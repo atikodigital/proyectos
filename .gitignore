@@ -1,0 +1,21 @@
+# Dependencias
+node_modules/
+
+# Credenciales y secretos
+.env
+.env.*
+*.local
+credentials.json
+
+# Archivos de empaquetado y temporales
+atiko-dist.zip
+index.html.bak
+*.log
+
+# Archivos del Sistema Operativo
+.DS_Store
+Thumbs.db
+
+# IDEs
+.vscode/
+.idea/

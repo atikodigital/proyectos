@@ -1,0 +1,29 @@
+﻿# Agencia Atiko â€” robots.txt
+# https://atikodigital.cl
+
+User-agent: *
+Allow: /
+
+# Bloquear archivos de build y logs
+Disallow: /*.log$
+Disallow: /*.md$
+Disallow: /.well-known/security.txt
+
+# Bots de IA: permitir indexaciÃ³n (mejora visibilidad en ChatGPT, Perplexity, Claude)
+User-agent: GPTBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+Sitemap: https://atikodigital.cl/sitemap.xml
+

@@ -1,0 +1,10 @@
+﻿# Agencia Atiko â€” security.txt (RFC 9116)
+# Si encuentras una vulnerabilidad, repÃ³rtala. Te lo vamos a agradecer.
+
+Contact: mailto:atikodigital@gmail.com
+Contact: https://wa.me/56927130792
+Expires: 2027-12-31T23:59:59Z
+Preferred-Languages: es, en
+Canonical: https://atikodigital.cl/.well-known/security.txt
+Policy: https://atikodigital.cl/privacidad.html
+

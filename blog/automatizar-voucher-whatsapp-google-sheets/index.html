@@ -1,0 +1,287 @@
+﻿<!DOCTYPE html>
+<html lang="es-CL">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CÃ³mo Automatizar Vouchers de WhatsApp a Google Sheets Â· Tutorial 2026 | Atiko</title>
+<meta name="description" content="GuÃ­a completa paso a paso: cÃ³mo recibir vouchers/comprobantes de pago por WhatsApp y registrarlos automÃ¡ticamente en Google Sheets con OCR e inteligencia artificial.">
+<link rel="canonical" href="https://atikodigital.cl/blog/automatizar-voucher-whatsapp-google-sheets/">
+<meta name="robots" content="index, follow">
+<meta property="og:type" content="article">
+<meta property="og:locale" content="es_CL">
+<meta property="og:title" content="Automatizar vouchers WhatsApp a Google Sheets Â· Tutorial 2026">
+<meta property="og:description" content="Cliente manda foto del comprobante â†’ fila nueva en Sheets. GuÃ­a paso a paso para pymes chilenas.">
+<meta property="og:url" content="https://atikodigital.cl/blog/automatizar-voucher-whatsapp-google-sheets/">
+<meta property="og:image" content="https://atikodigital.cl/og-image.jpg">
+<meta name="article:published_time" content="2026-05-22T10:00:00-04:00">
+<meta name="article:author" content="Agencia Atiko">
+
+<link rel="icon" type="image/svg+xml" href="/logo.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/shared.css">
+
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"HowTo","name":"CÃ³mo automatizar el registro de vouchers de WhatsApp a Google Sheets","description":"Tutorial paso a paso para implementar automatizaciÃ³n OCR de vouchers de transferencia chilenos a Google Sheets","totalTime":"PT2H","supply":[{"@type":"HowToSupply","name":"Cuenta de WhatsApp Business"},{"@type":"HowToSupply","name":"Cuenta de Google (Sheets/Drive)"},{"@type":"HowToSupply","name":"API key de Anthropic Claude o OpenAI"},{"@type":"HowToSupply","name":"Instancia de n8n (self-hosted o cloud)"}],"step":[{"@type":"HowToStep","name":"Configurar WhatsApp Business API","text":"Conectar Twilio o Meta Business como puente para recibir mensajes"},{"@type":"HowToStep","name":"Crear flujo en n8n","text":"Webhook que recibe la imagen y la pasa al modelo de IA"},{"@type":"HowToStep","name":"Configurar OCR con Claude Vision","text":"Prompt para extraer monto, fecha, banco, RUT del voucher"},{"@type":"HowToStep","name":"Conectar Google Sheets","text":"Configurar nodo de append row con los datos extraÃ­dos"},{"@type":"HowToStep","name":"Probar y desplegar","text":"Enviar vouchers de prueba y verificar registros"}]}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"Article","headline":"CÃ³mo automatizar el registro de vouchers desde WhatsApp a Google Sheets","datePublished":"2026-05-22","dateModified":"2026-05-22","author":{"@type":"Organization","name":"Agencia Atiko","url":"https://atikodigital.cl"},"publisher":{"@type":"Organization","name":"Agencia Atiko","logo":{"@type":"ImageObject","url":"https://atikodigital.cl/logo.svg"}},"image":"https://atikodigital.cl/og-image.jpg","mainEntityOfPage":{"@type":"WebPage","@id":"https://atikodigital.cl/blog/automatizar-voucher-whatsapp-google-sheets/"}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Inicio","item":"https://atikodigital.cl/"},{"@type":"ListItem","position":2,"name":"Blog","item":"https://atikodigital.cl/blog/"},{"@type":"ListItem","position":3,"name":"Voucher WhatsApp a Sheets","item":"https://atikodigital.cl/blog/automatizar-voucher-whatsapp-google-sheets/"}]}</script>
+</head>
+<body>
+
+
+<div class="bg-stage" aria-hidden="true"></div>
+<div class="bg-grid" aria-hidden="true"></div>
+<div class="bg-grain" aria-hidden="true"></div>
+
+<header class="site-header"><div class="site-header-inner">
+  <a href="/" class="site-logo"><img src="/logo.svg" alt="" width="36" height="36"><span>ATIKO</span></a>
+  <ul class="site-nav"><li><a href="/agentes-ia/">Agentes IA</a></li><li><a href="/catalogo/">CatÃ¡logo</a></li><li><a href="/automatizaciones/">Automatizaciones</a></li><li><a href="/industrias/">Industrias</a></li><li><a href="/precios/">Precios</a></li><li><a href="/blog/" class="active">Blog</a></li></ul>
+  <a href="https://wa.me/56927130792" target="_blank" rel="noopener" class="site-cta">Cotizar</a>
+</div></header>
+
+<nav class="crumbs"><a href="/">Inicio</a><a href="/blog/">Blog</a><span aria-current="page">Voucher WhatsApp a Sheets</span></nav>
+
+<section class="page-hero">
+  <span class="page-eyebrow">Tutorial Â· 12 min de lectura</span>
+  <h1 class="page-title">Voucher de WhatsApp â†’ fila en Sheets,<br><span class="grad">sin tu intervenciÃ³n.</span></h1>
+  <p class="page-lead">GuÃ­a completa para implementar el flujo mÃ¡s pedido por pymes chilenas: el cliente te manda foto del comprobante de transferencia por WhatsApp y aparece registrado automÃ¡ticamente en tu Google Sheet con monto, banco, fecha y RUT.</p>
+  <p style="color:var(--text-muted);font-size:.85rem;margin-top:1rem">Publicado: 22 de mayo de 2026 Â· Ãšltima actualizaciÃ³n: 22 de mayo de 2026 Â· Por Agencia Atiko</p>
+</section>
+
+<section class="section">
+  <article class="prose">
+
+    <h2>Â¿Por quÃ© automatizar esto?</h2>
+    <p>Si tu pyme cobra por transferencia bancaria (la mayorÃ­a de pymes en Chile lo hace), recibes vouchers por WhatsApp todo el dÃ­a. Anotar cada uno a mano en Excel o Google Sheets te toma <strong>2-4 minutos por voucher</strong>. Con 30 vouchers al dÃ­a son <strong>2 horas diarias</strong> solo registrando. Y se te olvidan algunos, se duplican otros, hay errores de tipeo.</p>
+    <p>El flujo automatizado lo hace en <strong>15 segundos sin tu intervenciÃ³n</strong> y con precisiÃ³n cercana al 98%.</p>
+
+    <h2>QuÃ© vamos a construir</h2>
+    <ol>
+      <li>Cliente envÃ­a foto del voucher a un WhatsApp dedicado</li>
+      <li>n8n recibe el webhook con la imagen</li>
+      <li>Claude Vision (o GPT-4 Vision) extrae los datos del voucher</li>
+      <li>Google Sheets se actualiza automÃ¡ticamente</li>
+      <li>El cliente recibe confirmaciÃ³n instantÃ¡nea</li>
+    </ol>
+
+    <h2>Stack tecnolÃ³gico y costos reales</h2>
+    <table class="compare-table">
+      <thead><tr><th>Componente</th><th>Para quÃ© sirve</th><th>Costo mensual</th></tr></thead>
+      <tbody>
+        <tr><td>Twilio WhatsApp Business</td><td>Recibir mensajes y enviar respuestas</td><td>USD $5-15 (segÃºn volumen)</td></tr>
+        <tr><td>n8n self-hosted (DigitalOcean)</td><td>Orquestador del flujo</td><td>USD $6 (droplet mÃ­nimo)</td></tr>
+        <tr><td>Anthropic Claude API</td><td>OCR + extracciÃ³n con IA</td><td>USD $5-25 (USD $0.005 por voucher)</td></tr>
+        <tr><td>Google Sheets + Drive</td><td>Almacenamiento de datos e imÃ¡genes</td><td>Gratis</td></tr>
+        <tr><td><strong>TOTAL</strong></td><td></td><td><strong>USD $16-46/mes (â‰ˆ$15.000-43.000 CLP)</strong></td></tr>
+      </tbody>
+    </table>
+
+    <p>Para una pyme que registra 500 vouchers/mes, el costo total ronda los <strong>$25.000 CLP/mes</strong>. Vs. 2 horas diarias Ã— 30 dÃ­as Ã— valor hora de tu administradora ($3.000-$5.000) = <strong>$180.000-$300.000/mes</strong> en sueldos. Se paga 10x el primer mes.</p>
+
+    <h2>Paso 1 Â· Crear cuenta WhatsApp Business y conectar Twilio</h2>
+    <p>Twilio es la forma mÃ¡s fÃ¡cil de conectar WhatsApp Business a una API en Chile (Meta tambiÃ©n funciona pero el setup es mÃ¡s burocrÃ¡tico).</p>
+
+    <h3>Subpaso 1.1 â€” Crear cuenta Twilio</h3>
+    <ol>
+      <li>Ve a <code>twilio.com</code> y crea cuenta con tu email comercial</li>
+      <li>Verifica tu nÃºmero celular</li>
+      <li>En el dashboard, anda a <strong>Messaging â†’ Try it out â†’ Send a WhatsApp message</strong></li>
+      <li>Activa el <strong>sandbox</strong> (gratis para pruebas)</li>
+    </ol>
+
+    <h3>Subpaso 1.2 â€” Configurar webhook</h3>
+    <p>En Twilio sandbox, configura la URL de webhook a tu instancia de n8n (la veremos en el paso 2):</p>
+    <pre><code>https://tu-n8n.com/webhook/voucher-whatsapp</code></pre>
+
+    <h3>Subpaso 1.3 â€” Para producciÃ³n (cuando funcione el flujo)</h3>
+    <p>Comprar un nÃºmero WhatsApp Business en Twilio (~USD $1/mes) y solicitar aprobaciÃ³n de plantillas. Toma 1-2 dÃ­as hÃ¡biles.</p>
+
+    <h2>Paso 2 Â· Levantar n8n self-hosted</h2>
+    <p>n8n es el orquestador del flujo. VersiÃ³n open-source self-hosted es gratis.</p>
+
+    <h3>Subpaso 2.1 â€” Crear droplet en DigitalOcean</h3>
+    <ol>
+      <li>Crear cuenta en <code>digitalocean.com</code></li>
+      <li>Crear nuevo droplet: Ubuntu 22.04, 1GB RAM, USD $6/mes</li>
+      <li>Conectar por SSH</li>
+    </ol>
+
+    <h3>Subpaso 2.2 â€” Instalar n8n con Docker</h3>
+    <pre><code># Instalar Docker
+curl -fsSL https://get.docker.com | sh
+
+# Crear docker-compose.yml
+cat &gt; docker-compose.yml &lt;&lt;EOF
+version: '3'
+services:
+  n8n:
+    image: n8nio/n8n
+    restart: always
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=admin
+      - N8N_BASIC_AUTH_PASSWORD=tu-password-fuerte
+      - N8N_HOST=tu-dominio.com
+      - WEBHOOK_URL=https://tu-dominio.com/
+    volumes:
+      - n8n_data:/home/node/.n8n
+volumes:
+  n8n_data:
+EOF
+
+docker compose up -d</code></pre>
+
+    <h3>Subpaso 2.3 â€” Configurar dominio + HTTPS</h3>
+    <p>Apuntar un subdominio (ej. <code>n8n.atikodigital.cl</code>) a la IP del droplet. Instalar Caddy o nginx con Let's Encrypt para SSL gratis.</p>
+
+    <h2>Paso 3 Â· Crear el flujo en n8n</h2>
+
+    <h3>Nodo 1: Webhook (Twilio)</h3>
+    <ul>
+      <li>HTTP Method: <code>POST</code></li>
+      <li>Path: <code>voucher-whatsapp</code></li>
+      <li>Response: <code>Immediately</code></li>
+    </ul>
+
+    <h3>Nodo 2: Filtrar solo si trae imagen</h3>
+    <pre><code>{{ $json.NumMedia > 0 ? true : false }}</code></pre>
+
+    <h3>Nodo 3: Descargar la imagen</h3>
+    <p>Twilio envÃ­a URLs con autenticaciÃ³n. Usar nodo HTTP Request:</p>
+    <ul>
+      <li>URL: <code>{{ $json.MediaUrl0 }}</code></li>
+      <li>Authentication: Basic Auth con Account SID y Auth Token</li>
+      <li>Response Format: <code>file</code></li>
+    </ul>
+
+    <h3>Nodo 4: Llamar a Claude Vision para extraer datos</h3>
+    <p>HTTP Request a la API de Anthropic:</p>
+    <pre><code>POST https://api.anthropic.com/v1/messages
+Headers:
+  x-api-key: {{ $env.ANTHROPIC_API_KEY }}
+  anthropic-version: 2023-06-01
+  content-type: application/json
+
+Body:
+{
+  "model": "claude-haiku-4-5",
+  "max_tokens": 1024,
+  "messages": [{
+    "role": "user",
+    "content": [
+      {
+        "type": "image",
+        "source": {
+          "type": "base64",
+          "media_type": "image/jpeg",
+          "data": "{{ $node['Descargar imagen'].binary.data.data }}"
+        }
+      },
+      {
+        "type": "text",
+        "text": "Eres un sistema OCR especializado en vouchers bancarios chilenos. Analiza esta imagen y devuelve SOLO un JSON con estos campos: { monto: number, fecha: string (YYYY-MM-DD), hora: string (HH:mm), banco_origen: string, rut_depositante: string|null, nombre_depositante: string|null, numero_operacion: string|null, es_voucher_valido: boolean }. Si no es un voucher vÃ¡lido devuelve {es_voucher_valido: false}. Solo el JSON, sin texto adicional."
+      }
+    ]
+  }]
+}</code></pre>
+
+    <h3>Nodo 5: Parsear respuesta JSON</h3>
+    <pre><code>const text = $input.first().json.content[0].text;
+return JSON.parse(text);</code></pre>
+
+    <h3>Nodo 6: Validar y manejar errores</h3>
+    <p>Si <code>es_voucher_valido === false</code>, responder al cliente "No pudimos leer tu comprobante, Â¿podrÃ­as reenviarlo con mejor calidad?" y terminar.</p>
+
+    <h3>Nodo 7: Verificar duplicados en Sheets</h3>
+    <p>Buscar en el Sheet si ya existe una fila con el mismo <code>numero_operacion</code> + <code>banco_origen</code>. Si existe, responder al cliente que el pago ya estÃ¡ registrado.</p>
+
+    <h3>Nodo 8: Append fila a Google Sheets</h3>
+    <ul>
+      <li>Documento: ID del Sheet "Pagos-Recibidos"</li>
+      <li>Hoja: <code>Movimientos</code></li>
+      <li>Columnas: Timestamp, Monto, Fecha, Hora, Banco, RUT, Nombre, NumOperacion, EstadoBoleta, URL Imagen</li>
+    </ul>
+
+    <h3>Nodo 9: Guardar imagen en Drive</h3>
+    <p>Upload de la imagen a la carpeta <code>/Atiko/Vouchers/2026/</code>. Anotar URL en la celda "URL Imagen" del paso anterior.</p>
+
+    <h3>Nodo 10: Responder al cliente por WhatsApp</h3>
+    <pre><code>POST https://api.twilio.com/2010-04-01/Accounts/{{AccountSid}}/Messages.json
+Body: {
+  "From": "whatsapp:+14155238886",
+  "To": "{{ $json.From }}",
+  "Body": "âœ“ Recibido. Pago de ${{ formatMoney($json.monto) }} registrado. Te llega la boleta en breve."
+}</code></pre>
+
+    <h2>Paso 4 Â· Probar el flujo</h2>
+    <p>Enviar 5-10 vouchers reales desde distintos bancos chilenos (Estado, BCI, Santander, ItaÃº, BancoChile, Falabella). Verificar:</p>
+    <ul>
+      <li>Que se extraigan los datos correctamente</li>
+      <li>Que aparezcan en Sheets</li>
+      <li>Que el cliente reciba confirmaciÃ³n rÃ¡pida</li>
+      <li>Que la imagen quede en Drive</li>
+    </ul>
+    <p>Casos a probar especialmente:</p>
+    <ul>
+      <li>Voucher borroso â†’ debe pedir reenvÃ­o</li>
+      <li>Captura de pantalla VS foto de pantalla â†’ ambas deben funcionar</li>
+      <li>Voucher en formato landscape vs portrait</li>
+      <li>Duplicado del mismo voucher â†’ debe detectar</li>
+      <li>Imagen que NO es voucher (foto de gato, comida) â†’ debe rechazar</li>
+    </ul>
+
+    <h2>Mejoras opcionales</h2>
+
+    <h3>IntegraciÃ³n con boletas SII</h3>
+    <p>Una vez registrado el voucher, llamar a OpenFactura/Haulmer para emitir la boleta automÃ¡ticamente. <a href="/servicios/automatizar-boletas-sii/">Ver el servicio completo</a>.</p>
+
+    <h3>NotificaciÃ³n al equipo</h3>
+    <p>Mensaje a un canal interno (Slack/WhatsApp del equipo) cuando llega un pago superior a cierto monto: "ðŸŽ‰ Pago grande de $XXX.XXX de [cliente]".</p>
+
+    <h3>Dashboard en Sheets</h3>
+    <p>Una segunda hoja en el mismo Sheet con mÃ©tricas: total recaudado hoy/semana/mes, top 10 clientes, banco mÃ¡s usado.</p>
+
+    <h2>Errores comunes y cÃ³mo resolverlos</h2>
+
+    <h3>Claude Vision devuelve texto antes del JSON</h3>
+    <p>Refuerza el prompt: "RESPONDE SOLO EL JSON. NADA MÃS. NI EXPLICACIONES NI TEXTO ANTES O DESPUÃ‰S." Usa "claude-haiku-4-5" que es mÃ¡s obediente al formato.</p>
+
+    <h3>El voucher es muy oscuro / contraluz</h3>
+    <p>El bot debe responder pidiendo reenvÃ­o en mejor luz. Si el cliente insiste con la misma foto borrosa, derivar a humano.</p>
+
+    <h3>Vouchers de bancos digitales (Tenpo, MACH, Tapp)</h3>
+    <p>Suelen tener formatos no-tradicionales. Funcionan, pero al inicio revÃ­salos manualmente para confirmar precisiÃ³n.</p>
+
+    <h3>Costo de API se dispara</h3>
+    <p>Establecer un lÃ­mite mensual de gasto en el panel de Anthropic. Y si superas 2000 vouchers/mes, cambiar a OCR self-hosted (Tesseract o PaddleOCR) para los casos simples y usar Claude solo para los complejos.</p>
+
+    <h2>Â¿Lo armas tÃº o lo armamos por ti?</h2>
+    <p>Si despuÃ©s de leer esto sientes que es factible y tienes ganas, dale: la documentaciÃ³n de n8n es buena y hay tutoriales en YouTube. Calcula 2-4 dÃ­as de trabajo full-time para tenerlo corriendo bien.</p>
+    <p>Si prefieres que lo haga alguien con experiencia, esto estÃ¡ incluido en el <a href="/precios/">Plan Pro de Atiko ($190.000/mes)</a> junto con otras automatizaciones, monitoreo continuo y soporte directo por WhatsApp.</p>
+
+    <hr>
+    <p><strong>Â¿Te sirviÃ³ este tutorial?</strong> Comparte el link con otra pyme chilena que estÃ© penando con la misma tarea. Y si quieres mÃ¡s tutoriales sobre automatizaciones, <a href="/blog/">visita el blog</a>.</p>
+  </article>
+</section>
+
+<div class="cta-block">
+  <h2>Â¿Lo implementas tÃº o lo armamos por ti?</h2>
+  <p>Si prefieres que tu pyme tenga esto corriendo en 2 semanas sin tocar cÃ³digo, estÃ¡ incluido en el plan Pro.</p>
+  <a href="https://wa.me/56927130792?text=Quiero%20que%20Atiko%20me%20arme%20el%20voucher%20automation" target="_blank" rel="noopener" class="btn-primary">Quiero que lo armen por mÃ­ â†’</a>
+</div>
+
+<footer class="site-footer">
+  <div class="site-footer-inner">
+    <div class="foot-col foot-brand"><a href="/" class="site-logo"><img src="/logo.svg" alt="" width="32" height="32"><span>ATIKO</span></a><p>Agentes IA y automatizaciÃ³n para pymes chilenas. Sacamos del medio el trabajo manual que te quita horas cada semana. Sitio web incluido.</p></div>
+    <div class="foot-col"><h4>Soluciones</h4><ul><li><a href="/agentes-ia/">Agentes IA</a></li><li><a href="/automatizaciones/">Automatizaciones</a></li><li><a href="/servicios/agentes-ia-whatsapp/">IA WhatsApp</a></li><li><a href="/servicios/automatizar-boletas-sii/">Boletas SII</a></li><li><a href="/servicios/automatizar-cobranza/">Cobranza</a></li><li><a href="/servicios/voucher-whatsapp-sheets/">Voucher â†’ Sheets</a></li></ul></div>
+    <div class="foot-col"><h4>Empresa</h4><ul><li><a href="/sobre/">Sobre Atiko</a></li><li><a href="/proceso/">Proceso</a></li><li><a href="/precios/">Precios</a></li><li><a href="/blog/">Blog</a></li></ul></div>
+    <div class="foot-col"><h4>Contacto</h4><ul><li><a href="https://wa.me/56927130792" target="_blank" rel="noopener">WhatsApp</a></li><li><a href="mailto:atikodigital@gmail.com">Email</a></li><li><span style="color:var(--text-muted)">Santiago, Chile</span></li></ul></div>
+  </div>
+  <div class="foot-bottom"><span>Â© 2026 Agencia Atiko Â· Todos los derechos reservados</span><span><a href="/privacidad.html">Privacidad</a> Â· <a href="/terminos.html">TÃ©rminos</a></span></div>
+</footer>
+<script src="/assets/shared.js" defer></script>
+</body>
+</html>
+

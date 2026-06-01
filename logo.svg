@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 230 64" fill="none">
+  <defs>
+    <linearGradient id="gb" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#c8a46a"/>
+      <stop offset="100%" stop-color="#60a5fa"/>
+    </linearGradient>
+  </defs>
+
+  <!-- ── Símbolo: A geométrica ── -->
+  <!-- Trazo izquierdo -->
+  <line x1="24" y1="6" x2="4"  y2="52" stroke="white" stroke-width="2.6" stroke-linecap="round"/>
+  <!-- Trazo derecho -->
+  <line x1="24" y1="6" x2="44" y2="52" stroke="white" stroke-width="2.6" stroke-linecap="round"/>
+  <!-- Barra horizontal degradada -->
+  <line x1="13" y1="32" x2="35" y2="32" stroke="url(#gb)" stroke-width="2.6" stroke-linecap="round"/>
+  <!-- Vértice superior: rombo dorado -->
+  <rect x="21" y="3" width="6" height="6" rx="1" fill="#c8a46a" transform="rotate(45 24 6)"/>
+
+  <!-- ── Separador ── -->
+  <line x1="60" y1="14" x2="60" y2="52" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+
+  <!-- ── Wordmark: ATIKO ── -->
+  <text x="72" y="44"
+        font-family="'Bebas Neue', 'Impact', 'Arial Narrow', sans-serif"
+        font-size="36"
+        letter-spacing="5"
+        fill="white">ATIKO</text>
+
+  <!-- ── Tagline ── -->
+  <text x="73" y="57"
+        font-family="'Space Grotesk', 'Arial', sans-serif"
+        font-size="7.5"
+        letter-spacing="4"
+        fill="#c8a46a">AGENCIA DIGITAL</text>
+</svg>

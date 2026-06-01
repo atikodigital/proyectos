@@ -1,0 +1,296 @@
+﻿<!DOCTYPE html>
+<html lang="es-CL">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>n8n para Principiantes Â· Tu Primera AutomatizaciÃ³n en 30 Min | Atiko</title>
+<meta name="description" content="Tutorial paso a paso de n8n para dueÃ±os de pyme. Instala, configura y crea tu primera automatizaciÃ³n en menos de 30 minutos. Sin cÃ³digo. Para pymes chilenas en 2026.">
+<link rel="canonical" href="https://atikodigital.cl/blog/n8n-para-principiantes-pyme/">
+<meta name="robots" content="index, follow">
+<meta name="keywords" content="n8n tutorial, n8n principiantes, n8n para pymes, n8n vs zapier, n8n chile, automatizacion sin codigo">
+
+<meta property="og:type" content="article">
+<meta property="og:locale" content="es_CL">
+<meta property="og:title" content="n8n para principiantes Â· Tu primera automatizaciÃ³n en 30 min">
+<meta property="og:description" content="Tutorial paso a paso de n8n para dueÃ±os de pyme. Sin programar. Sin tecnicismos.">
+<meta property="og:url" content="https://atikodigital.cl/blog/n8n-para-principiantes-pyme/">
+<meta property="og:image" content="https://atikodigital.cl/og-image.jpg">
+<meta name="article:published_time" content="2026-05-24T10:00:00-04:00">
+<meta name="article:author" content="Agencia Atiko">
+
+<link rel="icon" type="image/svg+xml" href="/logo.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/shared.css">
+
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"HowTo","name":"CÃ³mo crear tu primera automatizaciÃ³n con n8n","description":"Tutorial paso a paso para que un dueÃ±o de pyme sin conocimientos tÃ©cnicos cree su primera automatizaciÃ³n en n8n en menos de 30 minutos","totalTime":"PT30M","supply":[{"@type":"HowToSupply","name":"Cuenta de email"},{"@type":"HowToSupply","name":"Google Sheets"},{"@type":"HowToSupply","name":"30 minutos disponibles"}],"step":[{"@type":"HowToStep","name":"Crear cuenta n8n Cloud","text":"Registrarse en n8n.io y activar prueba gratis"},{"@type":"HowToStep","name":"Definir el flujo objetivo","text":"Elegir una automatizaciÃ³n simple: nuevo lead â†’ fila en Sheets"},{"@type":"HowToStep","name":"Configurar webhook trigger","text":"Crear nodo webhook que reciba datos"},{"@type":"HowToStep","name":"Conectar Google Sheets","text":"Autorizar y configurar el append row"},{"@type":"HowToStep","name":"Probar el flujo","text":"Enviar datos de prueba y verificar"}]}
+</script>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"Article","headline":"n8n para principiantes: tu primera automatizaciÃ³n en 30 minutos","datePublished":"2026-05-24","dateModified":"2026-05-24","author":{"@type":"Organization","name":"Agencia Atiko","url":"https://atikodigital.cl"},"publisher":{"@type":"Organization","name":"Agencia Atiko","logo":{"@type":"ImageObject","url":"https://atikodigital.cl/logo.svg"}},"image":"https://atikodigital.cl/og-image.jpg","mainEntityOfPage":{"@type":"WebPage","@id":"https://atikodigital.cl/blog/n8n-para-principiantes-pyme/"}}
+</script>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Inicio","item":"https://atikodigital.cl/"},{"@type":"ListItem","position":2,"name":"Blog","item":"https://atikodigital.cl/blog/"},{"@type":"ListItem","position":3,"name":"n8n para principiantes","item":"https://atikodigital.cl/blog/n8n-para-principiantes-pyme/"}]}
+</script>
+</head>
+<body>
+
+<div class="bg-stage" aria-hidden="true"></div>
+<div class="bg-grid" aria-hidden="true"></div>
+<div class="bg-grain" aria-hidden="true"></div>
+
+<header class="site-header"><div class="site-header-inner">
+  <a href="/" class="site-logo"><img src="/logo.svg" alt="" width="36" height="36"><span>ATIKO</span></a>
+  <ul class="site-nav"><li><a href="/agentes-ia/">Agentes IA</a></li><li><a href="/catalogo/">CatÃ¡logo</a></li><li><a href="/automatizaciones/">Automatizaciones</a></li><li><a href="/industrias/">Industrias</a></li><li><a href="/precios/">Precios</a></li><li><a href="/blog/" class="active">Blog</a></li></ul>
+  <a href="https://wa.me/56927130792" target="_blank" rel="noopener" class="site-cta">Cotizar</a>
+</div></header>
+
+<nav class="crumbs"><a href="/">Inicio</a><a href="/blog/">Blog</a><span aria-current="page">n8n para principiantes</span></nav>
+
+<section class="page-hero">
+  <span class="page-eyebrow">Tutorial Â· 12 min de lectura</span>
+  <div class="page-divider"></div>
+  <h1 class="page-title">n8n para principiantes.<br><span class="grad">Tu primera automatizaciÃ³n en 30 minutos.</span></h1>
+  <p class="page-lead">Si escuchaste hablar de n8n pero te suena a chino, esta guÃ­a te lleva del cero a tu primera automatizaciÃ³n corriendo en menos de 30 minutos. Sin cÃ³digo. Sin tecnicismos innecesarios. Pensado para dueÃ±os de pyme chilenas, no para programadores.</p>
+  <p style="color:var(--text-muted);font-size:.85rem;margin-top:1rem">Publicado: 24 de mayo de 2026 Â· Por Agencia Atiko</p>
+</section>
+
+<section class="section">
+  <article class="prose">
+
+    <h2 id="que-es">Â¿QuÃ© es n8n y por quÃ© te conviene aprenderlo?</h2>
+    <p><strong>n8n</strong> (se lee "ene-ocho-ene" o "naitenait" en jerga gringa) es una herramienta de automatizaciÃ³n visual sin cÃ³digo. ConectÃ¡s "nodos" (cajitas) que representan acciones: <em>"cuando llega un mensaje a WhatsApp"</em> â†’ <em>"extrae el monto con IA"</em> â†’ <em>"guarda fila en Google Sheets"</em> â†’ <em>"responde al cliente"</em>.</p>
+
+    <p>Es como Zapier o Make, pero con tres ventajas grandes:</p>
+    <ul>
+      <li><strong>Es open-source</strong>: podÃ©s correrlo gratis en tu propio servidor</li>
+      <li><strong>Es mucho mÃ¡s flexible</strong>: hace cosas que Zapier no</li>
+      <li><strong>Pricing mÃ¡s justo</strong>: cobra por ejecuciÃ³n mensual, no por cada paso</li>
+    </ul>
+
+    <p>Lo usan desde startups de Silicon Valley hasta pymes chilenas que automatizan boletas SII y conciliaciÃ³n bancaria. Es el motor detrÃ¡s del 80% de las automatizaciones que hacemos en Atiko.</p>
+
+    <h2 id="alternativas">Â¿CuÃ¡ndo usar n8n y cuÃ¡ndo no?</h2>
+
+    <table class="compare-table">
+      <thead>
+        <tr><th>Plataforma</th><th>Precio mensual</th><th>Mejor para</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>n8n self-hosted</strong></td><td>USD $6 (droplet)</td><td>Pymes con cierto know-how tÃ©cnico o que contratan ayuda</td></tr>
+        <tr><td><strong>n8n Cloud</strong></td><td>USD $20-50</td><td>Sin DevOps, quieres simplicidad pagada</td></tr>
+        <tr><td><strong>Make.com</strong></td><td>USD $9-29</td><td>Pymes con flujos simples, equipo no tÃ©cnico</td></tr>
+        <tr><td><strong>Zapier</strong></td><td>USD $20-100+</td><td>Si ya lo usan en tu equipo</td></tr>
+      </tbody>
+    </table>
+
+    <p>Para empezar a aprender, recomendamos <strong>n8n Cloud con la prueba gratis</strong>. MÃ¡s adelante, si te enamoras de n8n, podÃ©s moverlo a un servidor propio (DigitalOcean USD $6/mes).</p>
+
+    <h2 id="paso-1">Paso 1 Â· Crear cuenta en n8n Cloud (5 min)</h2>
+
+    <ol>
+      <li>AndÃ¡ a <code>https://n8n.io</code></li>
+      <li>Click en "Get Started Free"</li>
+      <li>Registrate con email o Google</li>
+      <li>ConfirmÃ¡ tu email</li>
+      <li>EntrÃ¡ al dashboard de n8n</li>
+    </ol>
+
+    <p>TenÃ©s 14 dÃ­as gratis (sin tarjeta) para probar. Suficiente para construir 2-3 automatizaciones.</p>
+
+    <h2 id="paso-2">Paso 2 Â· DefinÃ­ quÃ© vas a automatizar (5 min)</h2>
+
+    <p>Para tu primera automatizaciÃ³n, conviene elegir algo simple. Te sugerimos esta:</p>
+
+    <blockquote>"Cuando llegue un nuevo lead a un formulario de mi web, que se registre automÃ¡ticamente en una Google Sheet con nombre, email, mensaje y fecha."</blockquote>
+
+    <p>Es simple, Ãºtil de verdad y se construye en menos de 20 minutos. Cuando la tengas funcionando, vas a entender la lÃ³gica de n8n y podÃ©s ir por automatizaciones mÃ¡s complejas.</p>
+
+    <h2 id="paso-3">Paso 3 Â· Crear el workflow (10 min)</h2>
+
+    <h3>3.1 Â· Nuevo workflow</h3>
+    <ol>
+      <li>En el dashboard de n8n, click "Create Workflow"</li>
+      <li>Le ponÃ©s nombre: "Lead â†’ Sheets"</li>
+    </ol>
+
+    <h3>3.2 Â· Nodo Trigger (Webhook)</h3>
+    <p>Un "trigger" es lo que <em>inicia</em> la automatizaciÃ³n. Vamos a usar un webhook (URL que recibe datos):</p>
+    <ol>
+      <li>Click en el botÃ³n "+" en el canvas</li>
+      <li>BuscÃ¡ "Webhook" y selecciÃ³nalo</li>
+      <li>Configura:
+        <ul>
+          <li><strong>HTTP Method</strong>: POST</li>
+          <li><strong>Path</strong>: lead-form</li>
+          <li><strong>Response Mode</strong>: When Last Node Finishes</li>
+        </ul>
+      </li>
+      <li>Click "Execute Node" â†’ te muestra una URL Ãºnica tipo <code>https://tu-cuenta.n8n.cloud/webhook-test/lead-form</code></li>
+      <li>Copia esa URL: la vas a necesitar despuÃ©s</li>
+    </ol>
+
+    <h3>3.3 Â· Nodo Google Sheets</h3>
+    <p>Este nodo va a escribir la nueva fila:</p>
+    <ol>
+      <li>Click "+" en el flujo</li>
+      <li>BuscÃ¡ "Google Sheets"</li>
+      <li>Selecciona la acciÃ³n "Append Row"</li>
+      <li>Conectar cuenta de Google (te abre OAuth, autorizÃ¡s)</li>
+      <li>Selecciona el spreadsheet que vas a usar (creÃ¡lo previamente con columnas: Nombre, Email, Mensaje, Fecha)</li>
+      <li>Selecciona la hoja ("Sheet1" por defecto)</li>
+      <li>En "Values to Send", configura las columnas:
+        <ul>
+          <li><strong>Nombre</strong>: <code>{{ $json.body.nombre }}</code></li>
+          <li><strong>Email</strong>: <code>{{ $json.body.email }}</code></li>
+          <li><strong>Mensaje</strong>: <code>{{ $json.body.mensaje }}</code></li>
+          <li><strong>Fecha</strong>: <code>{{ $now.toISO() }}</code></li>
+        </ul>
+      </li>
+    </ol>
+
+    <h3>3.4 Â· Guardar y activar</h3>
+    <ol>
+      <li>Click "Save" arriba a la derecha</li>
+      <li>Click el toggle "Active" para activar el workflow</li>
+    </ol>
+
+    <h2 id="paso-4">Paso 4 Â· Probar (5 min)</h2>
+
+    <p>Tu workflow estÃ¡ corriendo, pero no hemos enviado datos. Vamos a simular un lead con un comando curl desde la consola (o usÃ¡ Postman si preferÃ­s):</p>
+
+    <pre><code>curl -X POST https://tu-cuenta.n8n.cloud/webhook/lead-form \
+  -H "Content-Type: application/json" \
+  -d '{
+    "nombre": "Juan PÃ©rez",
+    "email": "juan@example.com",
+    "mensaje": "Hola, me interesa un agente IA"
+  }'</code></pre>
+
+    <p>AndÃ¡ a tu Google Sheet. DeberÃ­as ver una fila nueva con esos datos + la fecha de cuÃ¡ndo se ejecutÃ³.</p>
+
+    <p>Si funciona: Â¡felicitaciones, hiciste tu primera automatizaciÃ³n! Si no funciona, revisÃ¡:</p>
+    <ul>
+      <li>Que el workflow estÃ© activo (toggle verde)</li>
+      <li>Que la URL del webhook sea correcta (sin <code>-test</code> al final si ya activaste)</li>
+      <li>Que los nombres de columnas coincidan exactamente con tu Sheet</li>
+    </ul>
+
+    <h2 id="paso-5">Paso 5 Â· Conectar al formulario de tu web (5 min)</h2>
+
+    <p>Ahora vamos a conectar tu formulario web real para que envÃ­e leads a este flujo. En tu HTML:</p>
+
+    <pre><code>&lt;form id="contacto-form"&gt;
+  &lt;input name="nombre" required&gt;
+  &lt;input name="email" type="email" required&gt;
+  &lt;textarea name="mensaje" required&gt;&lt;/textarea&gt;
+  &lt;button type="submit"&gt;Enviar&lt;/button&gt;
+&lt;/form&gt;
+
+&lt;script&gt;
+document.getElementById('contacto-form').addEventListener('submit', async (e) =&gt; {
+  e.preventDefault();
+  const data = Object.fromEntries(new FormData(e.target));
+  await fetch('https://tu-cuenta.n8n.cloud/webhook/lead-form', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(data)
+  });
+  alert('Â¡Gracias! Te contactaremos pronto.');
+  e.target.reset();
+});
+&lt;/script&gt;</code></pre>
+
+    <p>Pega ese cÃ³digo en tu sitio web (o el equivalente para WordPress / Wix / Squarespace). Listo. Cada vez que alguien complete el formulario, aparece una fila en tu Sheet.</p>
+
+    <h2 id="siguientes-pasos">Siguientes pasos Â· quÃ© mÃ¡s podÃ©s automatizar</h2>
+
+    <p>Con n8n manejado, estas son las automatizaciones que te recomendamos sumar despuÃ©s:</p>
+
+    <h3>Nivel 1 Â· Notificaciones</h3>
+    <ul>
+      <li><strong>Email automÃ¡tico al recibir un lead</strong>: agregÃ¡ un nodo "Send Email" despuÃ©s del Sheets</li>
+      <li><strong>WhatsApp al equipo</strong> cuando hay nuevo lead caliente</li>
+      <li><strong>Slack notification</strong> para el equipo de ventas</li>
+    </ul>
+
+    <h3>Nivel 2 Â· Procesamiento con IA</h3>
+    <ul>
+      <li><strong>Clasificar leads con Claude</strong> (hot/warm/cold) automÃ¡ticamente</li>
+      <li><strong>Generar email personalizado</strong> con IA basado en el mensaje del lead</li>
+      <li><strong>Resumir conversaciones largas</strong> de WhatsApp</li>
+    </ul>
+
+    <h3>Nivel 3 Â· Integraciones avanzadas</h3>
+    <ul>
+      <li><strong>Conectar con tu CRM</strong> (HubSpot, Notion, Pipedrive)</li>
+      <li><strong>ConciliaciÃ³n bancaria</strong> con Fintoc</li>
+      <li><strong>EmisiÃ³n de boletas SII</strong> con OpenFactura</li>
+      <li><strong>Voucher WhatsApp â†’ Sheets con OCR IA</strong> (<a href="/blog/automatizar-voucher-whatsapp-google-sheets/">ver tutorial completo</a>)</li>
+    </ul>
+
+    <h2 id="errores">Errores comunes y cÃ³mo evitarlos</h2>
+
+    <h3>"Workflow not active"</h3>
+    <p>El toggle Active no estÃ¡ prendido. Hay que activarlo despuÃ©s de guardar.</p>
+
+    <h3>"Could not find sheet"</h3>
+    <p>El spreadsheet no existe o el ID estÃ¡ mal. VerificÃ¡ que estÃ©s conectado con la cuenta Google correcta.</p>
+
+    <h3>"Invalid credentials"</h3>
+    <p>La autorizaciÃ³n OAuth expirÃ³. Re-conectÃ¡ la cuenta Google en n8n.</p>
+
+    <h3>El webhook responde pero no aparecen datos en Sheets</h3>
+    <p>El error mÃ¡s comÃºn: los nombres de las variables no coinciden. Si el formulario manda <code>{nombre: "Juan"}</code>, en n8n debe ser <code>{{ $json.body.nombre }}</code>, no <code>{{ $json.nombre }}</code>.</p>
+
+    <h2 id="cuando-ayuda">CuÃ¡ndo dejar de hacerlo solo y pedir ayuda</h2>
+
+    <p>n8n es accesible para principiantes pero tiene curva de aprendizaje real. Te recomendamos pedir ayuda cuando:</p>
+    <ul>
+      <li>Tu flujo necesita conectar mÃ¡s de 6-8 herramientas</li>
+      <li>RequerÃ­s integraciÃ³n con APIs no estÃ¡ndar (Bsale, Defontana, Toteat, sistemas custom)</li>
+      <li>Tu volumen es alto (1000+ ejecuciones/dÃ­a) y necesitÃ¡s monitoreo serio</li>
+      <li>NecesitÃ¡s IA con prompt engineering avanzado</li>
+      <li>Tu pyme depende crÃ­tico de la automatizaciÃ³n: ya no es para "experimentar"</li>
+    </ul>
+
+    <p>En esos casos, considerÃ¡ <a href="/precios/">el plan Pro de Atiko ($190.000/mes)</a> que incluye 5 automatizaciones nuevas por mes + mantenimiento + monitoreo + soporte WhatsApp.</p>
+
+    <h2 id="conclusion">ConclusiÃ³n</h2>
+
+    <p>n8n es la herramienta que mÃ¡s impacto tiene en pymes chilenas que reciÃ©n entran al mundo de la automatizaciÃ³n. Con esta guÃ­a, ya hiciste tu primera automatizaciÃ³n. La prÃ³xima va a ser mÃ¡s fÃ¡cil. La tercera todavÃ­a mÃ¡s. En un mes, vas a tener 5-10 flujos corriendo que te ahorran horas reales cada semana.</p>
+
+    <p>EmpezÃ¡ simple. No intentÃ©s automatizar todo el negocio el primer dÃ­a. Una automatizaciÃ³n a la vez, validando que funciona y aporta antes de pasar a la siguiente.</p>
+
+    <hr>
+
+    <p><strong>Â¿Te sirviÃ³ este tutorial?</strong> Compartilo con otra pyme. Para profundizar:</p>
+    <ul>
+      <li><a href="/blog/automatizar-voucher-whatsapp-google-sheets/">Tutorial intermedio: voucher WhatsApp â†’ Sheets con IA</a></li>
+      <li><a href="/blog/que-es-un-agente-ia/">Â¿QuÃ© es un agente IA? GuÃ­a completa</a></li>
+      <li><a href="/automatizaciones/">CatÃ¡logo de 12 automatizaciones para pymes</a></li>
+    </ul>
+  </article>
+</section>
+
+<div class="cta-block">
+  <h2>Â¿QuerÃ©s que armemos tus automatizaciones?</h2>
+  <p>Si preferÃ­s dedicarte a tu negocio y que alguien con experiencia haga el trabajo pesado, hablemos 30 min.</p>
+  <a href="https://wa.me/56927130792?text=Quiero%20que%20Atiko%20me%20arme%20automatizaciones" target="_blank" rel="noopener" class="btn-primary">Hablemos â†’</a>
+</div>
+
+<footer class="site-footer">
+  <div class="site-footer-inner">
+    <div class="foot-col foot-brand"><a href="/" class="site-logo"><img src="/logo.svg" alt="" width="32" height="32"><span>ATIKO</span></a><p>Agentes IA y automatizaciÃ³n para pymes chilenas. Sacamos del medio el trabajo manual que te quita horas cada semana. Sitio web incluido.</p></div>
+    <div class="foot-col"><h4>Soluciones</h4><ul><li><a href="/agentes-ia/">Agentes IA</a></li><li><a href="/automatizaciones/">Automatizaciones</a></li><li><a href="/servicios/agentes-ia-whatsapp/">IA WhatsApp</a></li><li><a href="/servicios/automatizar-boletas-sii/">Boletas SII</a></li><li><a href="/servicios/automatizar-cobranza/">Cobranza</a></li><li><a href="/servicios/voucher-whatsapp-sheets/">Voucher â†’ Sheets</a></li></ul></div>
+    <div class="foot-col"><h4>Empresa</h4><ul><li><a href="/sobre/">Sobre Atiko</a></li><li><a href="/proceso/">Proceso</a></li><li><a href="/precios/">Precios</a></li><li><a href="/blog/">Blog</a></li></ul></div>
+    <div class="foot-col"><h4>Contacto</h4><ul><li><a href="https://wa.me/56927130792" target="_blank" rel="noopener">WhatsApp</a></li><li><a href="mailto:atikodigital@gmail.com">Email</a></li><li><span style="color:var(--text-muted)">Santiago, Chile</span></li></ul></div>
+  </div>
+  <div class="foot-bottom"><span>Â© 2026 Agencia Atiko Â· Todos los derechos reservados</span><span><a href="/privacidad.html">Privacidad</a> Â· <a href="/terminos.html">TÃ©rminos</a></span></div>
+</footer>
+<script src="/assets/shared.js" defer></script>
+</body>
+</html>
+
