@@ -244,7 +244,7 @@
         </div>
       </div>
       <div id="atiko-kai-orb-area">
-        <canvas id="atiko-kai-canvas-orb" width="130" height="130"></canvas>
+        <canvas id="atiko-kai-canvas-orb" width="180" height="180"></canvas>
         <span class="kai-orb-label">KAI · ATIKO DIGITAL · ONLINE</span>
       </div>
       <div id="atiko-kai-msgs"></div>
@@ -356,176 +356,223 @@
     ctx.globalAlpha = 1;
   }
 
-  /* ── ORB grande (130×130) — JARVIS HUD completo ── */
+  /* ── ORB grande (180×180) — JARVIS HUD completo ── */
   function drawOrb(canvas, t, state) {
     const ctx = canvas.getContext('2d');
     const W = canvas.width, H = canvas.height;
     const cx = W/2, cy = H/2;
-    const R  = Math.min(W, H) * 0.43;
-    const isSpeaking = state === 'speaking';
-    const isListening = state === 'listening';
-    const isThinking  = state === 'thinking';
+    const R  = Math.min(W, H) * 0.44;
+    const spk = state === 'speaking';
+    const lst = state === 'listening';
+    const thk = state === 'thinking';
+    const PRI = '#00d4ff', ORG = '#ff6b00', YEL = '#ffcc00', GRN = '#00ff88';
 
     ctx.clearRect(0, 0, W, H);
 
-    // ── 1. Fondo oscuro ──────────────────────────────────
-    ctx.fillStyle = '#00060a';
-    ctx.fillRect(0, 0, W, H);
+    // ── 1. Fondo ─────────────────────────────────────────
+    ctx.fillStyle = '#000a0f'; ctx.fillRect(0, 0, W, H);
 
-    // ── 2. Grid de puntos ────────────────────────────────
-    ctx.fillStyle = 'rgba(0,212,255,0.055)';
-    for (let x = 5; x < W; x += 7) {
-      for (let y = 5; y < H; y += 7) {
-        ctx.beginPath(); ctx.arc(x, y, 0.7, 0, Math.PI*2); ctx.fill();
+    // ── 2. Grid de puntos (más visible) ──────────────────
+    for (let x = 6; x < W; x += 9) {
+      for (let y = 6; y < H; y += 9) {
+        const d = Math.hypot(x-cx, y-cy);
+        const a = d < R ? 0.14 : 0.055;
+        ctx.fillStyle = `rgba(0,212,255,${a})`;
+        ctx.beginPath(); ctx.arc(x, y, 0.9, 0, Math.PI*2); ctx.fill();
       }
     }
 
-    // ── 3. Halo glow (6 anillos concéntricos) ───────────
-    const haloBase = isSpeaking ? 0.55 : isListening ? 0.42 : isThinking ? 0.33 : 0.14;
-    const halo = haloBase + Math.sin(t*(isSpeaking?5:isListening?7:1.5))*0.08;
-    for (let i = 5; i >= 0; i--) {
-      const a = halo * (1 - i/6) * 0.38;
-      ctx.beginPath(); ctx.arc(cx, cy, R*(0.42+i*0.10), 0, Math.PI*2);
-      ctx.strokeStyle = `rgba(0,212,255,${a})`; ctx.lineWidth = 0.8; ctx.stroke();
-    }
+    // ── 3. Anillo externo sólido ─────────────────────────
+    ctx.beginPath(); ctx.arc(cx, cy, R*0.97, 0, Math.PI*2);
+    ctx.strokeStyle = 'rgba(0,212,255,0.4)'; ctx.lineWidth = 1.8; ctx.stroke();
 
-    // ── 4. Pulse rings (basado en tiempo) ────────────────
-    const pSpeed = isSpeaking ? 50 : isListening ? 35 : 18; // px/seg
+    // ── 4. Halo (6 círculos concéntricos) ────────────────
+    const haloI = spk ? 0.6 : lst ? 0.45 : thk ? 0.35 : 0.15;
+    const halo  = haloI + Math.sin(t*(spk?5:lst?7:1.5))*0.1;
+    [0.75, 0.63, 0.51, 0.41, 0.33, 0.26].forEach((rf, i) => {
+      const a = halo * (1 - i/6) * 0.35;
+      ctx.beginPath(); ctx.arc(cx, cy, R*rf, 0, Math.PI*2);
+      ctx.strokeStyle = `rgba(0,212,255,${a})`; ctx.lineWidth = 1; ctx.stroke();
+    });
+
+    // ── 5. Pulse rings ────────────────────────────────────
+    const pSpd = spk ? 55 : lst ? 40 : 20;
     for (let i = 0; i < 3; i++) {
-      const r = ((t*pSpeed + i*(R/3)*1.1) % (R*1.15));
+      const r = ((t*pSpd + i*(R/3)*1.1) % (R*1.12));
       if (r < 1) continue;
-      const a = (1 - r/(R*1.15)) * (isSpeaking ? 0.38 : 0.15);
+      const a = (1 - r/(R*1.12)) * (spk ? 0.45 : 0.18);
       ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2);
-      ctx.strokeStyle = `rgba(0,212,255,${a})`; ctx.lineWidth = 0.8; ctx.stroke();
+      ctx.strokeStyle = `rgba(0,212,255,${a})`; ctx.lineWidth = 1; ctx.stroke();
     }
 
-    // ── 5. Arcos giratorios (3 anillos) ─────────────────
-    const arcSpeeds = isSpeaking ? [1.3, -0.9, 2.0] : [0.55, -0.35, 0.9];
-    const arcRadii  = [R*0.94, R*0.81, R*0.67];
-    const arcSegs   = [
-      [[0,60],[100,30],[160,80],[280,40]],
-      [[0,25],[50,90],[180,35],[240,70]],
-      [[20,40],[110,60],[220,45],[310,30]],
-    ];
-    const arcAlphas = [0.70, 0.50, 0.32];
-    const arcWidths = [1.5, 1.2, 0.8];
-    arcSegs.forEach((segs, ri) => {
+    // ── 6. Arcos giratorios (3 anillos, líneas gruesas) ──
+    const aSpeeds = spk ? [1.8,-1.2,2.5] : [0.6,-0.4,1.0];
+    [
+      { r:R*0.91, segs:[[0,55],[90,35],[160,75],[270,45]], alpha:0.88, lw:2.5 },
+      { r:R*0.76, segs:[[0,30],[60,80],[175,42],[245,65]], alpha:0.65, lw:2.0 },
+      { r:R*0.60, segs:[[15,45],[95,55],[195,35],[305,50]], alpha:0.42, lw:1.4 },
+    ].forEach((def, ri) => {
       ctx.save();
-      ctx.translate(cx, cy); ctx.rotate(t * arcSpeeds[ri] * 0.314); ctx.translate(-cx, -cy);
-      ctx.globalAlpha = arcAlphas[ri];
-      segs.forEach(([f, s]) => {
-        const col = (ri===1 && isThinking) ? '#ffcc00' : '#00d4ff';
+      ctx.translate(cx,cy); ctx.rotate(t*aSpeeds[ri]*0.314); ctx.translate(-cx,-cy);
+      ctx.globalAlpha = def.alpha;
+      def.segs.forEach(([f,s]) => {
         ctx.beginPath();
-        ctx.arc(cx, cy, arcRadii[ri], (f-90)*Math.PI/180, (f+s-90)*Math.PI/180);
-        ctx.strokeStyle = col; ctx.lineWidth = arcWidths[ri]; ctx.stroke();
+        ctx.arc(cx, cy, def.r, (f-90)*Math.PI/180, (f+s-90)*Math.PI/180);
+        ctx.strokeStyle = (ri===1&&thk) ? YEL : PRI;
+        ctx.lineWidth = def.lw; ctx.stroke();
       });
       ctx.globalAlpha = 1; ctx.restore();
     });
 
-    // ── 6. Tick marks ────────────────────────────────────
+    // ── 7. Tick marks (60 marcas, 3 tamaños) ─────────────
     ctx.save(); ctx.translate(cx, cy);
-    for (let i = 0; i < 36; i++) {
-      const angle = (i/36)*Math.PI*2 - Math.PI/2;
-      const isMajor = i % 9 === 0;
-      const r1 = R * (isMajor ? 0.84 : 0.90);
-      const r2 = R * 0.96;
+    for (let i = 0; i < 60; i++) {
+      const ang = (i/60)*Math.PI*2 - Math.PI/2;
+      const maj = i%15===0, med = i%5===0;
+      const r1 = R * (maj ? 0.80 : med ? 0.87 : 0.92);
+      const r2 = R * 0.97;
       ctx.beginPath();
-      ctx.moveTo(Math.cos(angle)*r1, Math.sin(angle)*r1);
-      ctx.lineTo(Math.cos(angle)*r2, Math.sin(angle)*r2);
-      ctx.strokeStyle = isMajor ? 'rgba(0,212,255,0.65)' : 'rgba(0,212,255,0.18)';
-      ctx.lineWidth = isMajor ? 1.2 : 0.5; ctx.stroke();
+      ctx.moveTo(Math.cos(ang)*r1, Math.sin(ang)*r1);
+      ctx.lineTo(Math.cos(ang)*r2, Math.sin(ang)*r2);
+      ctx.strokeStyle = maj ? 'rgba(0,212,255,0.85)' : med ? 'rgba(0,212,255,0.45)' : 'rgba(0,212,255,0.15)';
+      ctx.lineWidth = maj ? 2 : med ? 1 : 0.5; ctx.stroke();
     }
     ctx.restore();
 
-    // ── 7. Scanner primario (cyan) ───────────────────────
-    ctx.save(); ctx.translate(cx, cy); ctx.rotate(t*1.571); ctx.translate(-cx, -cy);
-    ctx.globalAlpha = 0.48;
-    ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx, cy - R*0.92);
-    ctx.strokeStyle = '#00d4ff'; ctx.lineWidth = 1.5; ctx.stroke();
+    // ── 8. Scanner primario (cyan, con barrido) ───────────
+    ctx.save(); ctx.translate(cx,cy); ctx.rotate(t*1.571); ctx.translate(-cx,-cy);
+    ctx.globalAlpha = 0.75;
+    ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx, cy - R*0.93);
+    ctx.strokeStyle = PRI; ctx.lineWidth = 2; ctx.stroke();
+    // rastro de barrido
+    const sweep = ctx.createConicalGradient ? null : (() => {
+      const sg = ctx.createRadialGradient(cx, cy, 0, cx, cy, R*0.93);
+      sg.addColorStop(0, 'rgba(0,212,255,0.08)');
+      sg.addColorStop(1, 'rgba(0,212,255,0)');
+      return sg;
+    })();
+    if (sweep) { ctx.fillStyle = sweep; ctx.beginPath(); ctx.arc(cx,cy,R*0.93,(-Math.PI/2)-0.4,-Math.PI/2); ctx.fill(); }
     ctx.globalAlpha = 1; ctx.restore();
 
-    // Scanner secundario (naranja, sentido contrario)
-    ctx.save(); ctx.translate(cx, cy); ctx.rotate(-t*0.87 + 1.05); ctx.translate(-cx, -cy);
-    ctx.globalAlpha = 0.22;
-    ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx, cy - R*0.71);
-    ctx.strokeStyle = '#ff6b00'; ctx.lineWidth = 1.0; ctx.stroke();
+    // Scanner secundario (naranja)
+    ctx.save(); ctx.translate(cx,cy); ctx.rotate(-t*0.87+1.05); ctx.translate(-cx,-cy);
+    ctx.globalAlpha = 0.55;
+    ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(cx, cy - R*0.73);
+    ctx.strokeStyle = ORG; ctx.lineWidth = 1.8; ctx.stroke();
     ctx.globalAlpha = 1; ctx.restore();
 
-    // ── 8. Crosshair ─────────────────────────────────────
-    ctx.save(); ctx.globalAlpha = 0.13; ctx.strokeStyle = '#00d4ff';
-    ctx.lineWidth = 0.5; ctx.setLineDash([2, 5]);
+    // ── 9. Crosshair ─────────────────────────────────────
+    ctx.save(); ctx.globalAlpha = 0.18; ctx.strokeStyle = PRI;
+    ctx.lineWidth = 0.7; ctx.setLineDash([3, 6]);
     ctx.beginPath();
-    ctx.moveTo(cx - R, cy); ctx.lineTo(cx + R, cy);
-    ctx.moveTo(cx, cy - R); ctx.lineTo(cx, cy + R);
+    ctx.moveTo(cx-R,cy); ctx.lineTo(cx+R,cy);
+    ctx.moveTo(cx,cy-R); ctx.lineTo(cx,cy+R);
     ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha = 1; ctx.restore();
 
-    // ── 9. Corner brackets ───────────────────────────────
-    const bS = 10, bG = 4;
-    ctx.strokeStyle = 'rgba(0,212,255,0.42)'; ctx.lineWidth = 1.2;
+    // ── 10. Patrón hexagonal central (firma JARVIS) ───────
+    ctx.save(); ctx.translate(cx,cy); ctx.rotate(t*0.12);
+    const hexR = R * 0.29;
+    // hexágono exterior
+    ctx.beginPath();
+    for (let i = 0; i <= 6; i++) {
+      const a = (i/6)*Math.PI*2; const hx = Math.cos(a)*hexR, hy = Math.sin(a)*hexR;
+      i===0 ? ctx.moveTo(hx,hy) : ctx.lineTo(hx,hy);
+    }
+    ctx.strokeStyle = 'rgba(0,212,255,0.45)'; ctx.lineWidth = 1.5; ctx.stroke();
+    // hexágono interior
+    ctx.beginPath();
+    for (let i = 0; i <= 6; i++) {
+      const a = (i/6)*Math.PI*2; const hx = Math.cos(a)*hexR*0.55, hy = Math.sin(a)*hexR*0.55;
+      i===0 ? ctx.moveTo(hx,hy) : ctx.lineTo(hx,hy);
+    }
+    ctx.strokeStyle = 'rgba(0,212,255,0.25)'; ctx.lineWidth = 1; ctx.stroke();
+    // radios del hexágono
+    for (let i = 0; i < 6; i++) {
+      const a = (i/6)*Math.PI*2;
+      ctx.beginPath();
+      ctx.moveTo(0,0);
+      ctx.lineTo(Math.cos(a)*hexR, Math.sin(a)*hexR);
+      ctx.strokeStyle = 'rgba(0,212,255,0.2)'; ctx.lineWidth = 0.8; ctx.stroke();
+      // punto en cada vértice
+      ctx.beginPath(); ctx.arc(Math.cos(a)*hexR, Math.sin(a)*hexR, 2.5, 0, Math.PI*2);
+      ctx.fillStyle = 'rgba(0,212,255,0.7)'; ctx.fill();
+    }
+    ctx.restore();
+
+    // ── 11. Corner brackets (más grandes y gruesos) ───────
+    const bS = 16, bG = 6;
+    ctx.strokeStyle = 'rgba(0,212,255,0.65)'; ctx.lineWidth = 2;
     [[bG,bG,1,1],[W-bG,bG,-1,1],[bG,H-bG,1,-1],[W-bG,H-bG,-1,-1]].forEach(([x,y,dx,dy]) => {
       ctx.beginPath();
-      ctx.moveTo(x+dx*bS, y); ctx.lineTo(x, y); ctx.lineTo(x, y+dy*bS);
+      ctx.moveTo(x+dx*bS, y); ctx.lineTo(x,y); ctx.lineTo(x, y+dy*bS);
       ctx.stroke();
     });
 
-    // ── 10. Partículas (solo speaking) ───────────────────
-    if (isSpeaking && Math.random() < 0.28) {
-      const ang = Math.random()*Math.PI*2;
-      const rStart = R*0.28;
+    // ── 12. Partículas (speaking) ─────────────────────────
+    if (spk && Math.random() < 0.32) {
+      const ang = Math.random()*Math.PI*2, rS = R*0.28;
       jParticles.push({
-        x: cx + Math.cos(ang)*rStart, y: cy + Math.sin(ang)*rStart,
-        vx: Math.cos(ang)*(0.9+Math.random()*2.2),
-        vy: Math.sin(ang)*(0.9+Math.random()*2.2) - 0.35,
+        x: cx+Math.cos(ang)*rS, y: cy+Math.sin(ang)*rS,
+        vx: Math.cos(ang)*(1+Math.random()*2.5),
+        vy: Math.sin(ang)*(1+Math.random()*2.5)-0.4,
         life: 1.0,
       });
     }
     jParticles = jParticles
-      .map(p => ({...p, x:p.x+p.vx, y:p.y+p.vy, vx:p.vx*0.96, vy:p.vy*0.96, life:p.life-0.028}))
+      .map(p => ({...p, x:p.x+p.vx, y:p.y+p.vy, vx:p.vx*0.96, vy:p.vy*0.96, life:p.life-0.026}))
       .filter(p => p.life > 0);
     jParticles.forEach(p => {
-      ctx.globalAlpha = p.life * 0.85;
-      ctx.fillStyle = '#00d4ff';
-      ctx.beginPath(); ctx.arc(p.x, p.y, 1.2, 0, Math.PI*2); ctx.fill();
+      ctx.globalAlpha = p.life * 0.9;
+      ctx.fillStyle = PRI;
+      ctx.beginPath(); ctx.arc(p.x, p.y, 1.5, 0, Math.PI*2); ctx.fill();
     });
     ctx.globalAlpha = 1;
 
-    // ── 11. Orb central ──────────────────────────────────
-    const intensity = isSpeaking ? 0.8+Math.sin(t*5)*0.14
-      : isListening ? 0.55+Math.sin(t*7)*0.18
-      : isThinking  ? 0.42+Math.sin(t*4)*0.14
-      : 0.18+Math.sin(t*1.5)*0.05;
-    const orbR = R * 0.31;
-    const cg = ctx.createRadialGradient(cx, cy, 0, cx, cy, orbR);
-    cg.addColorStop(0, `rgba(255,255,255,${intensity*0.95})`);
-    cg.addColorStop(0.25, `rgba(0,212,255,${intensity*0.82})`);
-    cg.addColorStop(0.65, `rgba(0,80,200,${intensity*0.22})`);
+    // ── 13. Core central (multicapa, muy luminoso) ────────
+    const intens = spk ? 0.9+Math.sin(t*5)*0.08 : lst ? 0.65+Math.sin(t*7)*0.14
+      : thk ? 0.5+Math.sin(t*4)*0.12 : 0.25+Math.sin(t*1.5)*0.06;
+    // capas de glow
+    for (let i = 5; i >= 0; i--) {
+      const r = R*0.24*(1+i*0.38);
+      const a = intens*(1-i/6)*0.28;
+      ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2);
+      ctx.fillStyle = `rgba(0,212,255,${a})`; ctx.fill();
+    }
+    // gradiente del core
+    const cg = ctx.createRadialGradient(cx,cy,0,cx,cy,R*0.26);
+    cg.addColorStop(0, `rgba(255,255,255,${intens})`);
+    cg.addColorStop(0.12, `rgba(180,245,255,${intens*0.92})`);
+    cg.addColorStop(0.35, `rgba(0,212,255,${intens*0.65})`);
+    cg.addColorStop(0.75, `rgba(0,80,200,${intens*0.18})`);
     cg.addColorStop(1, 'rgba(0,0,0,0)');
     ctx.fillStyle = cg;
-    ctx.beginPath(); ctx.arc(cx, cy, orbR, 0, Math.PI*2); ctx.fill();
-    // núcleo blanco
-    ctx.beginPath(); ctx.arc(cx, cy, 3 + intensity*4, 0, Math.PI*2);
-    ctx.fillStyle = `rgba(255,255,255,${intensity*0.9})`; ctx.fill();
+    ctx.beginPath(); ctx.arc(cx,cy,R*0.26,0,Math.PI*2); ctx.fill();
+    // punto central blanco
+    ctx.beginPath(); ctx.arc(cx,cy, 3+intens*6, 0, Math.PI*2);
+    ctx.fillStyle = `rgba(255,255,255,${intens})`; ctx.fill();
 
-    // ── 12. Waveform bars ─────────────────────────────────
-    const numBars = 26, barW = 2, barGap = 1.5;
-    const totalBW = numBars*(barW+barGap)-barGap;
-    const bStartX = cx - totalBW/2;
-    const barCY = H * 0.895;
-    const maxBH = isSpeaking ? 8 : 2.5;
-    for (let i = 0; i < numBars; i++) {
-      const bx = bStartX + i*(barW+barGap);
-      const freq = isSpeaking ? (3+i*0.18+t*4) : (1.2+t*0.7+i*0.25);
-      const h = Math.max(1, Math.abs(Math.sin(freq+i*0.38))*maxBH + 0.8);
-      const alpha = isSpeaking ? 0.88 : 0.32;
-      ctx.fillStyle = `rgba(0,212,255,${alpha})`;
-      ctx.fillRect(bx, barCY - h/2, barW, h);
+    // ── 14. Waveform (32 barras dinámicas) ───────────────
+    const nB = 32, bW = 2, bG2 = 1.8;
+    const totBW = nB*(bW+bG2)-bG2;
+    const bX0 = cx - totBW/2, bCY = H*0.91;
+    const maxH = spk ? 11 : 3;
+    for (let i = 0; i < nB; i++) {
+      const bx = bX0 + i*(bW+bG2);
+      const fr = spk ? (3+i*0.18)*t*0.28+i*0.45 : 1.2*t+i*0.3;
+      const h = Math.max(1.5, Math.abs(Math.sin(fr))*maxH + 1.2);
+      ctx.fillStyle = `rgba(0,212,255,${spk?0.92:0.35})`;
+      ctx.fillRect(bx, bCY - h/2, bW, h);
     }
 
-    // ── 13. HUD labels ────────────────────────────────────
-    const stCol = isSpeaking?'#00d4ff' : isListening?'#00ff88' : isThinking?'#ffcc00' : 'rgba(0,212,255,0.28)';
+    // ── 15. HUD labels + data stream ─────────────────────
+    const stCol = spk?PRI : lst?GRN : thk?YEL : 'rgba(0,212,255,0.3)';
+    ctx.font = '6.5px "Share Tech Mono",monospace';
+    ctx.fillStyle = 'rgba(0,212,255,0.38)'; ctx.textAlign = 'left';  ctx.fillText('SYS', 8, 13);
+    ctx.fillStyle = stCol;                  ctx.textAlign = 'right'; ctx.fillText(state.toUpperCase(), W-7, 13);
     ctx.font = '5.5px "Share Tech Mono",monospace';
-    ctx.fillStyle = 'rgba(0,212,255,0.28)'; ctx.textAlign = 'left';  ctx.fillText('SYS', 6, 10);
-    ctx.fillStyle = stCol;                  ctx.textAlign = 'right'; ctx.fillText(state.toUpperCase(), W-5, 10);
+    ctx.fillStyle = 'rgba(0,212,255,0.22)';
+    ctx.textAlign = 'left';  ctx.fillText(`${(t*100%100|0).toString().padStart(3,'0')}ms`, 8, H-7);
+    ctx.textAlign = 'right'; ctx.fillText('KAI·v2', W-7, H-7);
     ctx.textAlign = 'left';
   }
 
