@@ -285,8 +285,10 @@
      CANVAS — J.A.R.V.I.S. HUD (grid · rings · scanner · particles · waveform)
   ══════════════════════════════════════════════════════ */
 
-  // Particle state (module-level, updated each frame in drawOrb)
+  // Particle + pulse state (module-level, updated each frame in drawOrb)
   let jParticles = [];
+  // Amplitud de voz en vivo (0..1) — alimentada por el analizador de audio realtime
+  let liveAmp = 0;
 
   /* ── FAB (58×58) ─── minimal JARVIS orb ── */
   function drawFab(canvas, t, state) {
@@ -406,7 +408,8 @@
     }
 
     // ── 6. Arcos giratorios (3 anillos, líneas gruesas) ──
-    const aSpeeds = spk ? [1.8,-1.2,2.5] : [0.6,-0.4,1.0];
+    const am = spk ? (1 + liveAmp * 1.6) : 1; // los arcos giran más rápido con la voz
+    const aSpeeds = (spk ? [1.8,-1.2,2.5] : [0.6,-0.4,1.0]).map(s => s * am);
     [
       { r:R*0.91, segs:[[0,55],[90,35],[160,75],[270,45]], alpha:0.88, lw:2.5 },
       { r:R*0.76, segs:[[0,30],[60,80],[175,42],[245,65]], alpha:0.65, lw:2.0 },
@@ -439,11 +442,19 @@
     }
     ctx.restore();
 
-    // ── 8. Scanner primario (cyan) ────────────────────────
+    // ── 8. Scanner primario (cyan, con barrido) ───────────
     ctx.save(); ctx.translate(cx,cy); ctx.rotate(t*1.571); ctx.translate(-cx,-cy);
     ctx.globalAlpha = 0.75;
     ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx, cy - R*0.93);
     ctx.strokeStyle = PRI; ctx.lineWidth = 2; ctx.stroke();
+    // rastro de barrido
+    const sweep = ctx.createConicalGradient ? null : (() => {
+      const sg = ctx.createRadialGradient(cx, cy, 0, cx, cy, R*0.93);
+      sg.addColorStop(0, 'rgba(0,212,255,0.08)');
+      sg.addColorStop(1, 'rgba(0,212,255,0)');
+      return sg;
+    })();
+    if (sweep) { ctx.fillStyle = sweep; ctx.beginPath(); ctx.arc(cx,cy,R*0.93,(-Math.PI/2)-0.4,-Math.PI/2); ctx.fill(); }
     ctx.globalAlpha = 1; ctx.restore();
 
     // Scanner secundario (naranja)
@@ -464,28 +475,34 @@
     // ── 10. Patrón hexagonal central (firma JARVIS) ───────
     ctx.save(); ctx.translate(cx,cy); ctx.rotate(t*0.12);
     const hexR = R * 0.29;
+    // hexágono exterior
     ctx.beginPath();
     for (let i = 0; i <= 6; i++) {
       const a = (i/6)*Math.PI*2; const hx = Math.cos(a)*hexR, hy = Math.sin(a)*hexR;
       i===0 ? ctx.moveTo(hx,hy) : ctx.lineTo(hx,hy);
     }
     ctx.strokeStyle = 'rgba(0,212,255,0.45)'; ctx.lineWidth = 1.5; ctx.stroke();
+    // hexágono interior
     ctx.beginPath();
     for (let i = 0; i <= 6; i++) {
       const a = (i/6)*Math.PI*2; const hx = Math.cos(a)*hexR*0.55, hy = Math.sin(a)*hexR*0.55;
       i===0 ? ctx.moveTo(hx,hy) : ctx.lineTo(hx,hy);
     }
     ctx.strokeStyle = 'rgba(0,212,255,0.25)'; ctx.lineWidth = 1; ctx.stroke();
+    // radios del hexágono
     for (let i = 0; i < 6; i++) {
       const a = (i/6)*Math.PI*2;
-      ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(Math.cos(a)*hexR, Math.sin(a)*hexR);
+      ctx.beginPath();
+      ctx.moveTo(0,0);
+      ctx.lineTo(Math.cos(a)*hexR, Math.sin(a)*hexR);
       ctx.strokeStyle = 'rgba(0,212,255,0.2)'; ctx.lineWidth = 0.8; ctx.stroke();
+      // punto en cada vértice
       ctx.beginPath(); ctx.arc(Math.cos(a)*hexR, Math.sin(a)*hexR, 2.5, 0, Math.PI*2);
       ctx.fillStyle = 'rgba(0,212,255,0.7)'; ctx.fill();
     }
     ctx.restore();
 
-    // ── 11. Corner brackets ───────────────────────────────
+    // ── 11. Corner brackets (más grandes y gruesos) ───────
     const bS = 16, bG = 6;
     ctx.strokeStyle = 'rgba(0,212,255,0.65)'; ctx.lineWidth = 2;
     [[bG,bG,1,1],[W-bG,bG,-1,1],[bG,H-bG,1,-1],[W-bG,H-bG,-1,-1]].forEach(([x,y,dx,dy]) => {
@@ -514,14 +531,17 @@
     });
     ctx.globalAlpha = 1;
 
-    // ── 13. Core central multicapa ────────────────────────
-    const intens = spk ? 0.9+Math.sin(t*5)*0.08 : lst ? 0.65+Math.sin(t*7)*0.14
+    // ── 13. Core central (multicapa, muy luminoso) ────────
+    const intens = spk ? Math.min(1, 0.72+Math.sin(t*5)*0.06 + liveAmp*0.5) : lst ? 0.65+Math.sin(t*7)*0.14
       : thk ? 0.5+Math.sin(t*4)*0.12 : 0.25+Math.sin(t*1.5)*0.06;
+    // capas de glow
     for (let i = 5; i >= 0; i--) {
-      const r = R*0.24*(1+i*0.38), a = intens*(1-i/6)*0.28;
+      const r = R*0.24*(1+i*0.38);
+      const a = intens*(1-i/6)*0.28;
       ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2);
       ctx.fillStyle = `rgba(0,212,255,${a})`; ctx.fill();
     }
+    // gradiente del core
     const cg = ctx.createRadialGradient(cx,cy,0,cx,cy,R*0.26);
     cg.addColorStop(0, `rgba(255,255,255,${intens})`);
     cg.addColorStop(0.12, `rgba(180,245,255,${intens*0.92})`);
@@ -530,10 +550,11 @@
     cg.addColorStop(1, 'rgba(0,0,0,0)');
     ctx.fillStyle = cg;
     ctx.beginPath(); ctx.arc(cx,cy,R*0.26,0,Math.PI*2); ctx.fill();
+    // punto central blanco
     ctx.beginPath(); ctx.arc(cx,cy, 3+intens*6, 0, Math.PI*2);
     ctx.fillStyle = `rgba(255,255,255,${intens})`; ctx.fill();
 
-    // ── 14. Waveform (32 barras) ─────────────────────────
+    // ── 14. Waveform (32 barras dinámicas) ───────────────
     const nB = 32, bW = 2, bG2 = 1.8;
     const totBW = nB*(bW+bG2)-bG2;
     const bX0 = cx - totBW/2, bCY = H*0.91;
@@ -708,14 +729,196 @@
   });
 
   /* ══════════════════════════════════════════════════════
-     STT — continuo con auto-restart
+     VOZ EN TIEMPO REAL — OpenAI Realtime (estilo J.A.R.V.I.S.)
+     Mic (PCM16 24kHz) → WS → servidor → OpenAI → audio de vuelta.
+     Barge-in, transcripción y orbe reactivo a la amplitud real.
+  ══════════════════════════════════════════════════════ */
+  const mic = document.getElementById('atiko-kai-mic');
+  const LIVE_URL = _base.replace(/^http/, 'ws') + '/api/voice/live';
+  const LIVE_SUPPORTED = !!(
+    window.isSecureContext &&
+    navigator.mediaDevices && navigator.mediaDevices.getUserMedia &&
+    window.WebSocket &&
+    (window.AudioContext || window.webkitAudioContext) &&
+    window.AudioWorklet
+  );
+
+  const KaiLive = (function () {
+    let ws = null, ctx = null, micStream = null, srcNode = null, workletNode = null;
+    let playGain = null, analyser = null, ampData = null, rafAmp = 0;
+    let playHead = 0;
+    const activeSrc = new Set();
+    let active = false, starting = false;
+    let asstBubble = null, asstText = '';
+
+    const PCM_WORKLET =
+      "class KaiPCM extends AudioWorkletProcessor{" +
+      "process(inputs){const ch=inputs[0][0];if(ch)this.port.postMessage(ch.slice(0));return true;}}" +
+      "registerProcessor('kai-pcm',KaiPCM);";
+
+    function f32toI16(f32) {
+      const i16 = new Int16Array(f32.length);
+      for (let i = 0; i < f32.length; i++) {
+        let s = Math.max(-1, Math.min(1, f32[i]));
+        i16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+      }
+      return i16;
+    }
+
+    function playPcm(int16) {
+      if (!ctx) return;
+      const f32 = new Float32Array(int16.length);
+      for (let i = 0; i < int16.length; i++) f32[i] = int16[i] / 32768;
+      const buf = ctx.createBuffer(1, f32.length, 24000);
+      buf.copyToChannel(f32, 0);
+      const src = ctx.createBufferSource();
+      src.buffer = buf; src.connect(playGain);
+      const when = Math.max(ctx.currentTime + 0.03, playHead);
+      src.start(when); playHead = when + buf.duration;
+      activeSrc.add(src);
+      src.onended = () => activeSrc.delete(src);
+    }
+
+    function stopPlayback() {
+      activeSrc.forEach(s => { try { s.stop(); } catch (e) {} });
+      activeSrc.clear(); playHead = 0;
+    }
+
+    function ampLoop() {
+      if (!analyser) return;
+      analyser.getByteTimeDomainData(ampData);
+      let sum = 0;
+      for (let i = 0; i < ampData.length; i++) { const v = (ampData[i] - 128) / 128; sum += v * v; }
+      liveAmp = Math.min(1, Math.sqrt(sum / ampData.length) * 3);
+      rafAmp = requestAnimationFrame(ampLoop);
+    }
+
+    function appendAssistant(text, done) {
+      if (!asstBubble) {
+        const w = document.createElement('div'); w.className = 'kai-msg-bot-wrap';
+        w.innerHTML = `<span class="kai-msg-label">KAI // ${ts()}</span><div class="kai-msg-bot-bubble"></div>`;
+        msgs.appendChild(w); asstBubble = w.querySelector('.kai-msg-bot-bubble'); asstText = '';
+      }
+      asstText += text;
+      asstBubble.textContent = asstText;
+      msgs.scrollTop = msgs.scrollHeight;
+      if (done) { asstBubble = null; asstText = ''; }
+    }
+
+    function onReady() {
+      active = true;
+      srcNode = ctx.createMediaStreamSource(micStream);
+      workletNode = new AudioWorkletNode(ctx, 'kai-pcm');
+      workletNode.port.onmessage = (e) => {
+        if (!active || !ws || ws.readyState !== WebSocket.OPEN) return;
+        ws.send(f32toI16(e.data).buffer);
+      };
+      const muteGain = ctx.createGain(); muteGain.gain.value = 0;
+      srcNode.connect(workletNode); workletNode.connect(muteGain); muteGain.connect(ctx.destination);
+      ampLoop();
+      sphereState = 'listening';
+      mic.classList.add('listening');
+    }
+
+    function onWsMessage(ev) {
+      if (typeof ev.data !== 'string') { playPcm(new Int16Array(ev.data)); return; }
+      let m; try { m = JSON.parse(ev.data); } catch (e) { return; }
+      switch (m.type) {
+        case 'ready': onReady(); break;
+        case 'user_speaking': stopPlayback(); sphereState = 'listening'; break;
+        case 'speaking': sphereState = m.value ? 'speaking' : (active ? 'listening' : 'idle'); break;
+        case 'assistant_transcript': appendAssistant(m.text || '', m.done); break;
+        case 'user_transcript': if ((m.text || '').trim()) addUser(m.text.trim()); break;
+        case 'error': addBot('Voz: ' + (m.message || 'error')); break;
+      }
+    }
+
+    function cleanup() {
+      if (rafAmp) { try { cancelAnimationFrame(rafAmp); } catch (e) {} rafAmp = 0; }
+      try { workletNode && workletNode.disconnect(); } catch (e) {}
+      try { srcNode && srcNode.disconnect(); } catch (e) {}
+      try { micStream && micStream.getTracks().forEach(t => t.stop()); } catch (e) {}
+      stopPlayback();
+      try { ws && ws.close(); } catch (e) {}
+      try { ctx && ctx.close(); } catch (e) {}
+      ws = null; ctx = null; micStream = null; srcNode = null; workletNode = null;
+      playGain = null; analyser = null; asstBubble = null; asstText = ''; liveAmp = 0;
+    }
+
+    async function start() {
+      if (active || starting) return true;
+      if (!LIVE_SUPPORTED) {
+        addBot(!window.isSecureContext
+          ? 'La conversación por voz requiere HTTPS. Abre el sitio con https:// para hablar con KAI.'
+          : 'Tu navegador no soporta la voz en tiempo real. Prueba con Chrome o Edge actualizado.');
+        return false;
+      }
+      starting = true;
+      try {
+        micStream = await navigator.mediaDevices.getUserMedia({
+          audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true, autoGainControl: true }
+        });
+      } catch (e) {
+        starting = false;
+        addBot('No pude acceder al micrófono. Revisa los permisos del navegador.');
+        return false;
+      }
+      try {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        ctx = new AC({ sampleRate: 24000 });
+        if (ctx.state === 'suspended') await ctx.resume();
+        await ctx.audioWorklet.addModule(URL.createObjectURL(new Blob([PCM_WORKLET], { type: 'application/javascript' })));
+
+        playGain = ctx.createGain(); playGain.gain.value = 1;
+        analyser = ctx.createAnalyser(); analyser.fftSize = 256;
+        ampData = new Uint8Array(analyser.frequencyBinCount);
+        playGain.connect(analyser); analyser.connect(ctx.destination);
+
+        ws = new WebSocket(LIVE_URL); ws.binaryType = 'arraybuffer';
+        ws.onmessage = onWsMessage;
+        ws.onerror = () => { if (active || starting) addBot('Error de conexión con el servicio de voz.'); stop(); };
+        ws.onclose = () => { if (active) stop(); };
+
+        await new Promise((resolve, reject) => {
+          const to = setTimeout(() => reject(new Error('timeout')), 8000);
+          ws.addEventListener('open', () => { clearTimeout(to); resolve(); }, { once: true });
+          ws.addEventListener('error', () => { clearTimeout(to); reject(new Error('ws')); }, { once: true });
+        });
+      } catch (e) {
+        starting = false; cleanup();
+        addBot('No se pudo iniciar la conversación por voz.');
+        return false;
+      }
+      starting = false;
+      return true; // al recibir 'ready' se conecta el micrófono
+    }
+
+    function sendText(text) {
+      if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'text', text }));
+    }
+
+    function stop() {
+      active = false; starting = false;
+      cleanup();
+      mic.classList.remove('listening');
+      if (sphereState !== 'thinking') sphereState = 'idle';
+    }
+
+    return {
+      start, stop, sendText,
+      get active() { return active; },
+      get engaged() { return active || starting; },
+    };
+  })();
+
+  /* ══════════════════════════════════════════════════════
+     STT fallback — Web Speech (solo si NO hay voz en tiempo real)
   ══════════════════════════════════════════════════════ */
   const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
-  const mic = document.getElementById('atiko-kai-mic');
   let recognition = null;
   let interimText = '';
 
-  if (SpeechRec) {
+  if (!LIVE_SUPPORTED && SpeechRec) {
     recognition = new SpeechRec();
     recognition.lang = CONFIG.sttLang;
     recognition.continuous = true;
@@ -729,6 +932,7 @@
       }
       interimText = interim;
       if (final.trim()) {
+        // Enviar texto final al agente
         input.value = final.trim();
         sendMsg();
       } else if (interim) {
@@ -738,6 +942,7 @@
     };
 
     recognition.onend = () => {
+      // Auto-restart si seguimos en modo escucha
       if (isListening) {
         try { recognition.start(); } catch(e) {}
       } else {
@@ -747,11 +952,19 @@
     };
 
     recognition.onerror = (e) => {
-      if (e.error === 'no-speech') return;
+      if (e.error === 'no-speech') return; // ignorar silencio
       isListening = false; mic.classList.remove('listening'); sphereState = 'idle';
     };
 
-    mic.addEventListener('click', () => {
+  }
+
+  // Botón micrófono: prioriza voz en tiempo real (Realtime); si no, STT; si no, aviso.
+  mic.addEventListener('click', () => {
+    if (LIVE_SUPPORTED) {
+      if (KaiLive.engaged) KaiLive.stop(); else KaiLive.start();
+      return;
+    }
+    if (recognition) {
       if (isListening) {
         isListening = false; recognition.stop();
         mic.classList.remove('listening'); sphereState = 'idle';
@@ -762,11 +975,10 @@
           isListening=false; mic.classList.remove('listening'); sphereState='idle';
         }
       }
-    });
-  } else {
-    mic.style.opacity = '0.3';
-    mic.addEventListener('click', () => addBot('Reconocimiento de voz no disponible. Usa Chrome o Edge.'));
-  }
+      return;
+    }
+    addBot('Reconocimiento de voz no disponible en este navegador.');
+  });
 
   /* ── Helpers ── */
   const msgs   = document.getElementById('atiko-kai-msgs');
@@ -809,6 +1021,7 @@
   function closeChat() {
     isOpen=false; win.classList.remove('open');
     if (isListening) { isListening=false; try{recognition&&recognition.stop();}catch(e){} }
+    try { KaiLive.stop(); } catch(e){}
     stopAudio();
   }
 
@@ -816,6 +1029,10 @@
     const text=input.value.trim();
     if (!text||isTyping) return;
     input.value=''; input.style.height='auto';
+    // Si la voz en tiempo real está activa, el mensaje escrito va por la misma sesión (KAI responde hablando)
+    if (typeof KaiLive !== 'undefined' && KaiLive.active) {
+      addUser(text); KaiLive.sendText(text); return;
+    }
     send.disabled=true; isTyping=true; sphereState='thinking';
     addUser(text); showTyping();
     try {

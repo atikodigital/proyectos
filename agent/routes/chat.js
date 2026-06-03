@@ -66,7 +66,10 @@ router.post('/', async (req, res) => {
  * Response: binary MP3 (audio/mpeg)
  */
 router.post('/tts', async (req, res) => {
-  const { text, voice = 'nova' } = req.body;
+  const { text } = req.body;
+  // Ignoramos la voz hardcodeada 'nova' de widgets antiguos: usamos siempre AGENT_TTS_VOICE
+  // del servidor, salvo que el cliente pida explícitamente otra voz distinta.
+  const voice = (req.body.voice && req.body.voice !== 'nova') ? req.body.voice : undefined;
 
   if (!text || typeof text !== 'string') {
     return res.status(400).json({ error: 'El campo "text" es requerido' });
@@ -97,7 +100,9 @@ router.post('/tts', async (req, res) => {
  * Permite reproducción inmediata (primer chunk suena sin esperar el archivo completo)
  */
 router.post('/tts/stream', async (req, res) => {
-  const { text, voice = 'nova' } = req.body;
+  const { text } = req.body;
+  // Ignoramos la voz hardcodeada 'nova' de widgets antiguos: usamos siempre AGENT_TTS_VOICE.
+  const voice = (req.body.voice && req.body.voice !== 'nova') ? req.body.voice : undefined;
 
   if (!text || typeof text !== 'string') {
     return res.status(400).json({ error: 'El campo "text" es requerido' });

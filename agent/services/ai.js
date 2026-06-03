@@ -24,8 +24,33 @@ const CONV_MODEL = provider === 'deepseek'
   : (process.env.AGENT_CONVERSATION_MODEL || 'gpt-4o-mini');
 
 const VISION_MODEL = process.env.OPENAI_VISION_MODEL || 'gpt-4o-mini';
-const TTS_MODEL = process.env.AGENT_TTS_MODEL || 'tts-1';
+// Voz: gpt-4o-mini-tts suena mucho más natural que tts-1 y acepta "instructions" de tono.
+const TTS_MODEL = process.env.AGENT_TTS_MODEL || 'gpt-4o-mini-tts';
+const TTS_VOICE = process.env.AGENT_TTS_VOICE || 'onyx';
+// Tono tipo J.A.R.V.I.S.: mayordomo digital, calmado, grave, eficiente.
+const TTS_INSTRUCTIONS = process.env.AGENT_TTS_INSTRUCTIONS ||
+  'Habla en español neutro-chileno como un asistente tipo J.A.R.V.I.S.: voz grave, serena y segura, ' +
+  'tono de mayordomo digital sofisticado, ritmo pausado pero eficiente, cálido pero profesional. ' +
+  'Nada robótico ni monótono: entona con naturalidad y leve calidez.';
 const STT_MODEL = process.env.AGENT_STT_MODEL || 'whisper-1';
+
+// gpt-4o-mini-tts (y familia gpt-4o-audio) aceptan `instructions`; tts-1/tts-1-hd aceptan `speed`.
+const TTS_SUPPORTS_INSTRUCTIONS = /gpt-4o/i.test(TTS_MODEL);
+
+function buildTtsParams(text, voice, extra) {
+  const params = {
+    model: TTS_MODEL,
+    voice: voice || TTS_VOICE,
+    input: text,
+    ...extra,
+  };
+  if (TTS_SUPPORTS_INSTRUCTIONS) {
+    params.instructions = TTS_INSTRUCTIONS;
+  } else {
+    params.speed = 1.12; // solo tts-1/tts-1-hd
+  }
+  return params;
+}
 
 // Memoria de sesiones (conversaciones en memoria)
 const conversations = new Map();
@@ -149,17 +174,15 @@ async function chat(sessionId, userMessage, options = {}) {
 /**
  * Text-to-Speech (TTS) - Generar archivo de audio MP3 vía OpenAI
  */
-async function textToSpeech(text, voice = 'nova') {
+async function textToSpeech(text, voice) {
   if (!process.env.OPENAI_API_KEY) {
     throw new Error('OPENAI_API_KEY no configurada');
   }
-  console.log(`[AI-Service] Generando TTS con voz ${voice}...`);
-  const response = await openaiClient.audio.speech.create({
-    model: TTS_MODEL,
-    voice: voice,
-    input: text,
-    speed: 1.12,
-  });
+  const useVoice = voice || TTS_VOICE;
+  console.log(`[AI-Service] Generando TTS (${TTS_MODEL}) con voz ${useVoice}...`);
+  const response = await openaiClient.audio.speech.create(
+    buildTtsParams(text, useVoice)
+  );
 
   const buffer = Buffer.from(await response.arrayBuffer());
   return buffer;
@@ -168,20 +191,23 @@ async function textToSpeech(text, voice = 'nova') {
 /**
  * Text-to-Speech Streaming (PCM) - Stream 24kHz 16-bit mono PCM para reproducción inmediata
  */
-async function textToSpeechStream(text, voice = 'nova') {
+async function textToSpeechStream(text, voice) {
   if (!process.env.OPENAI_API_KEY) {
     throw new Error('OPENAI_API_KEY no configurada');
   }
   const { Readable } = require('stream');
-  console.log(`[AI-Service] Generando TTS streaming PCM con voz ${voice}...`);
-  const response = await openaiClient.audio.speech.create({
-    model: TTS_MODEL,
-    voice: voice,
-    input: text,
-    speed: 1.12,
-    response_format: 'pcm', // 24000 Hz, 16-bit, mono, little-endian
-  });
-  return Readable.fromWeb(response.body);
+  const useVoice = voice || TTS_VOICE;
+  console.log(`[AI-Service] Generando TTS streaming PCM (${TTS_MODEL}) con voz ${useVoice}...`);
+  const response = await openaiClient.audio.speech.create(
+    buildTtsParams(text, useVoice, { response_format: 'pcm' }) // 24000 Hz, 16-bit, mono, little-endian
+  );
+  // Compatibilidad entre versiones del SDK: response.body puede ser un web ReadableStream
+  // (SDK nuevo) o un stream Node ya listo (SDK antiguo en el VPS).
+  const body = response.body;
+  if (body && typeof body.getReader === 'function') {
+    return Readable.fromWeb(body); // web ReadableStream → Node Readable
+  }
+  return body; // ya es un stream Node
 }
 
 /**

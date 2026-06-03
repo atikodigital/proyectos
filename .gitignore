@@ -19,3 +19,6 @@ Thumbs.db
 # IDEs
 .vscode/
 .idea/
+
+# Muestras de voz de prueba
+agent/voz-prueba-*.mp3
