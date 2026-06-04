@@ -16,6 +16,7 @@ const FILES = [
   'services/realtime.js',
   'services/ai.js',
   'routes/chat.js',
+  'config/prompt.js',
 ];
 
 const conn = new Client();
