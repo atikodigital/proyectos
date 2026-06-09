@@ -33,4 +33,9 @@ async function getEmployeeByPhone(db, companyId, phone) {
   return r.rows[0] || null;
 }
 
-module.exports = { createCompany, createEmployee, getCompanyByPhoneNumberId, getEmployeeByPhone };
+async function getEmployeeByUsuario(db, usuario) {
+  const r = await db.query('SELECT * FROM employees WHERE usuario=$1 AND activo=true LIMIT 1', [usuario]);
+  return r.rows[0] || null;
+}
+
+module.exports = { createCompany, createEmployee, getCompanyByPhoneNumberId, getEmployeeByPhone, getEmployeeByUsuario };
