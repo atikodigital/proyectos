@@ -38,4 +38,41 @@ async function getEmployeeByUsuario(db, usuario) {
   return r.rows[0] || null;
 }
 
-module.exports = { createCompany, createEmployee, getCompanyByPhoneNumberId, getEmployeeByPhone, getEmployeeByUsuario };
+async function listEmployees(db, companyId) {
+  const r = await db.query('SELECT id, company_id, nombre, phone, usuario, rol, activo, created_at FROM employees WHERE company_id=$1 ORDER BY created_at DESC', [companyId]);
+  return r.rows;
+}
+
+async function updateEmployee(db, companyId, id, patch) {
+  const cols = ['nombre', 'phone', 'usuario', 'rol', 'activo'].filter((f) => patch[f] !== undefined);
+  if (!cols.length) return null;
+  const set = cols.map((f, i) => `${f}=$${i + 3}`).join(', ');
+  const r = await db.query(
+    `UPDATE employees SET ${set} WHERE id=$1 AND company_id=$2 RETURNING id, company_id, nombre, phone, usuario, rol, activo`,
+    [id, companyId, ...cols.map((f) => patch[f])]
+  );
+  return r.rows[0] || null;
+}
+
+async function deactivateEmployee(db, companyId, id) {
+  const r = await db.query('UPDATE employees SET activo=false WHERE id=$1 AND company_id=$2 RETURNING id', [id, companyId]);
+  return r.rows[0] || null;
+}
+
+async function getCompany(db, companyId) {
+  const r = await db.query('SELECT id, nombre, rut, wa_phone_number_id, owner_nombre, owner_whatsapp, resumen_frecuencia, created_at FROM companies WHERE id=$1', [companyId]);
+  return r.rows[0] || null;
+}
+
+async function updateCompany(db, companyId, patch) {
+  const cols = ['nombre', 'rut', 'owner_nombre', 'owner_whatsapp', 'resumen_frecuencia'].filter((f) => patch[f] !== undefined);
+  if (!cols.length) return getCompany(db, companyId);
+  const set = cols.map((f, i) => `${f}=$${i + 2}`).join(', ');
+  await db.query(`UPDATE companies SET ${set} WHERE id=$1`, [companyId, ...cols.map((f) => patch[f])]);
+  return getCompany(db, companyId);
+}
+
+module.exports = {
+  createCompany, createEmployee, getCompanyByPhoneNumberId, getEmployeeByPhone, getEmployeeByUsuario,
+  listEmployees, updateEmployee, deactivateEmployee, getCompany, updateCompany,
+};
