@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const { createWebhookRouter } = require('./whatsapp/webhook');
+const { createAppRouter } = require('./app/router');
 const { getPool } = require('./db/pool');
 
 const app = express();
@@ -11,6 +12,7 @@ app.get('/health', (_req, res) => {
 });
 
 app.use('/api/whatsapp/webhook', createWebhookRouter({ db: getPool() }));
+app.use('/api/app', createAppRouter({ db: getPool() }));
 
 if (require.main === module) {
   const port = process.env.PORT || 3100;
