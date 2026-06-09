@@ -39,4 +39,22 @@ async function updateExpense(db, id, patch) {
   return r.rows[0] || null;
 }
 
-module.exports = { createExpense, getExpense, confirmExpense, updateExpense };
+async function getLatestPending(db, companyId, employeeId) {
+  const r = await db.query(
+    `SELECT * FROM expenses
+     WHERE company_id=$1 AND employee_id=$2 AND estado='pendiente_confirmacion'
+     ORDER BY created_at DESC LIMIT 1`,
+    [companyId, employeeId]
+  );
+  return r.rows[0] || null;
+}
+
+async function rejectExpense(db, id) {
+  const r = await db.query(
+    "UPDATE expenses SET estado='rechazado' WHERE id=$1 RETURNING *",
+    [id]
+  );
+  return r.rows[0] || null;
+}
+
+module.exports = { createExpense, getExpense, confirmExpense, updateExpense, getLatestPending, rejectExpense };
