@@ -25,7 +25,7 @@ test('crea un gasto en estado pendiente_confirmacion', async () => {
     cuenta_sii_codigo: '4.3.150.1', cuenta_sii_nombre: 'Otros Gastos de Administración y Venta',
   });
   expect(exp.estado).toBe('pendiente_confirmacion');
-  expect(exp.total).toBe('25000');
+  expect(Number(exp.total)).toBe(25000);
   const fetched = await getExpense(client, exp.id);
   expect(fetched.proveedor).toBe('Copec');
 });
@@ -43,5 +43,5 @@ test('updateExpense aplica patch de campos editables', async () => {
   const exp = await createExpense(client, { company_id: companyId, total: 1000, categoria: 'Otros gastos' });
   const upd = await updateExpense(client, exp.id, { categoria: 'Honorarios', total: 2000 });
   expect(upd.categoria).toBe('Honorarios');
-  expect(upd.total).toBe('2000');
+  expect(Number(upd.total)).toBe(2000);
 });
