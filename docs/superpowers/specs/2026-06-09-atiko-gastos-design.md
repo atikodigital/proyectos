@@ -24,13 +24,17 @@ el diseño, montado sobre la infra que ya existe (VPS Hostinger, pm2, Caddy, Doc
 - **Salida al dueño:** panel web (con Excel filtrable por columnas) **+** mensaje de WhatsApp.
 - **Identificación multi-tenant:** número de WhatsApp por cliente (cada cliente conecta SU número
   Business a la Cloud API; el tenant se reconoce por `phone_number_id`). En la app, por login.
-- **Categorías:** set fijo chileno (Combustible, Comida/Representación, Insumos, Transporte,
-  Alojamiento, Servicios, Otros). Personalizables = fase 2.
+- **Categorías:** set fijo chileno **mapeado al plan de cuentas SII Mipyme** (ver §6.1), para que
+  el Excel salga ya "contabilizable" para el contador. Personalizables = fase 2.
 - **OCR:** especializado desde el día uno → **Document AI + Gemini Flash** (híbrido).
 - **Canales de captura:** **App (Capacitor/Android) + WhatsApp**, ambos al mismo motor OCR.
 - **Hogar de la app:** app nueva propia de gastos (reusa los plugins/componentes de Matico como
   base), **NO** dentro de Matico.
 - **Plataforma de la app:** **Android primero**; iOS en fase 2.
+- **Distribución de la app:** **fuera de Play Store** en el MVP — instalación por APK directa al
+  cliente (confirmado).
+- **OCR extrae además:** **folio / N° de documento** y **dirección del emisor** (además de RUT,
+  proveedor, fecha, neto/IVA/total, tipo doc, categoría, glosa).
 
 ---
 
@@ -109,8 +113,8 @@ Flujo en la app:
    lógica de `processDocumentImage`).
 2. **Document AI** (Expense/Invoice parser): total, fecha, proveedor, impuesto, líneas.
 3. **Gemini Flash** (visión + texto): lo chileno que Document AI no clava — tipo de documento
-   (boleta/factura/otro), RUT emisor, split neto/IVA si falta, **categoría** (del set fijo CL),
-   glosa.
+   (boleta/factura/otro), **RUT emisor**, **folio / N° de documento**, **dirección del emisor**,
+   split neto/IVA si falta, **categoría** (del set fijo CL → mapea a cuenta SII), glosa.
 4. Se mezclan ambas salidas en un registro estructurado con `confianza`. Se guarda como
    `pendiente_confirmacion`.
 5. Tras confirmar (app o WhatsApp) → `confirmado` y se encola para el resumen al dueño.
@@ -124,8 +128,9 @@ IVA 19% por defecto, `total = neto + iva` validado.
 
 ### 5.1 Panel web — `gastos.atikodigital.cl`
 Branded Atiko (negro/dorado, estilo el CRM), login propio (JWT). El dueño ve **solo su empresa**:
-- Tabla: fecha · empleado · proveedor · RUT · tipo doc · categoría · neto · IVA · total · estado · foto.
-- **Filtros por columna** (rango de fecha, empleado, categoría, tipo doc, proveedor, estado).
+- Tabla: fecha · empleado · proveedor · RUT · folio · tipo doc · categoría · cuenta SII · neto · IVA · total · estado · foto.
+  (la dirección del emisor va en el detalle/Excel, no en la grilla principal).
+- **Filtros por columna** (rango de fecha, empleado, categoría, cuenta SII, tipo doc, proveedor, estado).
 - Fila de totales (Σ neto/IVA/total y por categoría).
 - **Descargar Excel respetando los filtros activos** (`exceljs`).
 - Gestión de empleados (alta/baja; credenciales de app + teléfono WhatsApp autorizado).
@@ -145,15 +150,37 @@ Branded Atiko (negro/dorado, estilo el CRM), login propio (JWT). El dueño ve **
 - **`employees`** (whitelist + login app): id, company_id, nombre, **phone** (E.164, WhatsApp),
   email/usuario + password_hash (login app), rol (empleado|admin), activo, created_at.
 - **`expenses`**: id, company_id, employee_id, `wa_message_id` (dedup), foto_path, **canal**
-  (app|whatsapp), **tipo_documento** (boleta|factura|otro), **rut_emisor**, proveedor, fecha,
-  **neto**, **iva**, **total** (bigint CLP), moneda, **categoria** (set fijo CL), glosa,
-  **estado** (pendiente_confirmacion|confirmado|rechazado), raw_ocr (jsonb), confianza,
+  (app|whatsapp), **tipo_documento** (boleta|factura|otro), **rut_emisor**, proveedor,
+  **folio** (N° de documento), **direccion_emisor**, fecha, **neto**, **iva**, **total**
+  (bigint CLP), moneda, **categoria** (set fijo CL), **cuenta_sii_codigo**, **cuenta_sii_nombre**,
+  glosa, **estado** (pendiente_confirmacion|confirmado|rechazado), raw_ocr (jsonb), confianza,
   created_at, confirmed_at.
 - **`users`** (login del panel): id, company_id, email, password_hash, rol
   (atiko_admin|owner).
 
-Categorías fijas (CL): Combustible, Comida/Representación, Insumos, Transporte, Alojamiento,
-Servicios, Otros.
+### 6.1 Categorías fijas (CL) → cuenta SII Mipyme
+
+La categoría se elige del set fijo; cada una mapea a una cuenta del plan de cuentas SII Mipyme
+(se persiste `cuenta_sii_codigo` + `cuenta_sii_nombre` junto al gasto, y sale en el Excel).
+
+| Categoría (app/bot) | Cuenta SII Mipyme |
+|---|---|
+| Mercadería e insumos del giro | 4.2.10.1 Costos Directos del Giro |
+| Alimentación y representación | 4.3.150.1 Otros Gastos de Adm. y Venta |
+| Combustible y transporte | 4.3.150.1 Otros Gastos de Adm. y Venta |
+| Mantención y reparaciones | 4.3.40.1 Reparaciones Automóviles |
+| Arriendos | 4.3.150.1 Otros Gastos de Adm. y Venta |
+| Servicios básicos (luz/agua/gas/internet/teléfono) | 4.3.10.1 Gastos Generales |
+| Útiles de oficina / generales | 4.3.10.1 Gastos Generales |
+| Seguros | 4.3.150.1 Otros Gastos de Adm. y Venta |
+| Publicidad y promoción | 4.3.140.1 Gasto Promoción |
+| Honorarios | 4.3.90.1 Honorarios |
+| Contribuciones, patentes e impuestos | 4.3.20.1 Contribuciones |
+| Gastos financieros (comisiones bancarias) | Gastos Financieros (egresos fuera de explotación) |
+| Otros gastos | 4.3.150.1 Otros Gastos de Adm. y Venta |
+
+El mapeo categoría→cuenta SII vive en una tabla/constante del backend (`SII_ACCOUNTS`), fácil de
+extender en fase 2 cuando las categorías sean personalizables por cliente.
 
 ---
 
