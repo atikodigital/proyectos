@@ -40,9 +40,9 @@ function createWebhookRouter({ db, verifyToken, sendText, downloadMedia, extract
 
         const company = await getCompanyByPhoneNumberId(db, phoneNumberId);
         if (!company) continue;
-        const reply = (body) => _send({ to: messages[0].from, body, token: company.wa_token, phoneNumberId });
 
         for (const msg of messages) {
+          const reply = (body) => _send({ to: msg.from, body, token: company.wa_token, phoneNumberId });
           const employee = await getEmployeeByPhone(db, company.id, msg.from);
           if (!employee) {
             await reply('No estás registrado para rendir gastos. Pídele a tu jefe que te agregue.');
