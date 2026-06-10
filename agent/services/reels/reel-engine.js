@@ -1,6 +1,21 @@
 // Orquesta: tema -> guion (scriptGenerator) -> assets por escena (en paralelo) -> render.
 // Escenas type "avatar" van al avatar provider (HeyGen); si falla, degradan a broll.
-function createReelEngine({ scriptGenerator, voice, images, render, avatar }) {
+
+// Paraleliza con tope: demasiadas llamadas simultáneas a Gemini disparan rate limits (400/429).
+async function mapWithConcurrency(items, limit, fn) {
+  const results = new Array(items.length);
+  let next = 0;
+  async function worker() {
+    while (next < items.length) {
+      const i = next++;
+      results[i] = await fn(items[i], i);
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+  return results;
+}
+
+function createReelEngine({ scriptGenerator, voice, images, render, avatar, sceneConcurrency = 2 }) {
   async function buildBrollScene(scene, degraded) {
     const [audio, image] = await Promise.all([
       voice.synthesize(scene.voiceLine),
@@ -40,7 +55,7 @@ function createReelEngine({ scriptGenerator, voice, images, render, avatar }) {
     const avatarId = opts.avatarId || null;
     const hasAvatar = !!(avatar && avatarId);
     const reelSpec = await scriptGenerator.generate(topic, { hasAvatar });
-    const scenes = await Promise.all(reelSpec.scenes.map((s) => buildScene(s, avatarId)));
+    const scenes = await mapWithConcurrency(reelSpec.scenes, sceneConcurrency, (s) => buildScene(s, avatarId));
     const mp4Path = await render({ title: reelSpec.title, scenes });
     return {
       mp4Path,
