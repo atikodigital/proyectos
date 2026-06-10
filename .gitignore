@@ -22,3 +22,6 @@ Thumbs.db
 
 # Muestras de voz de prueba
 agent/voz-prueba-*.mp3
+
+# Reels generados (contenido, no codigo)
+agent/public/reels/
