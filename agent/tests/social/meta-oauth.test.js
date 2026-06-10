@@ -17,3 +17,41 @@ test("buildAuthUrl includes app id, redirect, scopes and state", () => {
   assert.match(scope, /pages_manage_posts/);
   assert.match(scope, /instagram_content_publish/);
 });
+
+function fakeHttp(routes) {
+  return {
+    async get(url) {
+      const u = new URL(url);
+      const handler = routes[u.pathname];
+      if (!handler) throw new Error("no route for " + u.pathname);
+      return { data: handler(u.searchParams) };
+    },
+  };
+}
+
+test("exchangeCodeForToken returns short-lived token", async () => {
+  const http = fakeHttp({
+    "/v21.0/oauth/access_token": (p) => {
+      assert.equal(p.get("code"), "CODE1");
+      return { access_token: "SHORT", token_type: "bearer" };
+    },
+  });
+  const res = await oauth.exchangeCodeForToken({
+    http, appId: "A", appSecret: "S",
+    redirectUri: "https://x/cb", code: "CODE1",
+  });
+  assert.equal(res.accessToken, "SHORT");
+});
+
+test("getLongLivedToken exchanges short for long", async () => {
+  const http = fakeHttp({
+    "/v21.0/oauth/access_token": (p) => {
+      assert.equal(p.get("grant_type"), "fb_exchange_token");
+      assert.equal(p.get("fb_exchange_token"), "SHORT");
+      return { access_token: "LONG", expires_in: 5184000 };
+    },
+  });
+  const res = await oauth.getLongLivedToken({ http, appId: "A", appSecret: "S", shortLivedToken: "SHORT" });
+  assert.equal(res.accessToken, "LONG");
+  assert.equal(res.expiresIn, 5184000);
+});
