@@ -5,6 +5,10 @@ import path from 'path'
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
+  define: {
+    // Makes __VITE_API_BASE__ available in source (falls back to env var or undefined)
+    __VITE_API_BASE__: JSON.stringify(process.env.VITE_API_BASE || ''),
+  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
