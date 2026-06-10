@@ -42,6 +42,12 @@ function stageAssets(scenes, publicDir) {
       staged.push(path.join(publicDir, name));
       scene.audioSrc = name;
     }
+    if (s.videoPath) {
+      const name = renderId + "-vid-" + i + (path.extname(s.videoPath) || ".mp4");
+      fs.copyFileSync(s.videoPath, path.join(publicDir, name));
+      staged.push(path.join(publicDir, name));
+      scene.videoSrc = name;
+    }
     return scene;
   });
   const cleanup = () => {

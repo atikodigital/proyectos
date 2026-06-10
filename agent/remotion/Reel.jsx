@@ -1,5 +1,5 @@
 import React from "react";
-import { AbsoluteFill, Sequence, Img, Audio, staticFile, interpolate, useCurrentFrame } from "remotion";
+import { AbsoluteFill, Sequence, Img, Audio, OffthreadVideo, staticFile, interpolate, useCurrentFrame } from "remotion";
 
 const FPS = 30;
 const msToFrames = (ms) => Math.max(1, Math.round((ms / 1000) * FPS));
@@ -10,7 +10,12 @@ function Scene({ scene, sceneDurationInFrames }) {
   const scale = interpolate(frame, [0, sceneDurationInFrames], [1, 1.08]);
   return (
     <AbsoluteFill style={{ backgroundColor: scene.fallbackColor || "#0A1F3F" }}>
-      {scene.imageSrc ? (
+      {scene.videoSrc ? (
+        <OffthreadVideo
+          src={staticFile(scene.videoSrc)}
+          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+        />
+      ) : scene.imageSrc ? (
         <Img
           src={staticFile(scene.imageSrc)}
           style={{ width: "100%", height: "100%", objectFit: "cover", transform: `scale(${scale})` }}
@@ -28,7 +33,7 @@ function Scene({ scene, sceneDurationInFrames }) {
           {scene.text}
         </div>
       </AbsoluteFill>
-      {scene.audioSrc ? <Audio src={staticFile(scene.audioSrc)} /> : null}
+      {scene.audioSrc && !scene.videoSrc ? <Audio src={staticFile(scene.audioSrc)} /> : null}
     </AbsoluteFill>
   );
 }
