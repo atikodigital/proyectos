@@ -34,7 +34,7 @@ function sh(cmd) {
 conn.on('ready', () => {
   conn.sftp(async (err, sftp) => {
     if (err) throw err;
-    const files = walk(LOCAL).filter(f => f.startsWith('src/') || f.startsWith('public/') || f === 'package.json');
+    const files = walk(LOCAL).filter(f => f.startsWith('src/') || f.startsWith('public/') || f.startsWith('scripts/') || f === 'package.json');
     const dirs = new Set();
     for (const f of files) { const d = path.posix.dirname(f); if (d !== '.') dirs.add(d); }
     await sh(`mkdir -p ${REMOTE} ${[...dirs].map(d => `${REMOTE}/${d}`).join(' ')}`);
