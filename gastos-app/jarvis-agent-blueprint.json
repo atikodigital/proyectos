@@ -1,0 +1,165 @@
+{
+  "blueprint": "Agente conversacional J.A.R.V.I.S. (Matico) — clon completo",
+  "version": "1.0",
+  "fecha_extraccion": "2026-06-03",
+  "descripcion": "Agente de voz/chat/imagen embebido en una app React, con backend Express + OpenAI con tool-calling sobre Supabase. Esfera animada estilo Jarvis con 4 estados, voz bidireccional (STT+TTS), analisis de imagenes y modo entrenamiento para el admin.",
+
+  "arquitectura": {
+    "frontend": {
+      "framework": "React 18 + Vite + Tailwind",
+      "componentes": {
+        "VoiceAgentChat.jsx": "Componente principal del agente (esfera azul, voz, chat, camara). ~1500 lineas.",
+        "JarvisAssistant.jsx": "Variante para el dashboard del apoderado (orbe flotante abajo-izquierda).",
+        "MaticoAgent.jsx": "Agente de estudio del estudiante (modos de estudio con imagenes)."
+      }
+    },
+    "backend": {
+      "stack": "Node.js + Express",
+      "proveedor_ia": "OpenAI SDK (compatible con Kimi/DeepSeek como fallback)",
+      "base_datos": "Supabase (todas las tools leen/escriben ahi)",
+      "seguridad": ["JWT en cada request (authFetch)", "rate limiter aiLimiter montado en /api/agent"]
+    }
+  },
+
+  "endpoints": {
+    "POST /api/agent/chat": {
+      "request_body": {
+        "message": "texto del usuario (requerido)",
+        "student_id": "id del estudiante en contexto (requerido)",
+        "user_type": "parent | student (default parent)",
+        "conversation_history": "array de mensajes previos; el server usa solo los ultimos N (AGENT_HISTORY_MESSAGES=8)",
+        "training_mode": "bool — modo entrenamiento solo admin (verifica admin_user_id)",
+        "admin_user_id": "requerido si training_mode",
+        "images": "array de base64 (max 5 procesadas)",
+        "personality": "ajuste opcional de personalidad"
+      },
+      "flujo": [
+        "1. Si hay imagenes: pre-analisis con modelo VISION (prompt: 'Analiza estas imagenes en detalle. Extrae TODO el texto visible, temas, materias...', detail high, max_tokens 1500). El resultado se inyecta como contexto.",
+        "2. Construye system prompt (normal o entrenamiento) + historial (ultimos 8) + mensaje.",
+        "3. Llama al modelo conversacional con tools, tool_choice auto, temperature 0.3, max_tokens 500 (600 si hay imagenes).",
+        "4. Loop de tool-calling: ejecuta las tools pedidas y re-llama al modelo. Max 4 iteraciones (3 si hay imagenes).",
+        "5. Devuelve texto final + modelo usado."
+      ]
+    },
+    "POST /api/agent/tts": {
+      "request_body": { "text": "max 2000 chars", "voice": "nova (default) | alloy | echo | fable | onyx | shimmer" },
+      "config": { "model": "gpt-4o-mini-tts", "speed": 1.12, "timeout_ms": 12000 },
+      "respuesta": "audio para reproducir en el cliente"
+    },
+    "POST /api/agent/stt": {
+      "uso": "fallback de transcripcion server-side (multipart con campo audio)",
+      "model": "gpt-4o-mini-transcribe",
+      "nota": "El STT principal es Web Speech API en el navegador; este endpoint es respaldo."
+    },
+    "API /api/agent/training": {
+      "GET": "lista entrenamientos guardados",
+      "POST": "crea entrada de entrenamiento",
+      "PATCH /:id": "edita",
+      "DELETE /:id": "elimina"
+    }
+  },
+
+  "modelos": {
+    "conversacion": { "env": "AGENT_CONVERSATION_MODEL", "default": "gpt-5-mini", "temperature": 0.3 },
+    "vision_imagenes": { "env": "OPENAI_VISION_MODEL", "default": "gpt-4.1-mini", "detail": "high", "max_tokens": 1500 },
+    "tts": { "env": "AGENT_TTS_MODEL", "default": "gpt-4o-mini-tts", "voz_default": "nova", "speed": 1.12, "max_chars": 2000 },
+    "stt_fallback": { "env": "AGENT_STT_MODEL", "default": "gpt-4o-mini-transcribe" }
+  },
+
+  "variables_entorno": {
+    "AGENT_CONVERSATION_MODEL": "gpt-5-mini",
+    "AGENT_TTS_MODEL": "gpt-4o-mini-tts",
+    "AGENT_STT_MODEL": "gpt-4o-mini-transcribe",
+    "AGENT_MAX_TOKENS": 500,
+    "AGENT_MAX_TOOL_ITERATIONS": 4,
+    "AGENT_HISTORY_MESSAGES": 8,
+    "AGENT_TTS_TIMEOUT_MS": 12000
+  },
+
+  "tools": {
+    "descripcion": "17 tools publicas (formato OpenAI function-calling), todas contra Supabase. En modo entrenamiento se agrega save_training. Las tools 'privadas' (escritura/peligrosas) se filtran para usuarios no-admin.",
+    "lista": [
+      { "name": "get_student_profile", "que_hace": "perfil del estudiante (curso, materias, datos)" },
+      { "name": "search_students", "que_hace": "busca estudiantes por nombre" },
+      { "name": "get_recent_activity", "que_hace": "actividad reciente (quizzes, estudio, cuaderno)" },
+      { "name": "get_quiz_results", "que_hace": "resultados de quizzes/pruebas con notas" },
+      { "name": "get_study_time", "que_hace": "minutos de estudio por dia/materia" },
+      { "name": "get_upcoming_exams", "que_hace": "pruebas/eventos futuros (solo desde hoy, nunca pasados)" },
+      { "name": "get_inactive_subjects", "que_hace": "materias sin estudiar hace N dias" },
+      { "name": "get_notebook_evidence", "que_hace": "evidencias de cuaderno (fotos/OCR)" },
+      { "name": "get_wrong_questions_detail", "que_hace": "detalle de preguntas erradas (debilidades)" },
+      { "name": "prepare_exam_study", "que_hace": "genera material de estudio para una prueba (exige contenido concreto antes)" },
+      { "name": "create_calendar_event", "que_hace": "crea evento en el calendario" },
+      { "name": "update_calendar_event", "que_hace": "modifica evento" },
+      { "name": "delete_calendar_event", "que_hace": "elimina evento" },
+      { "name": "update_student_profile", "que_hace": "edita el perfil del estudiante" },
+      { "name": "search_all_modules", "que_hace": "busqueda transversal en todos los modulos" },
+      { "name": "run_custom_query", "que_hace": "consulta custom a la BD (solo admin)" },
+      { "name": "send_notification", "que_hace": "envia notificacion a un usuario" },
+      { "name": "save_training", "que_hace": "(solo modo entrenamiento) guarda instrucciones/memoria del admin" }
+    ]
+  },
+
+  "system_prompt": {
+    "modo_normal": "Matico, asistente del apoderado/estudiante. Respuestas cortas (2-3 frases), espanol chileno informal, sin markdown, siempre responde algo. Usa search_students antes de decir 'no tengo info'. Fechas: inyecta el dia de hoy y obliga a usar get_upcoming_exams para 'pendientes' (nunca mostrar eventos pasados).",
+    "modo_entrenamiento": {
+      "acceso": "solo admin (verifica admin_user_id)",
+      "rol": "agente personal del jefe con autoridad total sobre los modulos",
+      "regla_confirmacion": "antes de crear/modificar/eliminar/notificar: explica en una frase y pregunta exactamente 'lo hago?'. Solo ejecuta tras confirmacion (si/dale/hazlo/ok). Lecturas no requieren permiso.",
+      "memoria": "toda instruccion del admin se guarda con save_training clasificada en: instruccion | tono | memoria | skill | conocimiento | qa. Confirma con 'Listo jefe, anotado'.",
+      "preparacion_pruebas": "nunca inventa contenido: pide temas o foto del temario primero; recien ahi usa prepare_exam_study"
+    }
+  },
+
+  "voz": {
+    "stt_principal": {
+      "tecnologia": "Web Speech API del navegador (webkitSpeechRecognition)",
+      "config": { "continuous": true, "auto_restart": "se reinicia solo si se corta", "idioma": "es-CL/es-ES" },
+      "flujo": "mic ON -> transcripcion en vivo -> al detectar frase final se envia a /api/agent/chat"
+    },
+    "tts": {
+      "flujo": "respuesta del agente -> POST /api/agent/tts (no bloqueante, la esfera ya muestra 'speaking') -> reproduce audio -> vuelve a escuchar",
+      "voz": "nova default (parametrizable: onyx, alloy, echo, fable, shimmer)",
+      "speed": 1.12
+    }
+  },
+
+  "imagenes": {
+    "captura": "boton de camara en la UI (foto directa o galeria); tambien acepta capturas de pantalla",
+    "envio": "base64 en el array images[] del POST /api/agent/chat (max 5)",
+    "procesamiento": "pre-analisis con modelo vision ANTES del turno del agente; el texto extraido (temas, materias, contenido) se inyecta al contexto para que el agente lo use (ej: preparar estudio desde la foto de un temario)"
+  },
+
+  "ui_esfera": {
+    "tecnologia": "canvas 2D con animacion por requestAnimationFrame",
+    "estados": {
+      "idle": { "radio": 220, "descripcion": "reposo, arcos de energia suaves" },
+      "listening": { "radio": 190, "descripcion": "escuchando por microfono" },
+      "thinking": { "radio": 270, "descripcion": "procesando (llamada al agente)" },
+      "speaking": { "radio": 175, "descripcion": "reproduciendo TTS" }
+    },
+    "efectos": "arcos de energia con seno/fase/seed aleatorios (speed 0.6-1.4), alpha pulsante, color azul Matico",
+    "controles": ["camara (adjuntar imagen)", "microfono (toggle STT)", "chat (modo texto)", "cerrar"]
+  },
+
+  "flujo_completo_ejemplo": [
+    "1. Usuario abre el agente -> esfera 'idle' + mensaje de bienvenida",
+    "2. Toca el mic -> 'listening' -> habla: 'como le fue a Matias en matematicas?'",
+    "3. STT transcribe -> POST /api/agent/chat {message, student_id, history}",
+    "4. 'thinking' -> el modelo llama get_quiz_results -> Supabase -> compone respuesta corta",
+    "5. Respuesta -> POST /api/agent/tts -> 'speaking' reproduce audio -> vuelve a 'listening'",
+    "6. Si adjunta foto de un temario: vision lo analiza -> el agente pregunta detalles -> prepare_exam_study genera el material"
+  ],
+
+  "para_clonar_en_otro_proyecto": {
+    "minimo_necesario": [
+      "1. Backend: copiar los 4 endpoints (/chat, /tts, /stt, /training) + el array AGENT_TOOLS adaptando las tools a TU base de datos",
+      "2. Reemplazar las funciones Supabase de cada tool por las consultas de tu dominio (CRM, ventas, lo que sea)",
+      "3. Reescribir el system prompt con el rol/tono/reglas de tu negocio (mantener: respuestas cortas, regla 'lo hago?' para escrituras, memoria via save_training)",
+      "4. Frontend: copiar VoiceAgentChat.jsx (esfera + voz + chat + camara) y cambiar authFetch/branding",
+      "5. Env vars de la seccion variables_entorno + API key de OpenAI",
+      "6. Mantener el pre-analisis de imagenes con vision: es lo que permite 'entender' fotos antes de responder"
+    ],
+    "costo_aproximado": "gpt-5-mini para chat (barato), gpt-4.1-mini para vision, gpt-4o-mini-tts para voz — optimizado para bajo costo con respuestas cortas (500 tokens max)"
+  }
+}
