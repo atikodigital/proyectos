@@ -69,9 +69,23 @@ router.post("/generate", async function (req, res) {
   }
 });
 
+// Guard de administración: este endpoint gobierna el CONSENTIMIENTO legal.
+// Con ADMIN_API_TOKEN definido exige el header x-admin-token; sin definir, solo avisa (dev).
+function requireAdmin(req, res, next) {
+  const token = process.env.ADMIN_API_TOKEN;
+  if (!token) {
+    console.warn("[reels] ADMIN_API_TOKEN no definido — /avatar-profile SIN auth (solo dev).");
+    return next();
+  }
+  if (req.headers["x-admin-token"] !== token) {
+    return res.status(401).json({ error: "No autorizado" });
+  }
+  next();
+}
+
 // POST /api/reels/avatar-profile  body: { clientId, displayName, heygenAvatarId, consentSigned }
 // Registro manual del perfil (v1). El consentimiento escrito es responsabilidad del contrato.
-router.post("/avatar-profile", async function (req, res) {
+router.post("/avatar-profile", requireAdmin, async function (req, res) {
   try {
     const { clientId, displayName, heygenAvatarId, consentSigned } = req.body;
     if (!clientId || !heygenAvatarId) {

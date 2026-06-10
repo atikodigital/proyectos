@@ -319,6 +319,8 @@ Si el `clientId` tiene un avatar profile **con consentimiento firmado**, el reel
 
 Onboarding por persona: 1 foto → `createPhotoAvatar` (heygen-provider) o dashboard de HeyGen → guardar el id con consentimiento. Requiere `HEYGEN_API_KEY`; sin ella, todo sale faceless.
 
+> ⚠️ **Producción:** (1) define `ADMIN_API_TOKEN` — `/avatar-profile` gobierna consentimiento legal y exige el header `x-admin-token`. (2) La generación con avatar puede tardar minutos: sube el timeout del proxy en Caddy (`reverse_proxy { transport http { response_header_timeout 10m } }`) o la conexión morirá antes de terminar (el plan largo es cola de trabajos + polling).
+
 ---
 
 *Atiko Digital · atikodigital@gmail.com · +56 9 2713 0792*

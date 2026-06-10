@@ -47,6 +47,9 @@ async function generateVideo({ avatarId, audioPath, pollIntervalMs = 5000, maxPo
   const videoId = gen.data.video_id;
 
   for (let i = 0; i < maxPolls; i++) {
+    // espera ANTES de consultar (la generación nunca está lista al instante),
+    // y así no hay un sleep desperdiciado tras el último intento
+    await new Promise((r) => setTimeout(r, pollIntervalMs));
     const { data: st } = await axios.get(API + "/v1/video_status.get?video_id=" + videoId, {
       headers: { "X-Api-Key": KEY() },
     });
@@ -60,7 +63,6 @@ async function generateVideo({ avatarId, audioPath, pollIntervalMs = 5000, maxPo
     if (status === "failed") {
       throw new Error("HeyGen video failed: " + JSON.stringify(st.data.error || {}));
     }
-    await new Promise((r) => setTimeout(r, pollIntervalMs));
   }
   throw new Error("HeyGen video timed out tras " + maxPolls + " intentos");
 }
