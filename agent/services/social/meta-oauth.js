@@ -38,7 +38,32 @@ async function getLongLivedToken({ http, appId, appSecret, shortLivedToken }) {
   return { accessToken: data.access_token, expiresIn: data.expires_in };
 }
 
+async function listPagesWithInstagram({ http, userToken }) {
+  const accountsUrl = new URL(GRAPH_URL + "/me/accounts");
+  accountsUrl.searchParams.set("fields", "id,name,access_token");
+  accountsUrl.searchParams.set("access_token", userToken);
+  const { data: accounts } = await http.get(accountsUrl.toString());
+
+  const pages = [];
+  for (const page of accounts.data || []) {
+    const pageUrl = new URL(GRAPH_URL + "/" + page.id);
+    pageUrl.searchParams.set("fields", "instagram_business_account");
+    pageUrl.searchParams.set("access_token", page.access_token);
+    const { data: pageData } = await http.get(pageUrl.toString());
+    pages.push({
+      pageId: page.id,
+      pageName: page.name,
+      pageAccessToken: page.access_token,
+      igUserId: pageData.instagram_business_account
+        ? pageData.instagram_business_account.id
+        : null,
+    });
+  }
+  return pages;
+}
+
 module.exports = {
   GRAPH_URL, DEFAULT_SCOPES, buildAuthUrl,
   exchangeCodeForToken, getLongLivedToken,
+  listPagesWithInstagram,
 };

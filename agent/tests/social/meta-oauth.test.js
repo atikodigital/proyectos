@@ -55,3 +55,26 @@ test("getLongLivedToken exchanges short for long", async () => {
   assert.equal(res.accessToken, "LONG");
   assert.equal(res.expiresIn, 5184000);
 });
+
+test("listPagesWithInstagram returns pages and linked ig account", async () => {
+  const http = {
+    async get(url) {
+      const u = new URL(url);
+      if (u.pathname === "/v21.0/me/accounts") {
+        return { data: { data: [
+          { id: "PAGE1", name: "CASA LUXE", access_token: "PAGETOKEN1" },
+        ] } };
+      }
+      if (u.pathname === "/v21.0/PAGE1") {
+        return { data: { instagram_business_account: { id: "IG1" } } };
+      }
+      throw new Error("no route for " + u.pathname);
+    },
+  };
+  const pages = await oauth.listPagesWithInstagram({ http, userToken: "USERTOK" });
+  assert.equal(pages.length, 1);
+  assert.equal(pages[0].pageId, "PAGE1");
+  assert.equal(pages[0].pageName, "CASA LUXE");
+  assert.equal(pages[0].pageAccessToken, "PAGETOKEN1");
+  assert.equal(pages[0].igUserId, "IG1");
+});
