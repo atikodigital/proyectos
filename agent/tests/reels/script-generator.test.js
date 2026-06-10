@@ -47,3 +47,18 @@ test("generate throws after two invalid outputs", async () => {
   const gemini = { async generateText() { return "{ invalido }"; } };
   await assert.rejects(() => createScriptGenerator({ gemini }).generate("x"), /reel-spec inválido/);
 });
+
+test("generate with hasAvatar asks for type per scene in the prompt", async () => {
+  let seenPrompt = "";
+  const gemini = { async generateText(p) { seenPrompt = p; return JSON.stringify(goodSpec); } };
+  await createScriptGenerator({ gemini }).generate("tema x", { hasAvatar: true });
+  assert.match(seenPrompt, /"type"/);
+  assert.match(seenPrompt, /avatar/);
+});
+
+test("generate without opts does NOT mention avatar (retrocompatible)", async () => {
+  let seenPrompt = "";
+  const gemini = { async generateText(p) { seenPrompt = p; return JSON.stringify(goodSpec); } };
+  await createScriptGenerator({ gemini }).generate("tema x");
+  assert.ok(!/avatar/.test(seenPrompt));
+});
