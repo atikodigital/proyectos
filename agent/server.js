@@ -9,6 +9,7 @@ const WebSocket = require("ws");
 const chatRoutes = require("./routes/chat");
 const webhookRoutes = require("./routes/webhook");
 const socialRoutes = require("./routes/social");
+const reelsRoutes = require("./routes/reels");
 const realtime = require("./services/realtime");
 
 const app = express();
@@ -72,10 +73,20 @@ const webhookLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+// Generar un reel es caro (Gemini + render Remotion): límite estricto.
+const reelsLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Demasiadas generaciones de reel. Espera unos minutos.", retryAfter: 300 },
+});
+
 app.use("/widget", express.static(path.join(__dirname, "public")));
 app.use("/api/chat", chatLimiter, chatRoutes);
 app.use("/api/whatsapp/webhook", webhookLimiter, webhookRoutes);
 app.use("/api/social", socialRoutes);
+app.use("/api/reels", reelsLimiter, reelsRoutes);
 
 app.get("/health", function(req, res) {
   res.json({
@@ -88,6 +99,7 @@ app.get("/health", function(req, res) {
       openai: process.env.OPENAI_API_KEY ? "configurado" : "falta OPENAI_API_KEY",
       deepseek: process.env.DEEPSEEK_API_KEY ? "configurado" : "falta DEEPSEEK_API_KEY",
       whatsapp: (process.env.WHATSAPP_TOKEN && process.env.WHATSAPP_PHONE_ID) ? "configurado" : "pendiente",
+      gemini: process.env.GEMINI_API_KEY ? "configurado" : "pendiente",
     }
   });
 });

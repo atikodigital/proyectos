@@ -291,6 +291,24 @@ curl -X POST http://localhost:3000/api/social/publish \
   -d '{"clientId":"atiko","platform":"instagram","videoUrl":"https://.../reel.mp4","caption":"prueba"}'
 ```
 
+## 🎬 Reels — Motor de generación faceless (Fase 2)
+
+Convierte un tema corto en un reel 9:16 (MP4 + caption + hashtags).
+
+| Método | URL | Descripción |
+|--------|-----|-------------|
+| `POST` | `/api/reels/generate` | Body `{ topic, clientId? }` → genera el reel y devuelve `publicUrl`, `caption`, `hashtags` |
+
+Pipeline: Gemini (guion por escenas) → voz Gemini TTS + imágenes Gemini por escena → Remotion monta el MP4. El MP4 se guarda en `public/reels/` y se sirve en `/widget/reels/<archivo>.mp4` (URL pública que consume el Publicador de la Fase 1).
+
+Requiere `GEMINI_API_KEY`. El primer render descarga un Chromium (Remotion).
+
+```bash
+curl -X POST http://localhost:3000/api/reels/generate \
+  -H "Content-Type: application/json" \
+  -d '{"topic":"5 errores al vender por WhatsApp"}'
+```
+
 ---
 
 *Atiko Digital · atikodigital@gmail.com · +56 9 2713 0792*
