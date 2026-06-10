@@ -26,7 +26,7 @@ android {
     // Nombre personalizado del APK
     android.applicationVariants.all { variant ->
         variant.outputs.all { output ->
-            outputFileName = "MaticoApp-${variant.buildType.name}-v${defaultConfig.versionName}.apk"
+            outputFileName = "AtikoGastos-${variant.buildType.name}-v${defaultConfig.versionName}.apk"
         }
     }
 }
