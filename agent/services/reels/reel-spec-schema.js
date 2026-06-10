@@ -17,6 +17,9 @@ function validateReelSpec(spec) {
       if (!isNonEmptyString(s && s.text)) errors.push("scene[" + i + "].text es requerido");
       if (!isNonEmptyString(s && s.voiceLine)) errors.push("scene[" + i + "].voiceLine es requerido");
       if (!isNonEmptyString(s && s.imagePrompt)) errors.push("scene[" + i + "].imagePrompt es requerido");
+      if (s && s.type !== undefined && s.type !== "avatar" && s.type !== "broll") {
+        errors.push("scene[" + i + "].type debe ser 'avatar' o 'broll'");
+      }
     });
   }
   return { valid: errors.length === 0, errors };
