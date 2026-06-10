@@ -5,6 +5,7 @@ const { createPublisher } = require("../services/social/publisher");
 const { createFacebookAdapter } = require("../services/social/adapters/meta-facebook");
 const { createInstagramAdapter } = require("../services/social/adapters/meta-instagram");
 const { createMemoryTokenStore, createPgTokenStore } = require("../services/social/token-store");
+const { signState, verifyState } = require("../services/social/state");
 
 const router = express.Router();
 
@@ -31,15 +32,24 @@ const REDIRECT_URI = process.env.META_REDIRECT_URI;
 router.get("/connect/meta", function (req, res) {
   const clientId = req.query.clientId;
   if (!clientId) return res.status(400).json({ error: "Falta clientId" });
-  const url = oauth.buildAuthUrl({ appId: APP_ID, redirectUri: REDIRECT_URI, state: clientId });
+  // state firmado (HMAC) para protección CSRF — el callback solo acepta states con nuestra firma.
+  const url = oauth.buildAuthUrl({ appId: APP_ID, redirectUri: REDIRECT_URI, state: signState(clientId) });
   res.redirect(url);
 });
 
 // 2) Meta redirige aquí con ?code=...&state=clientId
 router.get("/callback/meta", async function (req, res) {
   try {
-    const { code, state: clientId } = req.query;
-    if (!code || !clientId) return res.status(400).json({ error: "Falta code o state" });
+    const { code, state } = req.query;
+    if (!code || !state) return res.status(400).json({ error: "Falta code o state" });
+
+    let clientId;
+    try {
+      clientId = verifyState(state);
+    } catch (e) {
+      console.warn("[social/callback] state inválido:", e.message);
+      return res.status(400).json({ error: "state inválido (posible CSRF)" });
+    }
 
     const short = await oauth.exchangeCodeForToken({ http, appId: APP_ID, appSecret: APP_SECRET, redirectUri: REDIRECT_URI, code });
     const long = await oauth.getLongLivedToken({ http, appId: APP_ID, appSecret: APP_SECRET, shortLivedToken: short.accessToken });
@@ -69,6 +79,9 @@ router.get("/callback/meta", async function (req, res) {
 });
 
 // 3) Publicar. body: { clientId, platform, message?, imageUrl?, videoUrl?, caption? }
+// TODO(auth): este endpoint NO valida que el caller esté autorizado para `clientId`.
+// Antes de exponerlo en producción, añadir middleware de auth (token de servicio o
+// sesión del panel) que verifique la pertenencia al cliente. Ver spec §9 (riesgos).
 router.post("/publish", async function (req, res) {
   try {
     const { clientId, platform } = req.body;

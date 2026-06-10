@@ -30,7 +30,8 @@ function createInstagramAdapter({ http, graphUrl = GRAPH_URL, sleep = defaultSle
     throw new Error("Instagram container no terminó (timed out) tras " + maxPolls + " intentos");
   }
 
-  async function publishReel({ igUserId, token, videoUrl, caption, pollIntervalMs = 3000, maxPolls = 20 }) {
+  // maxPolls=120 × 3s ≈ 6 min: procesar un Reel en Meta suele tardar 2-5 min.
+  async function publishReel({ igUserId, token, videoUrl, caption, pollIntervalMs = 3000, maxPolls = 120 }) {
     const containerId = await createContainer({ igUserId, token, videoUrl, caption });
     await waitUntilFinished({ containerId, token, pollIntervalMs, maxPolls });
     const { data } = await http.post(graphUrl + "/" + igUserId + "/media_publish", {
