@@ -1,5 +1,7 @@
 require('dotenv').config();
+require('express-async-errors');
 const path = require('path');
+const cors = require('cors');
 const express = require('express');
 const { createWebhookRouter } = require('./whatsapp/webhook');
 const { createAppRouter } = require('./app/router');
@@ -7,6 +9,7 @@ const { createPanelRouter } = require('./panel/router');
 const { getPool } = require('./db/pool');
 
 const app = express();
+app.use(cors());
 app.use(express.json({ limit: '15mb' }));
 
 app.get('/health', (_req, res) => {
@@ -17,6 +20,12 @@ app.use('/api/whatsapp/webhook', createWebhookRouter({ db: getPool() }));
 app.use('/api/app', createAppRouter({ db: getPool() }));
 app.use('/api/panel', createPanelRouter({ db: getPool() }));
 app.use('/panel', express.static(path.join(__dirname, '..', 'public', 'panel')));
+
+// eslint-disable-next-line no-unused-vars
+app.use((err, req, res, next) => {
+  console.error('[gastos] error:', err && err.message);
+  res.status(500).json({ error: 'server_error' });
+});
 
 if (require.main === module) {
   const port = process.env.PORT || 3100;
