@@ -267,4 +267,30 @@ Con 500 conversaciones/mes de ~10 mensajes c/u, el costo de Claude Haiku es < $5
 
 ---
 
+## 📤 Redes sociales — Publicador Meta (Fase 1)
+
+Conecta y publica en Facebook + Instagram de clientes desde el agente.
+
+### Endpoints
+| Método | URL | Descripción |
+|--------|-----|-------------|
+| `GET`  | `/api/social/connect/meta?clientId=casaluxe` | Redirige al OAuth de Meta |
+| `GET`  | `/api/social/callback/meta` | Callback: guarda tokens del cliente |
+| `POST` | `/api/social/publish` | Publica `{clientId, platform, videoUrl/message/imageUrl, caption}` |
+
+### Requisitos
+- App de Meta con permisos `pages_manage_posts`, `instagram_content_publish` (App Review + Advanced Access para cuentas de terceros).
+- Cuenta IG del cliente: Business/Creator vinculada a Página de FB.
+- `DATABASE_URL` (Postgres atiko-db) para persistir tokens.
+
+### Probar en local (modo desarrollo, sin App Review)
+Usa una cuenta donde TÚ eres admin de la app de Meta. Ejemplo de publicación IG Reel:
+```bash
+curl -X POST http://localhost:3000/api/social/publish \
+  -H "Content-Type: application/json" \
+  -d '{"clientId":"atiko","platform":"instagram","videoUrl":"https://.../reel.mp4","caption":"prueba"}'
+```
+
+---
+
 *Atiko Digital · atikodigital@gmail.com · +56 9 2713 0792*
