@@ -8,6 +8,7 @@ const WebSocket = require("ws");
 
 const chatRoutes = require("./routes/chat");
 const webhookRoutes = require("./routes/webhook");
+const socialRoutes = require("./routes/social");
 const realtime = require("./services/realtime");
 
 const app = express();
@@ -74,6 +75,7 @@ const webhookLimiter = rateLimit({
 app.use("/widget", express.static(path.join(__dirname, "public")));
 app.use("/api/chat", chatLimiter, chatRoutes);
 app.use("/api/whatsapp/webhook", webhookLimiter, webhookRoutes);
+app.use("/api/social", socialRoutes);
 
 app.get("/health", function(req, res) {
   res.json({
