@@ -8,9 +8,14 @@ let cachedBundleUrl = null;
 
 async function getBundle() {
   if (cachedBundleUrl) return cachedBundleUrl;
-  cachedBundleUrl = await bundle({
-    entryPoint: path.join(__dirname, "index.js"),
-  });
+  try {
+    cachedBundleUrl = await bundle({
+      entryPoint: path.join(__dirname, "index.js"),
+    });
+  } catch (e) {
+    cachedBundleUrl = null; // self-heal: reintentar el bundle en la próxima petición
+    throw e;
+  }
   return cachedBundleUrl;
 }
 
