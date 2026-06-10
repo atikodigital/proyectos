@@ -33,10 +33,10 @@ function createReelEngine({ scriptGenerator, voice, images, render, avatar, scen
     };
   }
 
-  async function buildScene(scene, avatarId) {
+  async function buildScene(scene, avatarId, avatarType) {
     if (scene.type === "avatar" && avatar && avatarId) {
       try {
-        const clip = await avatar.generate({ avatarId, voiceLine: scene.voiceLine });
+        const clip = await avatar.generate({ avatarId, avatarType, voiceLine: scene.voiceLine });
         return {
           type: "avatar",
           text: scene.text,
@@ -53,9 +53,10 @@ function createReelEngine({ scriptGenerator, voice, images, render, avatar, scen
 
   async function generate(topic, opts = {}) {
     const avatarId = opts.avatarId || null;
+    const avatarType = opts.avatarType;
     const hasAvatar = !!(avatar && avatarId);
     const reelSpec = await scriptGenerator.generate(topic, { hasAvatar });
-    const scenes = await mapWithConcurrency(reelSpec.scenes, sceneConcurrency, (s) => buildScene(s, avatarId));
+    const scenes = await mapWithConcurrency(reelSpec.scenes, sceneConcurrency, (s) => buildScene(s, avatarId, avatarType));
     const mp4Path = await render({ title: reelSpec.title, scenes });
     return {
       mp4Path,

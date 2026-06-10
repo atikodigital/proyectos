@@ -47,12 +47,16 @@ router.post("/generate", async function (req, res) {
     if (!topic) return res.status(400).json({ error: "Falta topic" });
 
     let avatarId = null;
+    let avatarType = "talking_photo";
     if (clientId && avatar) {
       const profile = await avatarProfiles.getAuthorized(clientId);
-      if (profile) avatarId = profile.heygenAvatarId;
+      if (profile) {
+        avatarId = profile.heygenAvatarId;
+        avatarType = profile.avatarType || "talking_photo";
+      }
     }
 
-    const result = await engine.generate(topic, { avatarId });
+    const result = await engine.generate(topic, { avatarId, avatarType });
     const fileName = path.basename(result.mp4Path);
     res.json({
       ok: true,
@@ -87,12 +91,13 @@ function requireAdmin(req, res, next) {
 // Registro manual del perfil (v1). El consentimiento escrito es responsabilidad del contrato.
 router.post("/avatar-profile", requireAdmin, async function (req, res) {
   try {
-    const { clientId, displayName, heygenAvatarId, consentSigned } = req.body;
+    const { clientId, displayName, heygenAvatarId, avatarType, consentSigned } = req.body;
     if (!clientId || !heygenAvatarId) {
       return res.status(400).json({ error: "Falta clientId o heygenAvatarId" });
     }
     await avatarProfiles.save({
       clientId, displayName: displayName || clientId, heygenAvatarId,
+      avatarType: avatarType === "avatar" ? "avatar" : "talking_photo",
       consentSigned: !!consentSigned,
       consentDate: consentSigned ? new Date().toISOString() : null,
     });

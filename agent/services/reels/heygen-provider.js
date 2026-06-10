@@ -35,12 +35,16 @@ async function createPhotoAvatar({ photoPath }) {
 }
 
 // Genera el clip del avatar hablando NUESTRO audio. Asíncrono: submit + poll + download.
-async function generateVideo({ avatarId, audioPath, pollIntervalMs = 5000, maxPolls = 60 }) {
+// avatarType: "talking_photo" (foto animada, más rígido) | "avatar" (avatar de VIDEO de HeyGen, más natural).
+async function generateVideo({ avatarId, avatarType = "talking_photo", audioPath, pollIntervalMs = 5000, maxPolls = 60 }) {
   // HeyGen detecta los WAV como audio/x-wav y exige que el header coincida.
   const audioAssetId = await uploadAsset(audioPath, "audio/x-wav");
+  const character = avatarType === "avatar"
+    ? { type: "avatar", avatar_id: avatarId, avatar_style: "normal" }
+    : { type: "talking_photo", talking_photo_id: avatarId };
   const { data: gen } = await axios.post(API + "/v2/video/generate", {
     video_inputs: [{
-      character: { type: "talking_photo", talking_photo_id: avatarId },
+      character,
       voice: { type: "audio", audio_asset_id: audioAssetId },
     }],
     dimension: { width: 1080, height: 1920 },

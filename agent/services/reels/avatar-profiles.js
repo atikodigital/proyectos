@@ -15,29 +15,29 @@ function createPgAvatarProfiles({ pool }) {
   function rowToProfile(r) {
     return {
       clientId: r.client_id, displayName: r.display_name,
-      heygenAvatarId: r.heygen_avatar_id,
+      heygenAvatarId: r.heygen_avatar_id, avatarType: r.avatar_type,
       consentSigned: r.consent_signed, consentDate: r.consent_date,
     };
   }
   return {
     async save(p) {
       await pool.query(
-        `INSERT INTO avatar_profiles (client_id, display_name, heygen_avatar_id, consent_signed, consent_date)
-         VALUES ($1,$2,$3,$4,$5)
+        `INSERT INTO avatar_profiles (client_id, display_name, heygen_avatar_id, avatar_type, consent_signed, consent_date)
+         VALUES ($1,$2,$3,$4,$5,$6)
          ON CONFLICT (client_id)
-         DO UPDATE SET display_name=$2, heygen_avatar_id=$3, consent_signed=$4, consent_date=$5`,
-        [p.clientId, p.displayName, p.heygenAvatarId, p.consentSigned, p.consentDate]
+         DO UPDATE SET display_name=$2, heygen_avatar_id=$3, avatar_type=$4, consent_signed=$5, consent_date=$6`,
+        [p.clientId, p.displayName, p.heygenAvatarId, p.avatarType || 'talking_photo', p.consentSigned, p.consentDate]
       );
     },
     async get(clientId) {
       const { rows } = await pool.query(
-        `SELECT client_id, display_name, heygen_avatar_id, consent_signed, consent_date
+        `SELECT client_id, display_name, heygen_avatar_id, avatar_type, consent_signed, consent_date
          FROM avatar_profiles WHERE client_id=$1`, [clientId]);
       return rows.length ? rowToProfile(rows[0]) : null;
     },
     async getAuthorized(clientId) {
       const { rows } = await pool.query(
-        `SELECT client_id, display_name, heygen_avatar_id, consent_signed, consent_date
+        `SELECT client_id, display_name, heygen_avatar_id, avatar_type, consent_signed, consent_date
          FROM avatar_profiles WHERE client_id=$1 AND consent_signed=true`, [clientId]);
       return rows.length ? rowToProfile(rows[0]) : null;
     },

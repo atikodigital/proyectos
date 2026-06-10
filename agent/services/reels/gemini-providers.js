@@ -46,11 +46,19 @@ function pcmToWav(pcmBuffer, sampleRate = 24000) {
 }
 
 // tts(text) -> audioPath
+// Voz e instrucciones de estilo configurables — sin esto el TTS suena plano/robótico.
+const TTS_VOICE = process.env.GEMINI_TTS_VOICE || "Aoede";
+const TTS_STYLE = process.env.GEMINI_TTS_STYLE ||
+  "Di lo siguiente en español latino neutro, con tono cercano, enérgico y natural, como una creadora de contenido hablando a su comunidad (no como locutor formal):";
+
 async function tts(text) {
   const url = BASE + "/gemini-2.5-flash-preview-tts:generateContent?key=" + KEY();
   const { data } = await axios.post(url, {
-    contents: [{ parts: [{ text }] }],
-    generationConfig: { responseModalities: ["AUDIO"] },
+    contents: [{ parts: [{ text: TTS_STYLE + "\n" + text }] }],
+    generationConfig: {
+      responseModalities: ["AUDIO"],
+      speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: TTS_VOICE } } },
+    },
   });
   const b64 = data.candidates[0].content.parts[0].inlineData.data;
   const pcm = Buffer.from(b64, "base64");
