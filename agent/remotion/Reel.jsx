@@ -1,19 +1,18 @@
 import React from "react";
-import { AbsoluteFill, Sequence, Img, Audio, useVideoConfig, interpolate, useCurrentFrame } from "remotion";
+import { AbsoluteFill, Sequence, Img, Audio, staticFile, interpolate, useCurrentFrame } from "remotion";
 
 const FPS = 30;
 const msToFrames = (ms) => Math.max(1, Math.round((ms / 1000) * FPS));
 
-function Scene({ scene }) {
+function Scene({ scene, sceneDurationInFrames }) {
   const frame = useCurrentFrame();
-  const { durationInFrames } = useVideoConfig();
-  // zoom suave (Ken Burns)
-  const scale = interpolate(frame, [0, durationInFrames], [1, 1.08]);
+  // zoom suave (Ken Burns) a lo largo de ESTA escena
+  const scale = interpolate(frame, [0, sceneDurationInFrames], [1, 1.08]);
   return (
     <AbsoluteFill style={{ backgroundColor: scene.fallbackColor || "#0A1F3F" }}>
-      {scene.imagePath ? (
+      {scene.imageSrc ? (
         <Img
-          src={"file://" + scene.imagePath}
+          src={staticFile(scene.imageSrc)}
           style={{ width: "100%", height: "100%", objectFit: "cover", transform: `scale(${scale})` }}
         />
       ) : null}
@@ -29,7 +28,7 @@ function Scene({ scene }) {
           {scene.text}
         </div>
       </AbsoluteFill>
-      {scene.audioPath ? <Audio src={"file://" + scene.audioPath} /> : null}
+      {scene.audioSrc ? <Audio src={staticFile(scene.audioSrc)} /> : null}
     </AbsoluteFill>
   );
 }
@@ -44,7 +43,7 @@ export const Reel = ({ scenes = [] }) => {
         start += dur;
         return (
           <Sequence key={i} from={from} durationInFrames={dur}>
-            <Scene scene={scene} />
+            <Scene scene={scene} sceneDurationInFrames={dur} />
           </Sequence>
         );
       })}
