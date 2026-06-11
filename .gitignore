@@ -31,3 +31,6 @@ agent/remotion/assets/*.mp3
 
 # Posts/imagenes generados (contenido, no codigo)
 agent/public/posts/
+
+# Brainstorm visual companion
+.superpowers/
