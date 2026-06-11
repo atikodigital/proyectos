@@ -4,7 +4,7 @@ const { verifyPassword, hashPassword } = require('../auth/password');
 const { signToken } = require('../auth/jwt');
 const { requireAuth, requireKind } = require('../auth/middleware');
 const { listExpenses } = require('../expenses/query');
-const { markExpensePaid } = require('../expenses/repo');
+const { markExpensePaid, getExpense, updateExpense, annulExpense } = require('../expenses/repo');
 const { buildExpensesWorkbook } = require('./excel');
 const {
   createEmployee, listEmployees, updateEmployee, deactivateEmployee, getCompany, updateCompany, getCompanyWa,
@@ -53,6 +53,18 @@ function createPanelRouter({ db, sendText } = {}) {
     const upd = await markExpensePaid(db, req.auth.companyId, req.params.id);
     if (!upd) return res.status(404).json({ error: 'no_existe' });
     return res.json(upd);
+  });
+
+  router.patch('/expenses/:id', async (req, res) => {
+    const exp = await getExpense(db, req.params.id);
+    if (!exp || exp.company_id !== req.auth.companyId) return res.status(404).json({ error: 'no_existe' });
+    return res.json(await updateExpense(db, req.params.id, req.body || {}));
+  });
+
+  router.post('/expenses/:id/anular', async (req, res) => {
+    const out = await annulExpense(db, req.auth.companyId, req.params.id);
+    if (!out) return res.status(404).json({ error: 'no_existe' });
+    return res.json(out);
   });
 
   router.post('/whatsapp/resumen', async (req, res) => {

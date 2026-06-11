@@ -4,7 +4,7 @@ const { verifyPassword } = require('../auth/password');
 const { signToken } = require('../auth/jwt');
 const { requireAuth, requireKind } = require('../auth/middleware');
 const { intakeFromImage } = require('../expenses/intake');
-const { getExpense, confirmExpense, updateExpense, rejectExpense } = require('../expenses/repo');
+const { getExpense, confirmExpense, updateExpense, rejectExpense, annulExpense } = require('../expenses/repo');
 const realExtract = require('../ocr/extract');
 
 function createAppRouter({ db, extractExpense } = {}) {
@@ -56,9 +56,14 @@ function createAppRouter({ db, extractExpense } = {}) {
     return res.json(await rejectExpense(db, req.params.id));
   });
 
+  router.post('/expenses/:id/anular', async (req, res) => {
+    if (!(await ownedExpense(req, res))) return;
+    return res.json(await annulExpense(db, req.auth.companyId, req.params.id));
+  });
+
   router.get('/expenses', async (req, res) => {
     const r = await db.query(
-      `SELECT * FROM expenses WHERE company_id=$1 AND employee_id=$2 ORDER BY created_at DESC LIMIT 50`,
+      `SELECT * FROM expenses WHERE company_id=$1 AND employee_id=$2 AND estado <> 'anulado' ORDER BY created_at DESC LIMIT 50`,
       [req.auth.companyId, req.auth.employeeId]
     );
     return res.json(r.rows);
