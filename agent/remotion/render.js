@@ -42,6 +42,12 @@ function stageAssets(scenes, publicDir) {
       staged.push(path.join(publicDir, name));
       scene.audioSrc = name;
     }
+    if (s.videoPath) {
+      const name = renderId + "-vid-" + i + (path.extname(s.videoPath) || ".mp4");
+      fs.copyFileSync(s.videoPath, path.join(publicDir, name));
+      staged.push(path.join(publicDir, name));
+      scene.videoSrc = name;
+    }
     return scene;
   });
   const cleanup = () => {
@@ -54,8 +60,19 @@ function stageAssets(scenes, publicDir) {
 
 async function renderReel(inputProps, outPath) {
   const serveUrl = await getBundle();
-  const { scenes, cleanup } = stageAssets(inputProps.scenes, path.join(serveUrl, "public"));
+  const publicDir = path.join(serveUrl, "public");
+  const { scenes, cleanup } = stageAssets(inputProps.scenes, publicDir);
   const props = { ...inputProps, scenes };
+
+  // Música de fondo opcional: copiar al public/ del bundle y referenciar con staticFile.
+  let musicStaged = null;
+  if (inputProps.musicPath && fs.existsSync(inputProps.musicPath)) {
+    const name = "music-" + crypto.randomBytes(6).toString("hex") + (path.extname(inputProps.musicPath) || ".mp3");
+    fs.copyFileSync(inputProps.musicPath, path.join(publicDir, name));
+    musicStaged = path.join(publicDir, name);
+    props.musicSrc = name;
+  }
+
   try {
     const composition = await selectComposition({
       serveUrl,
@@ -72,6 +89,7 @@ async function renderReel(inputProps, outPath) {
     return outPath;
   } finally {
     cleanup();
+    if (musicStaged) { try { fs.unlinkSync(musicStaged); } catch (e) { /* ya borrado */ } }
   }
 }
 

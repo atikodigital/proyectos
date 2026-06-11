@@ -1,0 +1,5 @@
+Música de fondo por defecto para los reels.
+Track: Corporate Background Music — delosound (Pixabay)
+Fuente: https://pixabay.com/music/upbeat-corporate-background-music-346481/
+Licencia: Pixabay Content License — libre de derechos, uso comercial, sin atribución requerida.
+Reemplazable: pon tu propio MP3 aquí o define REEL_MUSIC_PATH.

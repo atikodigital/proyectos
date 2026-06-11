@@ -25,3 +25,6 @@ agent/voz-prueba-*.mp3
 
 # Reels generados (contenido, no codigo)
 agent/public/reels/
+
+# Música de reels: asset binario, no se versiona (ver LICENSE.txt para fuente)
+agent/remotion/assets/*.mp3

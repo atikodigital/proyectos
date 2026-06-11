@@ -309,6 +309,18 @@ curl -X POST http://localhost:3000/api/reels/generate \
   -d '{"topic":"5 errores al vender por WhatsApp"}'
 ```
 
+### 🎭 Avatares (Fase 3)
+
+Si el `clientId` tiene un avatar profile **con consentimiento firmado**, el reel sale híbrido: el avatar del cliente (HeyGen, foto + nuestro audio TTS) abre con el gancho y cierra con el CTA; el resto es faceless. Si HeyGen falla, la escena degrada a faceless y el reel se genera igual (`degraded: true`).
+
+| Método | URL | Descripción |
+|--------|-----|-------------|
+| `POST` | `/api/reels/avatar-profile` | Registra `{ clientId, displayName, heygenAvatarId, consentSigned }` |
+
+Onboarding por persona: 1 foto → `createPhotoAvatar` (heygen-provider) o dashboard de HeyGen → guardar el id con consentimiento. Requiere `HEYGEN_API_KEY`; sin ella, todo sale faceless.
+
+> ⚠️ **Producción:** (1) define `ADMIN_API_TOKEN` — `/avatar-profile` gobierna consentimiento legal y exige el header `x-admin-token`. (2) La generación con avatar puede tardar minutos: sube el timeout del proxy en Caddy (`reverse_proxy { transport http { response_header_timeout 10m } }`) o la conexión morirá antes de terminar (el plan largo es cola de trabajos + polling).
+
 ---
 
 *Atiko Digital · atikodigital@gmail.com · +56 9 2713 0792*

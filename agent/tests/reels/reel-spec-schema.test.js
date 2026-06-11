@@ -40,3 +40,28 @@ test("rejects non-array hashtags", () => {
   assert.equal(r.valid, false);
   assert.ok(r.errors.some((e) => e.includes("hashtags")));
 });
+
+test("accepts scenes with type avatar or broll", () => {
+  const r = validateReelSpec({
+    ...valid,
+    scenes: [
+      { type: "avatar", text: "t", voiceLine: "v", imagePrompt: "p" },
+      { type: "broll", text: "t2", voiceLine: "v2", imagePrompt: "p2" },
+    ],
+  });
+  assert.equal(r.valid, true);
+});
+
+test("accepts scenes WITHOUT type (retrocompatible, default broll)", () => {
+  const r = validateReelSpec(valid);
+  assert.equal(r.valid, true);
+});
+
+test("rejects invalid scene type", () => {
+  const r = validateReelSpec({
+    ...valid,
+    scenes: [{ type: "hologram", text: "t", voiceLine: "v", imagePrompt: "p" }],
+  });
+  assert.equal(r.valid, false);
+  assert.ok(r.errors.some((e) => e.includes("type")));
+});
