@@ -39,31 +39,48 @@
   }
 
   const COLS = [
-    ['Fecha', 'fecha'], ['Empleado', 'employee_id'], ['Proveedor', 'proveedor'],
-    ['RUT', 'rut_emisor'], ['Folio', 'folio'], ['Tipo', 'tipo_documento'],
-    ['Categoría', 'categoria'], ['Cuenta SII', 'cuenta_sii_codigo'],
+    ['Tipo', 'tipo'], ['Fecha', 'fecha'], ['Empleado', 'empleado_nombre'], ['Proveedor', 'proveedor'],
+    ['RUT', 'rut_emisor'], ['Folio', 'folio'], ['N° oper.', 'nro_operacion'], ['Categoría', 'categoria'],
   ];
   const MONEY = [['Neto', 'neto'], ['IVA', 'iva'], ['Total', 'total']];
+
+  function cashflowFromRows(rows) {
+    const acc = { gastos: 0, ingresos: 0, saldo: 0, countGastos: 0, countIngresos: 0 };
+    for (const r of rows || []) {
+      const total = Number(r.total) || 0;
+      if (r.tipo === 'ingreso') { acc.ingresos += total; acc.countIngresos += 1; }
+      else { acc.gastos += total; acc.countGastos += 1; }
+    }
+    acc.saldo = acc.ingresos - acc.gastos;
+    return acc;
+  }
+
+  function pagoCell(r) {
+    if (r.tipo === 'ingreso') return '—';
+    if (r.estado_pago === 'pagada') return '✅ Pagada';
+    return '<button class="btn-ghost btn-pay" data-pay="' + escapeHtml(r.id) + '">Marcar pagada</button>';
+  }
 
   function expensesTableHtml(rows) {
     const list = rows || [];
     const thead = '<thead><tr>'
-      + COLS.map(([h]) => `<th>${h}</th>`).join('')
-      + MONEY.map(([h]) => `<th class="num">${h}</th>`).join('')
-      + '<th>Estado</th></tr></thead>';
-    const body = list.map((r) => {
-      const cells = COLS.map(([, k]) => `<td>${escapeHtml(r[k])}</td>`).join('')
-        + MONEY.map(([, k]) => `<td class="num">${fmtClp(r[k])}</td>`).join('')
-        + `<td>${escapeHtml(r.estado)}</td>`;
-      return `<tr>${cells}</tr>`;
+      + COLS.map(function (c) { return '<th>' + c[0] + '</th>'; }).join('')
+      + MONEY.map(function (c) { return '<th class="num">' + c[0] + '</th>'; }).join('')
+      + '<th>Estado</th><th>Pago</th></tr></thead>';
+    const body = list.map(function (r) {
+      const cells = COLS.map(function (c) { return '<td>' + escapeHtml(r[c[1]]) + '</td>'; }).join('')
+        + MONEY.map(function (c) { return '<td class="num">' + fmtClp(r[c[1]]) + '</td>'; }).join('')
+        + '<td>' + escapeHtml(r.estado) + '</td>'
+        + '<td>' + pagoCell(r) + '</td>';
+      return '<tr>' + cells + '</tr>';
     }).join('');
     const t = totalsFromRows(list);
-    const foot = `<tfoot><tr><td colspan="8" class="num"><b>Totales</b></td>`
-      + `<td class="num"><b>${fmtClp(t.neto)}</b></td>`
-      + `<td class="num"><b>${fmtClp(t.iva)}</b></td>`
-      + `<td class="num"><b>${fmtClp(t.total)}</b></td><td></td></tr></tfoot>`;
-    return `<table class="exp">${thead}<tbody>${body}</tbody>${foot}</table>`;
+    const foot = '<tfoot><tr><td colspan="8" class="num"><b>Totales</b></td>'
+      + '<td class="num"><b>' + fmtClp(t.neto) + '</b></td>'
+      + '<td class="num"><b>' + fmtClp(t.iva) + '</b></td>'
+      + '<td class="num"><b>' + fmtClp(t.total) + '</b></td><td></td><td></td></tr></tfoot>';
+    return '<table class="exp">' + thead + '<tbody>' + body + '</tbody>' + foot + '</table>';
   }
 
-  return { fmtClp, escapeHtml, buildQuery, totalsFromRows, expensesTableHtml };
+  return { fmtClp, escapeHtml, buildQuery, totalsFromRows, cashflowFromRows, expensesTableHtml };
 });

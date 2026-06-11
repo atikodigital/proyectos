@@ -24,13 +24,14 @@ test('totalsFromRows suma neto/iva/total', () => {
 
 test('expensesTableHtml arma header + una fila por gasto y escapa', () => {
   const html = PanelLib.expensesTableHtml([
-    { fecha: '2026-06-05', employee_id: 'e1', proveedor: '<Copec>', rut_emisor: '76086428-5', folio: '123',
-      tipo_documento: 'boleta', categoria: 'Combustible y transporte', cuenta_sii_codigo: '4.3.150.1',
-      neto: 21008, iva: 3992, total: 25000, estado: 'confirmado' },
+    { id: 'e1', tipo: 'gasto', fecha: '2026-06-05', empleado_nombre: 'Ana', proveedor: '<Copec>',
+      rut_emisor: '76086428-5', folio: '123', nro_operacion: 'OP-1',
+      categoria: 'Combustible y transporte',
+      neto: 21008, iva: 3992, total: 25000, estado: 'confirmado', estado_pago: 'registrada' },
   ]);
   expect(html).toContain('<table');
   expect(html).toContain('Proveedor');
   expect(html).toContain('&lt;Copec&gt;');
   expect(html).toContain('$25.000');
-  expect(html).toContain('4.3.150.1');
+  expect(html).toContain('Ana');
 });
