@@ -4,7 +4,7 @@ const { intakeFromImage } = require('../expenses/intake');
 const { getLatestPending, confirmExpense, updateExpense, rejectExpense } = require('../expenses/repo');
 const { monthlySummary } = require('../expenses/summary');
 const { interpretText } = require('./interpret');
-const { formatConfirmation, formatSummary } = require('./format');
+const { formatConfirmation, formatSummary, formatDuplicateBlock } = require('./format');
 const realClient = require('./client');
 const realExtract = require('../ocr/extract');
 
@@ -38,6 +38,12 @@ function createWebhookRouter({ db, verifyToken, sendText, downloadMedia, extract
         const messages = value.messages || [];
         if (!phoneNumberId || !messages.length) continue;
 
+        const contacts = value.contacts || [];
+        const senderName = (waid) => {
+          const c = contacts.find((x) => x.wa_id === waid);
+          return (c && c.profile && c.profile.name) || '';
+        };
+
         const company = await getCompanyByPhoneNumberId(db, phoneNumberId);
         if (!company) continue;
 
@@ -51,12 +57,20 @@ function createWebhookRouter({ db, verifyToken, sendText, downloadMedia, extract
 
           if (msg.type === 'image' && msg.image?.id) {
             const media = await _download({ mediaId: msg.image.id, token: company.wa_token });
-            const exp = await intakeFromImage({
+            const { expense, duplicado } = await intakeFromImage({
               db, companyId: company.id, employeeId: employee.id,
               imageBuffer: media.buffer, mimeType: media.mimeType, canal: 'whatsapp',
               waMessageId: msg.id, fotoPath: null, extract: _extract,
+              waSenderName: senderName(msg.from), waSenderPhone: msg.from,
             });
-            await reply(formatConfirmation(exp));
+            if (!expense) {
+              await reply(formatDuplicateBlock(duplicado.existente));
+              continue;
+            }
+            const aviso = duplicado && duplicado.nivel === 'suave'
+              ? '\n⚠️ Hay algo muy parecido ya registrado; revisa que no sea repetido.'
+              : '';
+            await reply(formatConfirmation(expense) + aviso);
             continue;
           }
 

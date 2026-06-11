@@ -29,4 +29,12 @@ function formatSummary(s) {
   );
 }
 
-module.exports = { formatConfirmation, formatSummary, fmtClp };
+function formatDuplicateBlock(e) {
+  const cuando = e.created_at ? new Date(e.created_at).toLocaleDateString('es-CL') : 's/fecha';
+  return (
+    `⚠️ Esto ya fue registrado (${e.proveedor || 's/proveedor'} · ${fmtClp(e.total)} · ${e.fecha || 's/fecha'}) el ${cuando}. ` +
+    `No lo registré de nuevo para no duplicar el pago. Si de verdad es otro, avísale al dueño.`
+  );
+}
+
+module.exports = { formatConfirmation, formatSummary, formatDuplicateBlock, fmtClp };
