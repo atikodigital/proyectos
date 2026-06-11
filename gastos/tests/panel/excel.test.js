@@ -10,9 +10,12 @@ test('arma un xlsx con header y una fila por gasto', async () => {
   const wb = new ExcelJS.Workbook();
   await wb.xlsx.load(buf);
   const ws = wb.worksheets[0];
-  expect(ws.getRow(1).getCell(1).value).toBe('Fecha');
-  expect(ws.getRow(1).getCell(3).value).toBe('Proveedor');
+  // build header→col map
+  const colOf = {};
+  ws.getRow(1).eachCell((cell, col) => { colOf[cell.value] = col; });
+  expect(colOf['Tipo']).toBeDefined();
+  expect(colOf['Proveedor/Pagador']).toBeDefined();
   const row2 = ws.getRow(2);
-  expect(row2.getCell(3).value).toBe('Copec');
-  expect(row2.getCell(11).value).toBe(25000);
+  expect(row2.getCell(colOf['Proveedor/Pagador']).value).toBe('Copec');
+  expect(Number(row2.getCell(colOf['Total']).value)).toBe(25000);
 });

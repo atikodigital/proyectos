@@ -65,7 +65,10 @@ test('descarga xlsx', async () => {
   expect(res.headers['content-type']).toContain('spreadsheet');
   const wb = new ExcelJS.Workbook();
   await wb.xlsx.load(res.body);
-  expect(wb.worksheets[0].getRow(2).getCell(3).value).toBe('Copec');
+  const ws0 = wb.worksheets[0];
+  const colOf = {};
+  ws0.getRow(1).eachCell((cell, col) => { colOf[cell.value] = col; });
+  expect(ws0.getRow(2).getCell(colOf['Proveedor/Pagador']).value).toBe('Copec');
 });
 
 test('crea empleado y lo lista', async () => {
