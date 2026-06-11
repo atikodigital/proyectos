@@ -1,4 +1,4 @@
-const { formatConfirmation, formatSummary } = require('../../src/whatsapp/format');
+const { formatConfirmation, formatSummary, formatDuplicateBlock } = require('../../src/whatsapp/format');
 
 test('formatConfirmation incluye proveedor, total formateado y categoria', () => {
   const msg = formatConfirmation({
@@ -21,4 +21,18 @@ test('formatSummary arma total y desglose por categoria', () => {
   expect(msg).toContain('$35.000');
   expect(msg).toContain('Combustible y transporte');
   expect(msg).toContain('$25.000');
+});
+
+test('formatDuplicateBlock avisa el duplicado con datos del existente', () => {
+  const msg = formatDuplicateBlock({ proveedor: 'Sodimac', total: 11900, fecha: '2026-06-01', created_at: '2026-06-02T10:00:00Z' });
+  expect(msg).toContain('Sodimac');
+  expect(msg).toContain('$11.900');
+  expect(msg.toLowerCase()).toContain('ya fue registrado');
+});
+
+test('formatDuplicateBlock tolera campos faltantes', () => {
+  const msg = formatDuplicateBlock({});
+  expect(msg).toContain('s/proveedor');
+  expect(msg).toContain('$0');
+  expect(msg).toContain('s/fecha');
 });
