@@ -5,6 +5,7 @@ const { signToken } = require('../auth/jwt');
 const { requireAuth, requireKind } = require('../auth/middleware');
 const { listExpenses } = require('../expenses/query');
 const { markExpensePaid, getExpense, updateExpense, annulExpense } = require('../expenses/repo');
+const { readImage, contentTypeFor } = require('../expenses/storage');
 const { buildExpensesWorkbook } = require('./excel');
 const {
   createEmployee, listEmployees, updateEmployee, deactivateEmployee, getCompany, updateCompany, getCompanyWa,
@@ -65,6 +66,15 @@ function createPanelRouter({ db, sendText } = {}) {
     const out = await annulExpense(db, req.auth.companyId, req.params.id);
     if (!out) return res.status(404).json({ error: 'no_existe' });
     return res.json(out);
+  });
+
+  router.get('/expenses/:id/foto', async (req, res) => {
+    const exp = await getExpense(db, req.params.id);
+    if (!exp || exp.company_id !== req.auth.companyId) return res.status(404).json({ error: 'no_existe' });
+    const buf = readImage(exp.foto_path);
+    if (!buf) return res.status(404).json({ error: 'sin_foto' });
+    res.setHeader('Content-Type', contentTypeFor(exp.foto_path));
+    return res.send(buf);
   });
 
   router.post('/whatsapp/resumen', async (req, res) => {

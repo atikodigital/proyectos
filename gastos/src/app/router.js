@@ -6,6 +6,7 @@ const { requireAuth, requireKind } = require('../auth/middleware');
 const { intakeFromImage } = require('../expenses/intake');
 const { getExpense, confirmExpense, updateExpense, rejectExpense, annulExpense } = require('../expenses/repo');
 const realExtract = require('../ocr/extract');
+const { readImage, contentTypeFor } = require('../expenses/storage');
 
 function createAppRouter({ db, extractExpense } = {}) {
   const _extract = extractExpense || realExtract.extractExpense;
@@ -59,6 +60,15 @@ function createAppRouter({ db, extractExpense } = {}) {
   router.post('/expenses/:id/anular', async (req, res) => {
     if (!(await ownedExpense(req, res))) return;
     return res.json(await annulExpense(db, req.auth.companyId, req.params.id));
+  });
+
+  router.get('/expenses/:id/foto', async (req, res) => {
+    const exp = await ownedExpense(req, res);
+    if (!exp) return;
+    const buf = readImage(exp.foto_path);
+    if (!buf) return res.status(404).json({ error: 'sin_foto' });
+    res.setHeader('Content-Type', contentTypeFor(exp.foto_path));
+    return res.send(buf);
   });
 
   router.get('/expenses', async (req, res) => {
