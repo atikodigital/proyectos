@@ -8,7 +8,7 @@ import { listContent, type ContentItem } from "./api";
 
 export default function App() {
   const [client, setClient] = useState("Atiko Digital");
-  const [view, setView] = useState("list");
+  const [view, setView] = useState("calendar");
   const [items, setItems] = useState<ContentItem[]>([]);
   const [creating, setCreating] = useState(false);
   const [selected, setSelected] = useState<ContentItem | null>(null);
@@ -28,7 +28,7 @@ export default function App() {
     return () => clearInterval(t);
   }, []);
 
-  const tabs: [string, string][] = [["list", "Lista"], ["calendar", "Calendario"]];
+  const tabs: [string, string][] = [["calendar", "Calendario"], ["list", "Lista"]];
 
   return (
     <div className="flex min-h-screen">
