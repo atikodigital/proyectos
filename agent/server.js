@@ -10,6 +10,7 @@ const chatRoutes = require("./routes/chat");
 const webhookRoutes = require("./routes/webhook");
 const socialRoutes = require("./routes/social");
 const reelsRoutes = require("./routes/reels");
+const postsRoutes = require("./routes/posts");
 const contentRoutes = require("./routes/content");
 const realtime = require("./services/realtime");
 
@@ -83,11 +84,21 @@ const reelsLimiter = rateLimit({
   message: { error: "Demasiadas generaciones de reel. Espera unos minutos.", retryAfter: 300 },
 });
 
+// Posts/imágenes: más barato que un reel pero también consume Gemini + render.
+const postsLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Demasiadas generaciones de posts. Espera unos minutos.", retryAfter: 300 },
+});
+
 app.use("/widget", express.static(path.join(__dirname, "public")));
 app.use("/api/chat", chatLimiter, chatRoutes);
 app.use("/api/whatsapp/webhook", webhookLimiter, webhookRoutes);
 app.use("/api/social", socialRoutes);
 app.use("/api/reels", reelsLimiter, reelsRoutes);
+app.use("/api/posts", postsLimiter, postsRoutes);
 app.use("/api/content", contentRoutes);
 
 app.get("/health", function(req, res) {
