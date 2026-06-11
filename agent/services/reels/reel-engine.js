@@ -46,7 +46,7 @@ function createReelEngine({ scriptGenerator, voice, images, render, avatar, scen
     const avatarId = opts.avatarId || null;
     const avatarType = opts.avatarType;
     const hasAvatar = !!(avatar && avatarId);
-    const reelSpec = await scriptGenerator.generate(topic, { hasAvatar });
+    const reelSpec = await scriptGenerator.generate(topic, { hasAvatar, style: opts.style });
     const scenes = await mapWithConcurrency(reelSpec.scenes, sceneConcurrency, (s) => buildScene(s, avatarId, avatarType));
     const mp4Path = await render({ title: reelSpec.title, scenes, musicPath: opts.musicPath });
     return {

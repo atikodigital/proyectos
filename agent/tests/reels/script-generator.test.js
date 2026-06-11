@@ -62,3 +62,18 @@ test("generate without opts does NOT mention avatar (retrocompatible)", async ()
   await createScriptGenerator({ gemini }).generate("tema x");
   assert.ok(!/avatar/.test(seenPrompt));
 });
+
+test("generate with style meme adds hype/creator instructions to the prompt", async () => {
+  let seenPrompt = "";
+  const gemini = { async generateText(p) { seenPrompt = p; return JSON.stringify(goodSpec); } };
+  await createScriptGenerator({ gemini }).generate("tema x", { style: "meme" });
+  assert.match(seenPrompt, /meme|hype|viral creator/i);
+  assert.match(seenPrompt, /MAYÚSCULAS|impactante/i);
+});
+
+test("generate without style does NOT add meme instructions", async () => {
+  let seenPrompt = "";
+  const gemini = { async generateText(p) { seenPrompt = p; return JSON.stringify(goodSpec); } };
+  await createScriptGenerator({ gemini }).generate("tema x");
+  assert.ok(!/meme/i.test(seenPrompt));
+});

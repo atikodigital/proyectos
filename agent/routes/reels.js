@@ -60,7 +60,8 @@ router.post("/generate", async function (req, res) {
     const musicCandidate = process.env.REEL_MUSIC_PATH || path.join(__dirname, "..", "remotion", "assets", "music.mp3");
     const musicPath = fs.existsSync(musicCandidate) ? musicCandidate : undefined;
 
-    const result = await engine.generate(topic, { avatarId, avatarType, musicPath });
+    // style opcional: "meme" = tono hype/creator (frases cortas, números, CTA de comentario)
+    const result = await engine.generate(topic, { avatarId, avatarType, musicPath, style: req.body.style });
     const fileName = path.basename(result.mp4Path);
     res.json({
       ok: true,
