@@ -27,7 +27,7 @@ export default function GastosApp() {
 
   async function submit(imageBase64, mimeType, override) {
     setBusy(true);
-    try { setPending(await api.createExpense(imageBase64, mimeType, override)); setDup(null); }
+    try { const exp = await api.createExpense(imageBase64, mimeType, override); setPending({ exp, img: imageBase64, mime: mimeType }); setDup(null); }
     catch (e) { if (e && e.status === 409) setDup({ imageBase64, mimeType, info: (e.data && e.data.duplicado) || {} }); }
     finally { setBusy(false); }
   }
@@ -58,7 +58,7 @@ export default function GastosApp() {
             <button onClick={() => setDup(null)} className="rounded-xl font-black py-3 bg-black/10 border">Descartar</button>
           </div>
         ) : pending ? (
-          <ConfirmScreen expense={pending} onDone={() => { setPending(null); setTab('mis'); }} />
+          <ConfirmScreen expense={pending.exp} photo={{ base64: pending.img, mime: pending.mime }} onDone={() => { setPending(null); setTab('mis'); }} />
         ) : tab === 'capturar' ? (
           busy ? <div className="p-6">Procesando…</div>
                : <div className="p-4"><p className="px-2 mb-2 opacity-70">Captura la boleta, factura o comprobante:</p>

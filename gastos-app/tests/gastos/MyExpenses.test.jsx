@@ -1,7 +1,7 @@
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import MyExpenses from '../../src/gastos/MyExpenses.jsx';
 import { api } from '../../src/gastos/api';
-jest.mock('../../src/gastos/api', () => ({ api: { listExpenses: jest.fn(), updateExpense: jest.fn(), annulExpense: jest.fn() } }));
+jest.mock('../../src/gastos/api', () => ({ api: { listExpenses: jest.fn(), updateExpense: jest.fn(), annulExpense: jest.fn(), fotoUrl: jest.fn() } }));
 
 beforeEach(() => { jest.clearAllMocks(); });
 
@@ -42,6 +42,18 @@ test('editar un movimiento llama a updateExpense', async () => {
   fireEvent.change(prov, { target: { value: 'Lider' } });
   fireEvent.click(screen.getByRole('button', { name: /guardar cambios/i }));
   await waitFor(() => expect(api.updateExpense).toHaveBeenCalledWith('g1', expect.objectContaining({ proveedor: 'Lider' })));
+});
+
+test('ver foto de la factura llama a fotoUrl y muestra la imagen', async () => {
+  api.listExpenses.mockResolvedValue([{ id: 'g3', tipo: 'gasto', proveedor: 'Sodimac', total: 1000, estado: 'confirmado' }]);
+  api.fotoUrl.mockResolvedValue('blob:fake-url');
+  render(<MyExpenses />);
+  await waitFor(() => expect(screen.getByText(/Sodimac/)).toBeInTheDocument());
+  fireEvent.click(screen.getByText(/Sodimac/));
+  await waitFor(() => expect(screen.getByText(/Ver foto/)).toBeInTheDocument());
+  fireEvent.click(screen.getByText(/Ver foto/));
+  await waitFor(() => expect(api.fotoUrl).toHaveBeenCalledWith('g3'));
+  await waitFor(() => expect(screen.getByAltText('factura')).toBeInTheDocument());
 });
 
 test('anular un movimiento pide confirmación y llama a annulExpense', async () => {

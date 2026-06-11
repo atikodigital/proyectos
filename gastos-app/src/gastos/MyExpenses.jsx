@@ -67,7 +67,14 @@ function Detalle({ e: e0, onBack, onReload }) {
   const [editing, setEditing] = useState(false);
   const [confirmAnular, setConfirmAnular] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [fotoUrl, setFotoUrl] = useState(null);
+  const [fotoMsg, setFotoMsg] = useState('');
   const esIngreso = e.tipo === 'ingreso';
+  async function verFoto() {
+    setFotoMsg('Cargando foto…');
+    const url = await api.fotoUrl(e.id);
+    if (url) { setFotoUrl(url); setFotoMsg(''); } else { setFotoMsg('Sin foto disponible (se guarda 2 meses y luego se elimina).'); }
+  }
   const filas = [
     [esIngreso ? 'Pagador / origen' : 'Proveedor', e.proveedor],
     ['Total', clp(e.total)],
@@ -111,6 +118,12 @@ function Detalle({ e: e0, onBack, onReload }) {
               );
             })}
           </div>
+          {fotoUrl ? (
+            <img alt="factura" src={fotoUrl} className="rounded-xl border w-full max-h-80 object-contain bg-black/20" />
+          ) : (
+            <button onClick={verFoto} className="rounded-xl font-black py-2 bg-black/10 border text-sm">📷 Ver foto de la factura</button>
+          )}
+          {fotoMsg ? <div className="text-xs opacity-60">{fotoMsg}</div> : null}
           {confirmAnular ? (
             <div className="rounded-xl border p-3 grid gap-2" style={{ borderColor: '#7a1f1f' }}>
               <div className="text-sm">¿Anular este movimiento? Dejará de contar en los totales y el Excel (queda el registro).</div>

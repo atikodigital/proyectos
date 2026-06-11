@@ -270,10 +270,23 @@
   }
   function closeDetalle() { $('detalleModal').classList.add('hidden'); $('detalleActions').innerHTML = ''; }
   function defaultActions() {
-    $('detalleActions').innerHTML = '<button id="detEditBtn" class="btn-ghost" style="flex:1">✏️ Editar</button>'
+    $('detalleActions').innerHTML = '<button id="detFotoBtn" class="btn-ghost" style="flex:1">📷 Ver foto</button>'
+      + '<button id="detEditBtn" class="btn-ghost" style="flex:1">✏️ Editar</button>'
       + '<button id="detAnularBtn" class="btn-ghost" style="flex:1; color:#ff8a8a">🗑️ Anular</button>';
+    $('detFotoBtn').onclick = onFoto;
     $('detEditBtn').onclick = onEdit;
     $('detAnularBtn').onclick = onAnular;
+  }
+  async function onFoto() {
+    if (!detSel) return;
+    try {
+      var res = await apiFetch('/expenses/' + detSel.id + '/foto');
+      if (!res.ok) { $('detalleBody').insertAdjacentHTML('afterbegin', '<div class="muted" style="margin-bottom:8px">Sin foto disponible (se guarda 2 meses y luego se elimina).</div>'); $('detFotoBtn').disabled = true; return; }
+      var blob = await res.blob();
+      var url = URL.createObjectURL(blob);
+      $('detalleBody').insertAdjacentHTML('afterbegin', '<img alt="factura" src="' + url + '" style="width:100%; max-height:340px; object-fit:contain; border-radius:10px; background:#0008; margin-bottom:10px" />');
+      $('detFotoBtn').disabled = true;
+    } catch (e) {}
   }
   function fld(id, label, value, type) {
     return '<label class="muted" style="display:block; margin-top:8px">' + label + '</label>'

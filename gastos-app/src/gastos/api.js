@@ -33,4 +33,11 @@ export const api = {
   rejectExpense(id) { return req(`/api/app/expenses/${id}/reject`, { method: 'POST' }); },
   annulExpense(id) { return req(`/api/app/expenses/${id}/anular`, { method: 'POST' }); },
   listExpenses() { return req('/api/app/expenses'); },
+  async fotoUrl(id) {
+    const t = getToken();
+    const res = await fetch(`${API_BASE}/api/app/expenses/${id}/foto`, { headers: t ? { Authorization: `Bearer ${t}` } : {} });
+    if (!res.ok) return null;
+    const blob = await res.blob();
+    return URL.createObjectURL(blob);
+  },
 };
