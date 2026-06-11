@@ -24,7 +24,9 @@ suma **ingresos**, evita **duplicados** (clave para no pagar dos veces), y entre
 4. **Estado de pago** por movimiento (base para un futuro módulo de pagos).
 5. **Panel + Excel** con vista de gastos/ingresos/saldo y todo el detalle.
 6. **WhatsApp**: enviar el resumen al WhatsApp del dueño desde el número de Atiko.
-7. Onboarding de la empresa real **matikoapp**.
+7. **Fechas contables**: guardar fecha de emisión y de carga; contabilizar por la de
+   emisión; permitir filtro por período (mes/año).
+8. Onboarding de la empresa real **matikoapp**.
 
 ## No-objetivos (YAGNI)
 
@@ -50,6 +52,23 @@ Nuevos campos:
 
 Campos ya existentes que se reutilizan para la clave de duplicado: `rut_proveedor`,
 `folio`, `monto`, `fecha`, `proveedor`, `company_id`.
+
+### Fechas y período contable
+
+Se distinguen dos fechas, **ambas se guardan**:
+
+| Campo | Significado | Uso |
+|---|---|---|
+| `fecha` (existente) | **Fecha de emisión** del documento (la que dice la boleta/factura/comprobante), leída por OCR | **Fecha contable**: ordena, filtra y agrupa para el período tributario |
+| `created_at` (existente) | Fecha/hora de **carga** (cuándo se sacó/subió la foto) | Auditoría, "cuándo se registró realmente" |
+
+La contabilidad **siempre manda por `fecha` (emisión)**, no por `created_at`. Si el OCR no
+logra leer la fecha de emisión, la app pide al usuario que la confirme/ingrese antes de
+guardar (no se asume la fecha de carga como contable).
+
+**Período contable:** el panel y el Excel permiten filtrar por **mes/año** (ej. junio 2026)
+derivado de `fecha`. El cierre mensual con el contador se hace eligiendo el período y
+descargando ese Excel.
 
 ## Componentes y flujo
 
@@ -83,12 +102,18 @@ movimiento existente + el nivel, o `null`:
 
 ### 4. Panel web — `public/panel` + `src/panel`
 - Filtro **Tipo: Todos / Gastos / Ingresos** sobre la tabla existente.
-- Tarjeta de **saldo**: `Σ ingresos − Σ gastos`, con totales de cada lado.
-- Columna **Tipo** y **Estado** visibles; el detalle de cada movimiento ya muestra el resto.
+- Filtro **Período contable: mes/año** (derivado de `fecha` de emisión), además del rango
+  desde-hasta ya existente.
+- Tarjeta de **saldo**: `Σ ingresos − Σ gastos`, con totales de cada lado, para el período
+  seleccionado.
+- Columna **Tipo** y **Estado** visibles; cada fila muestra `fecha` (emisión) y, en el
+  detalle, la fecha de carga.
 - Acción para marcar un gasto como **pagado** (`estado_pago = pagada`).
 
 ### 5. Excel — `src/panel/excel.js`
-- Agrega columnas **Tipo** y **Estado**; incluye gastos e ingresos; respeta los filtros.
+- Agrega columnas **Tipo**, **Estado**, **Fecha emisión** y **Fecha carga**; incluye gastos
+  e ingresos; respeta los filtros (tipo + período). El período elegido se usa para el cierre
+  mensual.
 
 ### 6. WhatsApp resumen — `src/whatsapp` + `src/expenses/summary.js`
 - Endpoint en el panel: `POST /api/panel/whatsapp/resumen` (auth dueño) → arma el resumen
@@ -123,7 +148,8 @@ movimiento existente + el nivel, o `null`:
 - `intake.js`: 409 en duplicado fuerte; registro con `override`; alerta suave no bloquea.
 - `extract.js`: clasificación `tipo` (mock de Gemini devolviendo gasto/ingreso).
 - `excel.js`: columnas Tipo/Estado y filas de ambos tipos.
-- Panel: filtro por tipo y cálculo de saldo.
+- Panel: filtro por tipo, filtro por período (mes/año sobre `fecha` de emisión) y cálculo
+  de saldo del período.
 - WhatsApp resumen: arma el texto correcto; el envío usa el cliente inyectable (mock) y
   propaga el error de ventana.
 
