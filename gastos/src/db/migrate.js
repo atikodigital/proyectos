@@ -5,17 +5,34 @@ function schemaSql() {
   return fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf8');
 }
 
-// Partial index for WhatsApp message dedup — required in real Postgres but
-// pg-mem does not support partial indexes (WHERE clause), so we apply it
-// separately and swallow the error in test environments.
+// Índice parcial para dedup de mensajes de WhatsApp (no soportado por pg-mem).
 const PARTIAL_INDEXES = `
 CREATE UNIQUE INDEX IF NOT EXISTS idx_expenses_wamsg
   ON expenses(company_id, wa_message_id)
   WHERE wa_message_id IS NOT NULL;
 `;
 
+// Columnas v2: en una DB existente (producción) CREATE TABLE IF NOT EXISTS es no-op,
+// así que las agregamos con ALTER idempotente. En pg-mem ya vienen del schema.sql,
+// por eso cada ALTER va en su propio try/catch tolerante.
+const V2_COLUMNS = [
+  "ALTER TABLE expenses ADD COLUMN IF NOT EXISTS tipo text NOT NULL DEFAULT 'gasto'",
+  "ALTER TABLE expenses ADD COLUMN IF NOT EXISTS nro_operacion text",
+  "ALTER TABLE expenses ADD COLUMN IF NOT EXISTS image_hash text",
+  "ALTER TABLE expenses ADD COLUMN IF NOT EXISTS estado_pago text NOT NULL DEFAULT 'registrada'",
+  "ALTER TABLE expenses ADD COLUMN IF NOT EXISTS dedup_override boolean NOT NULL DEFAULT false",
+  "ALTER TABLE expenses ADD COLUMN IF NOT EXISTS wa_sender_name text",
+  "ALTER TABLE expenses ADD COLUMN IF NOT EXISTS wa_sender_phone text",
+];
+
+// Índices de dedup (no únicos: el override permite una 2ª fila a propósito).
+const DEDUP_INDEXES = [
+  "CREATE INDEX IF NOT EXISTS idx_expenses_dedup_doc ON expenses(company_id, rut_emisor, folio)",
+  "CREATE INDEX IF NOT EXISTS idx_expenses_dedup_op ON expenses(company_id, nro_operacion)",
+  "CREATE INDEX IF NOT EXISTS idx_expenses_dedup_hash ON expenses(company_id, image_hash)",
+];
+
 async function migrate(db) {
-  // Split on statement boundaries so pg-mem receives one statement at a time
   const statements = schemaSql()
     .split(/;\s*\n/)
     .map((s) => s.trim())
@@ -25,11 +42,17 @@ async function migrate(db) {
     await db.query(stmt);
   }
 
-  // Apply partial index; pg-mem may not support it — that's OK for tests
+  for (const stmt of V2_COLUMNS) {
+    try { await db.query(stmt); } catch (e) { /* pg-mem: ya existen del schema */ }
+  }
+  for (const stmt of DEDUP_INDEXES) {
+    try { await db.query(stmt); } catch (e) { /* tolerante */ }
+  }
+
   try {
     await db.query(PARTIAL_INDEXES);
   } catch (e) {
-    // pg-mem may not support partial indexes — safe to skip in test environment
+    // pg-mem no soporta índices parciales — ok en tests
   }
 }
 
