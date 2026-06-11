@@ -3,6 +3,10 @@
 **Fecha:** 2026-06-11
 **Estado:** Aprobado (pendiente revisión del spec por el usuario)
 **Base:** extiende `2026-06-09-atiko-gastos-design.md` (MVP de gastos ya en producción).
+**Nombre del producto/app:** **Hash IA** (antes "Atiko Gastos"). El servicio interno
+sigue siendo `atiko-gastos`; el cambio es de marca: `appName`, título del login, encabezado
+del panel y nombre del APK. El MVP ya está validado: login de empleado funcionando en el
+teléfono.
 
 ## Contexto
 
