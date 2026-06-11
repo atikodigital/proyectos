@@ -35,3 +35,18 @@ test('listExpenses devuelve filas', async () => {
   fetch.mockResolvedValue({ ok: true, status: 200, json: async () => ([{ id: 'x1' }]) });
   expect(await api.listExpenses()).toHaveLength(1);
 });
+
+test('createExpense 409 lanza error con status y data.duplicado', async () => {
+  setToken('TK');
+  fetch.mockResolvedValue({ ok: false, status: 409, json: async () => ({ error: 'duplicado', duplicado: { nivel: 'fuerte', existente: { id: 'old' } } }) });
+  await expect(api.createExpense('B64')).rejects.toMatchObject({ status: 409 });
+  try { await api.createExpense('B64'); } catch (e) { expect(e.data.duplicado.nivel).toBe('fuerte'); }
+});
+
+test('createExpense con override manda override:true', async () => {
+  setToken('TK');
+  fetch.mockResolvedValue({ ok: true, status: 201, json: async () => ({ id: 'x2' }) });
+  await api.createExpense('B64', 'image/jpeg', true);
+  const [, opts] = fetch.mock.calls[fetch.mock.calls.length - 1];
+  expect(JSON.parse(opts.body)).toEqual({ imageBase64: 'B64', mimeType: 'image/jpeg', override: true });
+});

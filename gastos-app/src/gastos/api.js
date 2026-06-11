@@ -13,7 +13,7 @@ async function req(path, { method = 'GET', body, auth = true } = {}) {
   if (auth) { const t = getToken(); if (t) headers.Authorization = `Bearer ${t}`; }
   const res = await fetch(`${API_BASE}${path}`, { method, headers, body: body ? JSON.stringify(body) : undefined });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) { const e = new Error((data && data.error) || `http_${res.status}`); e.status = res.status; throw e; }
+  if (!res.ok) { const e = new Error((data && data.error) || `http_${res.status}`); e.status = res.status; e.data = data; throw e; }
   return data;
 }
 
@@ -23,7 +23,11 @@ export const api = {
     setToken(data.token);
     return data;
   },
-  createExpense(imageBase64, mimeType = 'image/jpeg') { return req('/api/app/expenses', { method: 'POST', body: { imageBase64, mimeType } }); },
+  createExpense(imageBase64, mimeType = 'image/jpeg', override = false) {
+    const body = { imageBase64, mimeType };
+    if (override) body.override = true;
+    return req('/api/app/expenses', { method: 'POST', body });
+  },
   confirmExpense(id) { return req(`/api/app/expenses/${id}/confirm`, { method: 'POST' }); },
   updateExpense(id, patch) { return req(`/api/app/expenses/${id}`, { method: 'PATCH', body: patch }); },
   rejectExpense(id) { return req(`/api/app/expenses/${id}/reject`, { method: 'POST' }); },
