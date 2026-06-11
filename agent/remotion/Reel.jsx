@@ -4,12 +4,21 @@ import { AbsoluteFill, Sequence, Img, Audio, OffthreadVideo, staticFile, interpo
 const FPS = 30;
 const msToFrames = (ms) => Math.max(1, Math.round((ms / 1000) * FPS));
 
-function Scene({ scene, sceneDurationInFrames }) {
+function Scene({ scene, sceneDurationInFrames, index }) {
   const frame = useCurrentFrame();
-  // zoom suave (Ken Burns) a lo largo de ESTA escena
-  const scale = interpolate(frame, [0, sceneDurationInFrames], [1, 1.08]);
+  // Ken Burns VARIADO por escena (alterna zoom-in/out + paneo) para que no se vea estático/muerto.
+  const d = sceneDurationInFrames;
+  const zoomIn = index % 2 === 0;
+  const scale = zoomIn
+    ? interpolate(frame, [0, d], [1.0, 1.14], { extrapolateRight: "clamp" })
+    : interpolate(frame, [0, d], [1.14, 1.0], { extrapolateRight: "clamp" });
+  const panDir = index % 4 < 2 ? 1 : -1; // alterna izquierda/derecha cada 2 escenas
+  const panX = interpolate(frame, [0, d], [0, panDir * 40], { extrapolateRight: "clamp" });
+  const imgTransform = `scale(${scale}) translateX(${panX}px)`;
+  // Fade-in suave al entrar la escena (transición sin cortes secos).
+  const opacity = interpolate(frame, [0, 8], [0, 1], { extrapolateRight: "clamp" });
   return (
-    <AbsoluteFill style={{ backgroundColor: scene.fallbackColor || "#0A1F3F" }}>
+    <AbsoluteFill style={{ backgroundColor: scene.fallbackColor || "#0A1F3F", opacity }}>
       {scene.videoSrc ? (
         <OffthreadVideo
           src={staticFile(scene.videoSrc)}
@@ -18,7 +27,7 @@ function Scene({ scene, sceneDurationInFrames }) {
       ) : scene.imageSrc ? (
         <Img
           src={staticFile(scene.imageSrc)}
-          style={{ width: "100%", height: "100%", objectFit: "cover", transform: `scale(${scale})` }}
+          style={{ width: "110%", height: "110%", marginLeft: "-5%", marginTop: "-5%", objectFit: "cover", transform: imgTransform }}
         />
       ) : null}
       {/* overlay oscuro para legibilidad del texto */}
@@ -48,7 +57,7 @@ export const Reel = ({ scenes = [] }) => {
         start += dur;
         return (
           <Sequence key={i} from={from} durationInFrames={dur}>
-            <Scene scene={scene} sceneDurationInFrames={dur} />
+            <Scene scene={scene} sceneDurationInFrames={dur} index={i} />
           </Sequence>
         );
       })}
