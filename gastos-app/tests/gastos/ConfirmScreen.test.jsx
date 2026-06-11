@@ -1,8 +1,8 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import ConfirmScreen from '../../src/gastos/ConfirmScreen.jsx';
 import { api } from '../../src/gastos/api';
-jest.mock('../../src/gastos/api', () => ({ api: { confirmExpense: jest.fn(), rejectExpense: jest.fn() } }));
-const exp = { id: 'x1', proveedor: 'Copec', total: 25000, categoria: 'Combustible y transporte', fecha: '2026-06-12', iva: 3992, tipo_documento: 'boleta' };
+jest.mock('../../src/gastos/api', () => ({ api: { confirmExpense: jest.fn(), rejectExpense: jest.fn(), updateExpense: jest.fn() } }));
+const exp = { id: 'x1', tipo: 'gasto', proveedor: 'Copec', total: 25000, categoria: 'Combustible y transporte', fecha: '2026-06-12', iva: 3992, tipo_documento: 'boleta' };
 
 test('confirma', async () => {
   api.confirmExpense.mockResolvedValue({ ...exp, estado: 'confirmado' });
@@ -20,4 +20,13 @@ test('descarta', async () => {
   render(<ConfirmScreen expense={exp} onDone={jest.fn()} />);
   fireEvent.click(screen.getByRole('button', { name: /descartar/i }));
   await waitFor(() => expect(api.rejectExpense).toHaveBeenCalledWith('x1'));
+});
+
+test('muestra badge GASTO y permite cambiar a ingreso', async () => {
+  api.updateExpense.mockResolvedValue({ ...exp, tipo: 'ingreso' });
+  render(<ConfirmScreen expense={exp} onDone={jest.fn()} />);
+  expect(screen.getByText(/GASTO/)).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: /es un ingreso/i }));
+  await waitFor(() => expect(api.updateExpense).toHaveBeenCalledWith('x1', { tipo: 'ingreso' }));
+  await waitFor(() => expect(screen.getByText(/INGRESO/)).toBeInTheDocument());
 });
