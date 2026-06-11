@@ -30,14 +30,15 @@ function createAppRouter({ db, extractExpense } = {}) {
   }
 
   router.post('/expenses', async (req, res) => {
-    const { imageBase64, mimeType } = req.body || {};
+    const { imageBase64, mimeType, override } = req.body || {};
     if (!imageBase64) return res.status(400).json({ error: 'falta_imagen' });
-    const exp = await intakeFromImage({
+    const { expense, duplicado } = await intakeFromImage({
       db, companyId: req.auth.companyId, employeeId: req.auth.employeeId,
       imageBuffer: Buffer.from(imageBase64, 'base64'), mimeType: mimeType || 'image/jpeg',
-      canal: 'app', extract: _extract,
+      canal: 'app', extract: _extract, override: !!override,
     });
-    return res.status(201).json(exp);
+    if (!expense) return res.status(409).json({ error: 'duplicado', duplicado });
+    return res.status(201).json({ ...expense, duplicado: duplicado || null });
   });
 
   router.post('/expenses/:id/confirm', async (req, res) => {
