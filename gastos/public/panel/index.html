@@ -119,6 +119,7 @@
             <button id="detalleClose" class="btn-ghost">Cerrar</button>
           </div>
           <div id="detalleBody"></div>
+          <div id="detalleActions" style="display:flex; gap:8px; margin-top:12px"></div>
         </div>
       </div>
     </section>
@@ -259,13 +260,58 @@
       };
     });
   }
+  var detSel = null;
   function openDetalle(row) {
+    detSel = row;
     $('detalleTitulo').textContent = (row.tipo === 'ingreso' ? 'Ingreso' : 'Gasto') + ' · ' + PanelLib.fmtClp(row.total);
     $('detalleBody').innerHTML = PanelLib.detalleHtml(row);
+    defaultActions();
     $('detalleModal').classList.remove('hidden');
   }
-  $('detalleClose').onclick = function () { $('detalleModal').classList.add('hidden'); };
-  $('detalleModal').onclick = function (ev) { if (ev.target === $('detalleModal')) $('detalleModal').classList.add('hidden'); };
+  function closeDetalle() { $('detalleModal').classList.add('hidden'); $('detalleActions').innerHTML = ''; }
+  function defaultActions() {
+    $('detalleActions').innerHTML = '<button id="detEditBtn" class="btn-ghost" style="flex:1">✏️ Editar</button>'
+      + '<button id="detAnularBtn" class="btn-ghost" style="flex:1; color:#ff8a8a">🗑️ Anular</button>';
+    $('detEditBtn').onclick = onEdit;
+    $('detAnularBtn').onclick = onAnular;
+  }
+  function fld(id, label, value, type) {
+    return '<label class="muted" style="display:block; margin-top:8px">' + label + '</label>'
+      + '<input id="' + id + '" ' + (type ? 'type="' + type + '" ' : '') + 'style="width:100%" value="' + PanelLib.escapeHtml(value == null ? '' : value) + '" />';
+  }
+  function onEdit() {
+    var e = detSel; if (!e) return;
+    var esIngreso = e.tipo === 'ingreso';
+    var catOpts = '<option value="">—</option>' + CATEGORIES.map(function (c) {
+      return '<option value="' + PanelLib.escapeHtml(c) + '"' + (c === e.categoria ? ' selected' : '') + '>' + PanelLib.escapeHtml(c) + '</option>';
+    }).join('');
+    $('detalleBody').innerHTML = ''
+      + '<label class="muted" style="display:block">Tipo</label>'
+      + '<select id="edTipo" style="width:100%"><option value="gasto"' + (esIngreso ? '' : ' selected') + '>Gasto</option><option value="ingreso"' + (esIngreso ? ' selected' : '') + '>Ingreso</option></select>'
+      + fld('edProveedor', esIngreso ? 'Pagador / origen' : 'Proveedor', e.proveedor)
+      + fld('edTotal', 'Monto', e.total, 'number')
+      + fld('edFecha', 'Fecha (aaaa-mm-dd)', e.fecha ? String(e.fecha).slice(0, 10) : '')
+      + '<label class="muted" style="display:block; margin-top:8px">Categoría</label><select id="edCategoria" style="width:100%">' + catOpts + '</select>'
+      + fld('edFolio', 'Folio (N° doc)', e.folio)
+      + fld('edNroOp', 'N° operación', e.nro_operacion);
+    $('detalleActions').innerHTML = '<button id="edSave" class="btn-gold" style="flex:1">Guardar</button><button id="edCancel" class="btn-ghost" style="flex:1">Cancelar</button>';
+    $('edSave').onclick = async function () {
+      var patch = { tipo: $('edTipo').value, proveedor: $('edProveedor').value, total: Number($('edTotal').value) || 0,
+        fecha: $('edFecha').value || null, categoria: $('edCategoria').value, folio: $('edFolio').value, nro_operacion: $('edNroOp').value };
+      try { await apiFetch('/expenses/' + e.id, { method: 'PATCH', body: JSON.stringify(patch) }); closeDetalle(); loadGastos(); } catch (err) {}
+    };
+    $('edCancel').onclick = function () { openDetalle(e); };
+  }
+  function onAnular() {
+    $('detalleActions').innerHTML = '<span style="flex:1; font-size:13px; align-self:center">¿Anular este movimiento? (queda el registro)</span>'
+      + '<button id="anYes" class="btn-ghost" style="color:#ff8a8a">Sí, anular</button><button id="anNo" class="btn-ghost">No</button>';
+    $('anYes').onclick = async function () {
+      try { await apiFetch('/expenses/' + detSel.id + '/anular', { method: 'POST', body: JSON.stringify({}) }); closeDetalle(); loadGastos(); } catch (err) {}
+    };
+    $('anNo').onclick = function () { openDetalle(detSel); };
+  }
+  $('detalleClose').onclick = closeDetalle;
+  $('detalleModal').onclick = function (ev) { if (ev.target === $('detalleModal')) closeDetalle(); };
   function renderSaldo(rows) {
     var c = PanelLib.cashflowFromRows(rows);
     $('sIngresos').textContent = PanelLib.fmtClp(c.ingresos);
