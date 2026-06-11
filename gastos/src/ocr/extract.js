@@ -32,9 +32,19 @@ async function extractExpense({ imageBuffer, mimeType = 'image/jpeg' }) {
   const fecha = parseFecha(pick(docai.fecha, gem.fecha));
   const direccion = String(pick(docai.direccion_emisor, gem.direccion_emisor) || '').trim();
 
-  let categoria = String(gem.categoria || '').trim();
-  if (!isValidCategory(categoria)) categoria = 'Otros gastos';
-  const sii = mapCategoryToSii(categoria);
+  const tipo = String(gem.tipo || '').toLowerCase() === 'ingreso' ? 'ingreso' : 'gasto';
+  const nro_operacion = String(gem.nro_operacion || '').trim();
+
+  let categoria;
+  let sii;
+  if (tipo === 'ingreso') {
+    categoria = 'Ingreso';
+    sii = { codigo: '', nombre: '' };
+  } else {
+    categoria = String(gem.categoria || '').trim();
+    if (!isValidCategory(categoria)) categoria = 'Otros gastos';
+    sii = mapCategoryToSii(categoria);
+  }
 
   // Confianza simple: cuántos campos clave salieron.
   const keys = [totals.total, proveedor, fecha, gem.rut_emisor];
@@ -42,9 +52,11 @@ async function extractExpense({ imageBuffer, mimeType = 'image/jpeg' }) {
   const confianza = Math.round((got / keys.length) * 100);
 
   return {
+    tipo,
     tipo_documento: String(gem.tipo_documento || 'otro').toLowerCase(),
     rut_emisor: gem.rut_emisor ? normalizeRut(gem.rut_emisor) : '',
     folio: String(gem.folio || '').trim(),
+    nro_operacion,
     direccion_emisor: direccion,
     proveedor,
     fecha,

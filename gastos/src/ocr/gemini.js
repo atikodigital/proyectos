@@ -19,11 +19,16 @@ function parseJsonLoose(text) {
 
 function buildPrompt() {
   return [
-    'Eres un extractor de datos de boletas y facturas chilenas.',
+    'Eres un extractor de datos de comprobantes chilenos (boletas, facturas y comprobantes de transferencia/depósito).',
+    'Primero determina el campo tipo:',
+    '- "gasto" si es una boleta o factura (un comercio nos cobra).',
+    '- "ingreso" si es un comprobante de transferencia/depósito recibido (entra plata).',
     'Devuelve SOLO un JSON con estos campos:',
-    'tipo_documento (boleta|factura|otro), rut_emisor, folio, direccion_emisor,',
-    'proveedor, fecha (dd/mm/aaaa), neto, iva, total (en pesos CLP enteros),',
-    `categoria (una de: ${CATEGORIES.join(', ')}), glosa (descripción corta).`,
+    'tipo (gasto|ingreso), tipo_documento (boleta|factura|transferencia|deposito|otro),',
+    'rut_emisor, folio, nro_operacion (N° de operación/transacción si es transferencia),',
+    'direccion_emisor, proveedor (para ingreso: nombre de quien paga/origen),',
+    'fecha (dd/mm/aaaa), neto, iva, total (en pesos CLP enteros),',
+    `categoria (una de: ${CATEGORIES.join(', ')}; solo para gasto), glosa (descripción corta).`,
     'Si un campo no aparece, usa "" o 0. No inventes montos.',
   ].join(' ');
 }
