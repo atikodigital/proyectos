@@ -29,8 +29,8 @@ async function confirmExpense(db, id) {
   return r.rows[0] || null;
 }
 
-const EDITABLE = ['tipo_documento', 'rut_emisor', 'proveedor', 'folio', 'direccion_emisor',
-  'fecha', 'neto', 'iva', 'total', 'categoria', 'cuenta_sii_codigo', 'cuenta_sii_nombre', 'glosa'];
+const EDITABLE = ['tipo', 'tipo_documento', 'rut_emisor', 'proveedor', 'folio', 'nro_operacion',
+  'direccion_emisor', 'fecha', 'neto', 'iva', 'total', 'categoria', 'cuenta_sii_codigo', 'cuenta_sii_nombre', 'glosa'];
 
 async function updateExpense(db, id, patch) {
   const cols = EDITABLE.filter((f) => patch[f] !== undefined);

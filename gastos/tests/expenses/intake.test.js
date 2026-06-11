@@ -26,7 +26,7 @@ test('intakeFromImage corre el motor y guarda con campos de sesion', async () =>
     cuenta_sii_nombre: 'Otros Gastos de Administración y Venta', confianza: 75, raw_ocr: { a: 1 },
   });
   const { db, companyId, employeeId } = await freshDb();
-  const exp = await intakeFromImage({
+  const { expense: exp } = await intakeFromImage({
     db, companyId, employeeId, imageBuffer: Buffer.from('x'), mimeType: 'image/jpeg',
     canal: 'whatsapp', waMessageId: 'wamid.1', fotoPath: '/tmp/a.jpg',
   });
@@ -40,7 +40,7 @@ test('intakeFromImage corre el motor y guarda con campos de sesion', async () =>
 test('rejectExpense pone estado rechazado', async () => {
   extractExpense.mockResolvedValue({ total: 1000, categoria: 'Otros gastos', cuenta_sii_codigo: '4.3.150.1', cuenta_sii_nombre: 'X' });
   const { db, companyId, employeeId } = await freshDb();
-  const exp = await intakeFromImage({ db, companyId, employeeId, imageBuffer: Buffer.from('x'), canal: 'whatsapp' });
+  const { expense: exp } = await intakeFromImage({ db, companyId, employeeId, imageBuffer: Buffer.from('x'), canal: 'whatsapp' });
   const rej = await rejectExpense(db, exp.id);
   expect(rej.estado).toBe('rechazado');
   expect(await getLatestPending(db, companyId, employeeId)).toBeNull();
