@@ -23,6 +23,6 @@ test('con token: capturar crea gasto y pasa a confirmar', async () => {
   api.createExpense.mockResolvedValue({ id: 'x1', proveedor: 'Copec', total: 25000, estado: 'pendiente_confirmacion' });
   render(<GastosApp />);
   fireEvent.click(screen.getByText('fake-capture'));
-  await waitFor(() => expect(api.createExpense).toHaveBeenCalledWith('B64', 'image/jpeg'));
+  await waitFor(() => expect(api.createExpense).toHaveBeenCalledWith('B64', 'image/jpeg', false));
   expect(await screen.findByText(/Revisa el gasto/i)).toBeInTheDocument();
 });
