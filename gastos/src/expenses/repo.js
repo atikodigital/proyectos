@@ -59,4 +59,12 @@ async function rejectExpense(db, id) {
   return r.rows[0] || null;
 }
 
-module.exports = { createExpense, getExpense, confirmExpense, updateExpense, getLatestPending, rejectExpense };
+async function markExpensePaid(db, companyId, id) {
+  const r = await db.query(
+    "UPDATE expenses SET estado_pago='pagada' WHERE id=$1 AND company_id=$2 RETURNING *",
+    [id, companyId]
+  );
+  return r.rows[0] || null;
+}
+
+module.exports = { createExpense, getExpense, confirmExpense, updateExpense, getLatestPending, rejectExpense, markExpensePaid };

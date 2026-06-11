@@ -4,6 +4,7 @@ const { verifyPassword, hashPassword } = require('../auth/password');
 const { signToken } = require('../auth/jwt');
 const { requireAuth, requireKind } = require('../auth/middleware');
 const { listExpenses } = require('../expenses/query');
+const { markExpensePaid } = require('../expenses/repo');
 const { buildExpensesWorkbook } = require('./excel');
 const {
   createEmployee, listEmployees, updateEmployee, deactivateEmployee, getCompany, updateCompany,
@@ -11,8 +12,8 @@ const {
 
 function parseFiltros(q = {}) {
   return {
-    from: q.from, to: q.to, empleadoId: q.empleadoId, categoria: q.categoria,
-    estado: q.estado, tipoDocumento: q.tipoDocumento, proveedor: q.proveedor,
+    from: q.from, to: q.to, periodo: q.periodo, empleadoId: q.empleadoId, categoria: q.categoria,
+    estado: q.estado, estadoPago: q.estadoPago, tipo: q.tipo, tipoDocumento: q.tipoDocumento, proveedor: q.proveedor,
   };
 }
 
@@ -42,6 +43,12 @@ function createPanelRouter({ db } = {}) {
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.setHeader('Content-Disposition', 'attachment; filename="gastos.xlsx"');
     return res.send(buf);
+  });
+
+  router.patch('/expenses/:id/pagar', async (req, res) => {
+    const upd = await markExpensePaid(db, req.auth.companyId, req.params.id);
+    if (!upd) return res.status(404).json({ error: 'no_existe' });
+    return res.json(upd);
   });
 
   router.get('/employees', async (req, res) => {
