@@ -80,8 +80,23 @@
             </select>
           </div>
           <div><label>Proveedor</label><input id="fProveedor" placeholder="buscar…" /></div>
+          <div><label>Tipo</label>
+            <select id="fTipo">
+              <option value="">Todos</option>
+              <option value="gasto">Gastos</option>
+              <option value="ingreso">Ingresos</option>
+            </select>
+          </div>
+          <div><label>Período</label><input id="fPeriodo" type="month" /></div>
           <button id="applyBtn" class="btn-gold">Aplicar</button>
           <button id="excelBtn" class="btn-ghost">Descargar Excel</button>
+        </div>
+      </div>
+      <div id="saldoCard" class="card hidden">
+        <div class="row" style="gap:28px">
+          <div><label>Ingresos</label><div id="sIngresos" style="font-size:20px;font-weight:900;color:#7CFC9B">$0</div></div>
+          <div><label>Gastos</label><div id="sGastos" style="font-size:20px;font-weight:900;color:#ff8a8a">$0</div></div>
+          <div><label>Saldo</label><div id="sSaldo" style="font-size:20px;font-weight:900;color:var(--gold)">$0</div></div>
         </div>
       </div>
       <div id="expensesTable" class="scroll"><p class="muted" style="padding:16px">Cargando…</p></div>
@@ -189,7 +204,8 @@
   });
 
   function currentFilters() {
-    return { from: $('fFrom').value, to: $('fTo').value, categoria: $('fCategoria').value,
+    return { from: $('fFrom').value, to: $('fTo').value, periodo: $('fPeriodo').value,
+             tipo: $('fTipo').value, categoria: $('fCategoria').value,
              estado: $('fEstado').value, proveedor: $('fProveedor').value };
   }
   async function loadGastos() {
@@ -197,9 +213,27 @@
     try {
       var res = await apiFetch('/expenses' + PanelLib.buildQuery(currentFilters()));
       var rows = await res.json();
+      renderSaldo(rows);
       $('expensesTable').innerHTML = rows.length ? PanelLib.expensesTableHtml(rows)
-        : '<p class="muted" style="padding:16px">Sin gastos para esos filtros.</p>';
+        : '<p class="muted" style="padding:16px">Sin movimientos para esos filtros.</p>';
+      wirePayButtons();
     } catch (e) { if (e.message !== '401') $('expensesTable').innerHTML = '<p class="err" style="padding:16px">Error al cargar.</p>'; }
+  }
+  function renderSaldo(rows) {
+    var c = PanelLib.cashflowFromRows(rows);
+    $('sIngresos').textContent = PanelLib.fmtClp(c.ingresos);
+    $('sGastos').textContent = PanelLib.fmtClp(c.gastos);
+    $('sSaldo').textContent = PanelLib.fmtClp(c.saldo);
+    $('saldoCard').classList.toggle('hidden', !rows.length);
+  }
+  function wirePayButtons() {
+    $('expensesTable').querySelectorAll('[data-pay]').forEach(function (b) {
+      b.onclick = async function () {
+        b.disabled = true;
+        try { await apiFetch('/expenses/' + b.getAttribute('data-pay') + '/pagar', { method: 'PATCH' }); loadGastos(); }
+        catch (e) { b.disabled = false; }
+      };
+    });
   }
   $('applyBtn').onclick = loadGastos;
   $('excelBtn').onclick = async function () {
