@@ -2,20 +2,7 @@
 // Escenas type "avatar" van al avatar provider (HeyGen); si falla, degradan a broll.
 
 const { buildCaptions } = require("./captions");
-
-// Paraleliza con tope: demasiadas llamadas simultáneas a Gemini disparan rate limits (400/429).
-async function mapWithConcurrency(items, limit, fn) {
-  const results = new Array(items.length);
-  let next = 0;
-  async function worker() {
-    while (next < items.length) {
-      const i = next++;
-      results[i] = await fn(items[i], i);
-    }
-  }
-  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
-  return results;
-}
+const { mapWithConcurrency } = require("../lib/concurrency");
 
 function createReelEngine({ scriptGenerator, voice, images, render, avatar, sceneConcurrency = 2 }) {
   async function buildBrollScene(scene, degraded) {
@@ -59,7 +46,7 @@ function createReelEngine({ scriptGenerator, voice, images, render, avatar, scen
     const avatarId = opts.avatarId || null;
     const avatarType = opts.avatarType;
     const hasAvatar = !!(avatar && avatarId);
-    const reelSpec = await scriptGenerator.generate(topic, { hasAvatar });
+    const reelSpec = await scriptGenerator.generate(topic, { hasAvatar, style: opts.style });
     const scenes = await mapWithConcurrency(reelSpec.scenes, sceneConcurrency, (s) => buildScene(s, avatarId, avatarType));
     const mp4Path = await render({ title: reelSpec.title, scenes, musicPath: opts.musicPath });
     return {

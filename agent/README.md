@@ -321,6 +321,22 @@ Onboarding por persona: 1 foto → `createPhotoAvatar` (heygen-provider) o dashb
 
 > ⚠️ **Producción:** (1) define `ADMIN_API_TOKEN` — `/avatar-profile` gobierna consentimiento legal y exige el header `x-admin-token`. (2) La generación con avatar puede tardar minutos: sube el timeout del proxy en Caddy (`reverse_proxy { transport http { response_header_timeout 10m } }`) o la conexión morirá antes de terminar (el plan largo es cola de trabajos + polling).
 
+## 🖼️ Posts e historias — Generador de imágenes (Fase 4b)
+
+Genera piezas de imagen listas para el planificador: **post** (1 imagen 4:5), **carousel** (3-5 imágenes 4:5) o **story** (1 imagen 9:16). Gemini genera la imagen LIMPIA y el titular se dibuja con Remotion (tipografía perfecta).
+
+| Método | URL | Descripción |
+|--------|-----|-------------|
+| `POST` | `/api/posts/generate` | Body `{ topic, format: post\|carousel\|story }` → `{ caption, hashtags, imageUrls }` |
+
+Los PNG se sirven en `/widget/posts/`. Requiere `GEMINI_API_KEY`.
+
+```bash
+curl -X POST http://localhost:3000/api/posts/generate \
+  -H "Content-Type: application/json" \
+  -d '{"topic":"5 beneficios de automatizar tu pyme","format":"carousel"}'
+```
+
 ## 🗓️ Planificador de contenido (Fase 4a)
 
 Programa y publica contenido (reel/post) automáticamente a su hora vía el Publicador.

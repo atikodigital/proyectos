@@ -28,3 +28,11 @@ agent/public/reels/
 
 # Música de reels: asset binario, no se versiona (ver LICENSE.txt para fuente)
 agent/remotion/assets/*.mp3
+
+# Posts/imagenes generados (contenido, no codigo)
+agent/public/posts/
+
+# Brainstorm visual companion
+.superpowers/
+panel/node_modules/
+panel/dist/

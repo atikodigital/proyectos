@@ -93,4 +93,4 @@ async function renderReel(inputProps, outPath) {
   }
 }
 
-module.exports = { renderReel };
+module.exports = { renderReel, getBundle };
