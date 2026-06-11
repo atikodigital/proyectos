@@ -1,0 +1,136 @@
+# Atiko Gastos v2 — Ingresos, Flujo de Caja, Anti-duplicados y WhatsApp
+
+**Fecha:** 2026-06-11
+**Estado:** Aprobado (pendiente revisión del spec por el usuario)
+**Base:** extiende `2026-06-09-atiko-gastos-design.md` (MVP de gastos ya en producción).
+
+## Contexto
+
+El MVP captura **solo gastos** (boletas/facturas) vía app y WhatsApp, los pasa por OCR
+(Document AI + Gemini), los categoriza a cuentas SII y los muestra en un panel web con
+exportación a Excel. Ya está desplegado en el VPS (`atiko-gastos`, puerto 3100,
+`gastos.atikodigital.cl`) con login de empleado funcionando.
+
+Esta v2 convierte el producto de "rendición de gastos" a **control de flujo de caja**:
+suma **ingresos**, evita **duplicados** (clave para no pagar dos veces), y entrega
+**resúmenes por WhatsApp** reutilizando el número que ya tiene Atiko.
+
+## Objetivos
+
+1. Registrar **ingresos** (comprobantes de transferencia/depósito) además de gastos.
+2. **Clasificación asistida por IA**: el OCR propone gasto/ingreso, el usuario confirma.
+3. **Anti-duplicados**: detectar si una factura/boleta o un comprobante ya fue registrado,
+   para no pagar/registrar dos veces. Bloquear con override del dueño.
+4. **Estado de pago** por movimiento (base para un futuro módulo de pagos).
+5. **Panel + Excel** con vista de gastos/ingresos/saldo y todo el detalle.
+6. **WhatsApp**: enviar el resumen al WhatsApp del dueño desde el número de Atiko.
+7. Onboarding de la empresa real **matikoapp**.
+
+## No-objetivos (YAGNI)
+
+- Módulo de pagos/conciliación bancaria automático (solo dejamos el campo `estado_pago`).
+- Multi-moneda (todo CLP).
+- Plantillas de WhatsApp en este alcance: para producción se hará aparte; aquí se usa la
+  ventana de 24h para pruebas.
+- Cambiar el modelo multi-tenant: cada cliente sigue usando su propio número; Atiko es la
+  excepción que reusa el suyo.
+
+## Modelo de datos
+
+Se extiende la tabla `expenses` (un solo registro por movimiento, con un campo `tipo`).
+Nuevos campos:
+
+| Campo | Tipo | Descripción |
+|---|---|---|
+| `tipo` | text | `gasto` \| `ingreso`. Default `gasto`. |
+| `nro_operacion` | text, nullable | N° de operación/código de transacción (transferencias). |
+| `image_hash` | text, nullable | Huella (SHA-256) del archivo de imagen para dedup exacto. |
+| `estado_pago` | text | `registrada` \| `pagada`. Default `registrada`. Solo aplica a gastos. |
+| `dedup_override` | boolean | `true` si se forzó el registro pese a ser duplicado. Default `false`. |
+
+Campos ya existentes que se reutilizan para la clave de duplicado: `rut_proveedor`,
+`folio`, `monto`, `fecha`, `proveedor`, `company_id`.
+
+## Componentes y flujo
+
+### 1. Clasificación gasto/ingreso (OCR)
+- `src/ocr/extract.js` agrega al resultado un campo `tipo` con la sugerencia de la IA.
+- Heurística: documento tributario con folio/RUT emisor → `gasto`; comprobante de
+  transferencia/depósito (banco, "transferencia exitosa", monto + destinatario, sin folio
+  tributario) → `ingreso`. Gemini decide con un prompt explícito que devuelve `tipo`.
+- La app muestra la sugerencia; el empleado confirma o la cambia con un toque antes de
+  guardar. El `tipo` final viaja en el `confirm`/`PATCH`.
+
+### 2. Detección de duplicados — `src/expenses/dedup.js` (nuevo)
+Función pura `findDuplicate(db, companyId, candidate)` que aplica 3 capas y devuelve el
+movimiento existente + el nivel, o `null`:
+
+- **Capa 1 — documento (fuerte):**
+  - Gasto: match exacto por `company_id + rut_proveedor + folio` (cuando ambos existen).
+  - Ingreso: match exacto por `company_id + nro_operacion` (cuando existe).
+- **Capa 2 — imagen (fuerte):** match por `company_id + image_hash`.
+- **Capa 3 — probable (suave):** mismo `company_id + monto + fecha + proveedor`.
+
+`fuerte` (capa 1 o 2) → la app **avisa y bloquea**; solo se registra si el dueño manda
+`override: true`. `suave` (capa 3) → la app muestra alerta pero permite guardar.
+
+### 3. Intake con dedup — `src/expenses/intake.js`
+- Calcula `image_hash` al recibir la imagen.
+- Tras el OCR y antes de confirmar, llama a `findDuplicate`. Si hay duplicado fuerte y no
+  viene `override`, responde `409 { duplicado: 'fuerte', existente: {...} }`.
+- La app, al recibir 409 fuerte, muestra el aviso con fecha + persona y ofrece el botón
+  "registrar igual" (que reenvía con `override: true`; el `dedup_override` queda en `true`).
+
+### 4. Panel web — `public/panel` + `src/panel`
+- Filtro **Tipo: Todos / Gastos / Ingresos** sobre la tabla existente.
+- Tarjeta de **saldo**: `Σ ingresos − Σ gastos`, con totales de cada lado.
+- Columna **Tipo** y **Estado** visibles; el detalle de cada movimiento ya muestra el resto.
+- Acción para marcar un gasto como **pagado** (`estado_pago = pagada`).
+
+### 5. Excel — `src/panel/excel.js`
+- Agrega columnas **Tipo** y **Estado**; incluye gastos e ingresos; respeta los filtros.
+
+### 6. WhatsApp resumen — `src/whatsapp` + `src/expenses/summary.js`
+- Endpoint en el panel: `POST /api/panel/whatsapp/resumen` (auth dueño) → arma el resumen
+  (total gastos, total ingresos, saldo, periodo) y lo envía al `owner_whatsapp` de la
+  empresa usando `wa_phone_number_id` + `wa_token` guardados en la empresa.
+- **Restricción WhatsApp:** el envío proactivo solo llega dentro de la ventana de 24h
+  (tras un mensaje entrante del dueño) o con plantilla aprobada. Para pruebas se usa la
+  ventana de 24h; el endpoint devuelve el estado real de la API de WhatsApp (entregado o
+  error de ventana) sin simular éxito.
+- **Atiko reusa su número** (+56 9 2713 0792): se guardan en la empresa `matikoapp` el
+  `wa_phone_number_id` y `wa_token` de ese número (leídos del `.env` de `atiko-agent`). El
+  envío es **solo saliente** vía Graph API; el webhook entrante de ese número sigue siendo
+  de KAI y no se toca.
+
+### 7. Onboarding `matikoapp`
+- Empresa `matikoapp`, dueño "Jose Olguín", `owner_whatsapp = +56993300435`,
+  `wa_phone_number_id`/`wa_token` del número de Atiko. Script reutilizable
+  (`scripts/create-company.js` o ampliación de `set-company-wa.js`).
+
+## Manejo de errores
+
+- OCR sin `tipo` claro → default `gasto`, el usuario corrige.
+- Duplicado fuerte sin override → `409` con el movimiento existente (fecha + persona).
+- Envío WhatsApp fuera de ventana / sin plantilla → el endpoint devuelve el error de la API
+  tal cual, con un mensaje claro al dueño ("abre la ventana escribiendo al número o usa
+  plantilla"). Nunca se reporta "enviado" si la API no lo confirmó.
+- Hash de imagen faltante (p. ej. payload sin imagen) → se omite capa 2, no rompe el flujo.
+
+## Testing
+
+- `dedup.js`: unit tests de las 3 capas (match y no-match) con pg-mem.
+- `intake.js`: 409 en duplicado fuerte; registro con `override`; alerta suave no bloquea.
+- `extract.js`: clasificación `tipo` (mock de Gemini devolviendo gasto/ingreso).
+- `excel.js`: columnas Tipo/Estado y filas de ambos tipos.
+- Panel: filtro por tipo y cálculo de saldo.
+- WhatsApp resumen: arma el texto correcto; el envío usa el cliente inyectable (mock) y
+  propaga el error de ventana.
+
+## Despliegue
+
+- Migración aditiva (nuevas columnas con default) vía `migrate.js`; segura sobre la tabla
+  existente.
+- Redeploy de `atiko-gastos` (`deploy-gastos.js`) y rebuild del APK con la pantalla de
+  confirmación de tipo + manejo del 409.
+- Alta de `matikoapp` y carga de credenciales del número de Atiko.
