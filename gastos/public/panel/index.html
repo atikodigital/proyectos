@@ -90,7 +90,9 @@
           <div><label>Período</label><input id="fPeriodo" type="month" /></div>
           <button id="applyBtn" class="btn-gold">Aplicar</button>
           <button id="excelBtn" class="btn-ghost">Descargar Excel</button>
+          <button id="resumenBtn" class="btn-ghost">📲 Enviarme resumen</button>
         </div>
+        <p id="resumenMsg" class="muted" style="margin:8px 2px 0"></p>
       </div>
       <div id="saldoCard" class="card hidden">
         <div class="row" style="gap:28px">
@@ -244,6 +246,20 @@
       var a = document.createElement('a'); a.href = url; a.download = 'gastos.xlsx';
       document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
     } catch (e) {}
+  };
+  $('resumenBtn').onclick = async function () {
+    $('resumenBtn').disabled = true;
+    $('resumenMsg').textContent = 'Enviando resumen por WhatsApp…';
+    try {
+      var body = {};
+      if ($('fPeriodo').value) body.periodo = $('fPeriodo').value;
+      var res = await apiFetch('/whatsapp/resumen', { method: 'POST', body: JSON.stringify(body) });
+      var d = await res.json().catch(function () { return {}; });
+      if (res.ok) { $('resumenMsg').textContent = '✓ Resumen enviado a tu WhatsApp (' + (d.to || '') + ').'; }
+      else if (d.error === 'whatsapp_no_configurado') { $('resumenMsg').textContent = 'Falta configurar el WhatsApp de la empresa.'; }
+      else { $('resumenMsg').textContent = 'No se pudo enviar. Escríbele "hola" a tu número de WhatsApp para abrir la ventana de 24h y reintenta.'; }
+    } catch (e) { if (e.message !== '401') $('resumenMsg').textContent = 'Error al enviar.'; }
+    $('resumenBtn').disabled = false;
   };
 
   async function loadEmpleados() {
