@@ -37,4 +37,15 @@ function formatDuplicateBlock(e) {
   );
 }
 
-module.exports = { formatConfirmation, formatSummary, formatDuplicateBlock, fmtClp };
+function formatCashflowSummary(s) {
+  const lineas = (s.porCategoria || []).map((c) => `• ${c.categoria}: ${fmtClp(c.total)}`);
+  return (
+    `📊 Resumen ${s.periodo || ''}\n` +
+    `📈 Ingresos: ${fmtClp(s.ingresos)} (${s.countIngresos || 0})\n` +
+    `📉 Gastos: ${fmtClp(s.gastos)} (${s.countGastos || 0})\n` +
+    `💰 Saldo: ${fmtClp(s.saldo)}` +
+    (lineas.length ? `\n\nGastos por categoría:\n${lineas.join('\n')}` : '')
+  );
+}
+
+module.exports = { formatConfirmation, formatSummary, formatDuplicateBlock, fmtClp, formatCashflowSummary };
