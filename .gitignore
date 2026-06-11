@@ -34,3 +34,5 @@ agent/public/posts/
 
 # Brainstorm visual companion
 .superpowers/
+panel/node_modules/
+panel/dist/
