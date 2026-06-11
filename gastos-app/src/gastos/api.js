@@ -31,5 +31,6 @@ export const api = {
   confirmExpense(id) { return req(`/api/app/expenses/${id}/confirm`, { method: 'POST' }); },
   updateExpense(id, patch) { return req(`/api/app/expenses/${id}`, { method: 'PATCH', body: patch }); },
   rejectExpense(id) { return req(`/api/app/expenses/${id}/reject`, { method: 'POST' }); },
+  annulExpense(id) { return req(`/api/app/expenses/${id}/anular`, { method: 'POST' }); },
   listExpenses() { return req('/api/app/expenses'); },
 };
