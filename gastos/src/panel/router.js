@@ -7,8 +7,11 @@ const { listExpenses } = require('../expenses/query');
 const { markExpensePaid } = require('../expenses/repo');
 const { buildExpensesWorkbook } = require('./excel');
 const {
-  createEmployee, listEmployees, updateEmployee, deactivateEmployee, getCompany, updateCompany,
+  createEmployee, listEmployees, updateEmployee, deactivateEmployee, getCompany, updateCompany, getCompanyWa,
 } = require('../companies/repo');
+const { cashflowSummary } = require('../expenses/summary');
+const { formatCashflowSummary } = require('../whatsapp/format');
+const realWaClient = require('../whatsapp/client');
 
 function parseFiltros(q = {}) {
   return {
@@ -17,7 +20,8 @@ function parseFiltros(q = {}) {
   };
 }
 
-function createPanelRouter({ db } = {}) {
+function createPanelRouter({ db, sendText } = {}) {
+  const _sendText = sendText || realWaClient.sendText;
   const router = express.Router();
 
   router.post('/login', async (req, res) => {
@@ -49,6 +53,26 @@ function createPanelRouter({ db } = {}) {
     const upd = await markExpensePaid(db, req.auth.companyId, req.params.id);
     if (!upd) return res.status(404).json({ error: 'no_existe' });
     return res.json(upd);
+  });
+
+  router.post('/whatsapp/resumen', async (req, res) => {
+    const wa = await getCompanyWa(db, req.auth.companyId);
+    if (!wa || !wa.wa_phone_number_id || !wa.wa_token || !wa.owner_whatsapp) {
+      return res.status(400).json({ error: 'whatsapp_no_configurado' });
+    }
+    let year; let month;
+    const m = /^(\d{4})-(\d{2})$/.exec((req.body && req.body.periodo) || '');
+    if (m) { year = Number(m[1]); month = Number(m[2]); }
+    else { const d = new Date(); year = d.getFullYear(); month = d.getMonth() + 1; }
+    const meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+    const s = await cashflowSummary(db, req.auth.companyId, { year, month });
+    const body = formatCashflowSummary({ ...s, periodo: `${meses[month - 1]} ${year}` });
+    try {
+      await _sendText({ to: wa.owner_whatsapp, body, token: wa.wa_token, phoneNumberId: wa.wa_phone_number_id });
+    } catch (e) {
+      return res.status(502).json({ error: 'envio_whatsapp', detalle: e.message });
+    }
+    return res.json({ ok: true, to: wa.owner_whatsapp });
   });
 
   router.get('/employees', async (req, res) => {

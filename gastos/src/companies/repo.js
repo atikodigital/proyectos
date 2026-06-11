@@ -72,7 +72,15 @@ async function updateCompany(db, companyId, patch) {
   return getCompany(db, companyId);
 }
 
+async function getCompanyWa(db, companyId) {
+  const r = await db.query(
+    'SELECT nombre, wa_phone_number_id, wa_token, owner_whatsapp FROM companies WHERE id=$1',
+    [companyId]
+  );
+  return r.rows[0] || null;
+}
+
 module.exports = {
   createCompany, createEmployee, getCompanyByPhoneNumberId, getEmployeeByPhone, getEmployeeByUsuario,
-  listEmployees, updateEmployee, deactivateEmployee, getCompany, updateCompany,
+  listEmployees, updateEmployee, deactivateEmployee, getCompany, updateCompany, getCompanyWa,
 };
