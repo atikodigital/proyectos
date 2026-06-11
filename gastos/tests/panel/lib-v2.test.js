@@ -28,3 +28,21 @@ test('expensesTableHtml: gasto pagado no muestra botón; ingreso muestra raya', 
   const ingreso = PanelLib.expensesTableHtml([{ id: 'b', tipo: 'ingreso', total: 5000 }]);
   expect(ingreso).not.toContain('data-pay');
 });
+
+test('expensesTableHtml: las filas son clickeables (exp-row + data-id)', () => {
+  const html = PanelLib.expensesTableHtml([{ id: 'a1', tipo: 'gasto', total: 1000 }]);
+  expect(html).toContain('class="exp-row" data-id="a1"');
+});
+
+test('detalleHtml muestra todos los campos (voucher, teléfono, fechas)', () => {
+  const html = PanelLib.detalleHtml({
+    id: 'i1', tipo: 'ingreso', proveedor: 'Cliente A', total: 80000, nro_operacion: 'OP-7788',
+    fecha: '2026-06-06', created_at: '2026-06-07T10:00:00Z', wa_sender_name: 'Juan',
+    wa_sender_phone: '56999111222', empleado_nombre: 'Jose', estado: 'confirmado', estado_pago: 'registrada',
+  });
+  expect(html).toContain('OP-7788');
+  expect(html).toContain('56999111222');
+  expect(html).toContain('2026-06-07');
+  expect(html).toContain('Pagador / origen');
+  expect(html).toContain('Cliente A');
+});

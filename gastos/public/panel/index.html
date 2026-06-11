@@ -31,6 +31,12 @@
   .muted { opacity:.6; }
   .scroll { overflow:auto; max-height:62vh; border:1px solid #ffffff12; border-radius:12px; }
   .emp { display:flex; justify-content:space-between; align-items:center; padding:8px 10px; border-bottom:1px solid #ffffff12; }
+  table.exp tr.exp-row { cursor:pointer; }
+  table.exp tr.exp-row:hover td { background:#ffffff0a; }
+  .modal { position:fixed; inset:0; background:#000000cc; display:flex; align-items:center; justify-content:center; padding:16px; z-index:50; }
+  .modal .box { background:#161616; border:1px solid #ffffff22; border-radius:14px; max-width:480px; width:100%; max-height:85vh; overflow:auto; padding:16px; }
+  .detrow { display:flex; justify-content:space-between; gap:12px; padding:8px 4px; border-bottom:1px solid #ffffff12; font-size:14px; }
+  .detrow .detk { opacity:.6; } .detrow .detv { font-weight:700; text-align:right; }
 </style>
 </head>
 <body>
@@ -106,6 +112,15 @@
         </div>
       </div>
       <div id="expensesTable" class="scroll"><p class="muted" style="padding:16px">Cargando…</p></div>
+      <div id="detalleModal" class="modal hidden">
+        <div class="box">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px">
+            <span class="brand" id="detalleTitulo">Detalle</span>
+            <button id="detalleClose" class="btn-ghost">Cerrar</button>
+          </div>
+          <div id="detalleBody"></div>
+        </div>
+      </div>
     </section>
 
     <!-- EMPLEADOS -->
@@ -220,17 +235,37 @@
              tipo: $('fTipo').value, categoria: $('fCategoria').value,
              estado: $('fEstado').value, proveedor: $('fProveedor').value };
   }
+  var lastRows = [];
   async function loadGastos() {
     $('expensesTable').innerHTML = '<p class="muted" style="padding:16px">Cargando…</p>';
     try {
       var res = await apiFetch('/expenses' + PanelLib.buildQuery(currentFilters()));
       var rows = await res.json();
+      lastRows = rows;
       renderSaldo(rows);
       $('expensesTable').innerHTML = rows.length ? PanelLib.expensesTableHtml(rows)
         : '<p class="muted" style="padding:16px">Sin movimientos para esos filtros.</p>';
       wirePayButtons();
+      wireRowClicks();
     } catch (e) { if (e.message !== '401') $('expensesTable').innerHTML = '<p class="err" style="padding:16px">Error al cargar.</p>'; }
   }
+  function wireRowClicks() {
+    $('expensesTable').querySelectorAll('tr.exp-row').forEach(function (tr) {
+      tr.onclick = function (ev) {
+        if (ev.target.closest && ev.target.closest('[data-pay]')) return; // no abrir si tocó "Marcar pagada"
+        var id = tr.getAttribute('data-id');
+        var row = lastRows.filter(function (r) { return String(r.id) === id; })[0];
+        if (row) openDetalle(row);
+      };
+    });
+  }
+  function openDetalle(row) {
+    $('detalleTitulo').textContent = (row.tipo === 'ingreso' ? 'Ingreso' : 'Gasto') + ' · ' + PanelLib.fmtClp(row.total);
+    $('detalleBody').innerHTML = PanelLib.detalleHtml(row);
+    $('detalleModal').classList.remove('hidden');
+  }
+  $('detalleClose').onclick = function () { $('detalleModal').classList.add('hidden'); };
+  $('detalleModal').onclick = function (ev) { if (ev.target === $('detalleModal')) $('detalleModal').classList.add('hidden'); };
   function renderSaldo(rows) {
     var c = PanelLib.cashflowFromRows(rows);
     $('sIngresos').textContent = PanelLib.fmtClp(c.ingresos);

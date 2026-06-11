@@ -72,7 +72,7 @@
         + MONEY.map(function (c) { return '<td class="num">' + fmtClp(r[c[1]]) + '</td>'; }).join('')
         + '<td>' + escapeHtml(r.estado) + '</td>'
         + '<td>' + pagoCell(r) + '</td>';
-      return '<tr>' + cells + '</tr>';
+      return '<tr class="exp-row" data-id="' + escapeHtml(r.id) + '">' + cells + '</tr>';
     }).join('');
     const t = totalsFromRows(list);
     const foot = '<tfoot><tr><td colspan="8" class="num"><b>Totales</b></td>'
@@ -82,5 +82,37 @@
     return '<table class="exp">' + thead + '<tbody>' + body + '</tbody>' + foot + '</table>';
   }
 
-  return { fmtClp, escapeHtml, buildQuery, totalsFromRows, cashflowFromRows, expensesTableHtml };
+  function detalleRows(e) {
+    var esIngreso = e.tipo === 'ingreso';
+    return [
+      ['Tipo', esIngreso ? 'Ingreso' : 'Gasto'],
+      [esIngreso ? 'Pagador / origen' : 'Proveedor', e.proveedor],
+      ['Total', fmtClp(e.total)],
+      ['Neto', e.neto ? fmtClp(e.neto) : ''],
+      ['IVA', e.iva ? fmtClp(e.iva) : ''],
+      ['RUT', e.rut_emisor],
+      ['Folio (N° doc)', e.folio],
+      ['N° operación (voucher)', e.nro_operacion],
+      ['Documento', e.tipo_documento],
+      ['Categoría', esIngreso ? '' : e.categoria],
+      ['Cuenta SII', e.cuenta_sii_codigo ? (e.cuenta_sii_codigo + ' ' + (e.cuenta_sii_nombre || '')) : ''],
+      ['Fecha emisión', e.fecha],
+      ['Fecha de carga', e.created_at ? String(e.created_at).slice(0, 10) : ''],
+      ['Empleado', e.empleado_nombre],
+      ['Dirección', e.direccion_emisor],
+      ['Glosa', e.glosa],
+      ['Enviado por (WhatsApp)', [e.wa_sender_name, e.wa_sender_phone].filter(Boolean).join(' · ')],
+      ['Canal', e.canal],
+      ['Estado', e.estado],
+      ['Estado de pago', e.estado_pago],
+    ].filter(function (f) { return f[1] !== undefined && f[1] !== null && String(f[1]).trim() !== ''; });
+  }
+
+  function detalleHtml(e) {
+    return detalleRows(e || {}).map(function (f) {
+      return '<div class="detrow"><span class="detk">' + escapeHtml(f[0]) + '</span><span class="detv">' + escapeHtml(f[1]) + '</span></div>';
+    }).join('');
+  }
+
+  return { fmtClp, escapeHtml, buildQuery, totalsFromRows, cashflowFromRows, expensesTableHtml, detalleRows, detalleHtml };
 });
