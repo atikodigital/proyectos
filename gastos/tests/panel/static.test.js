@@ -5,7 +5,7 @@ test('GET /panel/ sirve el html del panel branded', async () => {
   const res = await request(app).get('/panel/');
   expect(res.status).toBe(200);
   expect(res.headers['content-type']).toMatch(/html/);
-  expect(res.text).toContain('Atiko Gastos');
+  expect(res.text).toContain('Hash IA');
   expect(res.text).toContain('id="loginView"');
   expect(res.text).toContain('id="appView"');
   expect(res.text).toContain('id="expensesTable"');
