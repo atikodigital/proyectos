@@ -94,6 +94,8 @@ const postsLimiter = rateLimit({
 });
 
 app.use("/widget", express.static(path.join(__dirname, "public")));
+// Panel web (Fase 4d): build estático de la SPA React (panel/dist), servido en /panel
+app.use("/panel", express.static(path.join(__dirname, "..", "panel", "dist")));
 app.use("/api/chat", chatLimiter, chatRoutes);
 app.use("/api/whatsapp/webhook", webhookLimiter, webhookRoutes);
 app.use("/api/social", socialRoutes);
