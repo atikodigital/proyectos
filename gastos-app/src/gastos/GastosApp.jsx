@@ -7,6 +7,14 @@ import MyExpenses from './MyExpenses.jsx';
 import EvidenceIntake from '../components/EvidenceIntake.jsx';
 
 function clp(n) { return '$' + (Math.round(Number(n) || 0)).toLocaleString('es-CL'); }
+function fechaCorta(v) { if (!v) return ''; const s = String(v); return s.length >= 10 ? s.slice(0, 10) : s; }
+function motivoText(m) {
+  if (m === 'folio') return 'es la misma factura/boleta (mismo folio y RUT del proveedor)';
+  if (m === 'nro_operacion') return 'es el mismo comprobante (mismo N° de operación)';
+  if (m === 'imagen') return 'es exactamente la misma foto';
+  if (m === 'monto_fecha_proveedor') return 'coincide el monto, la fecha y el proveedor con otro ya registrado';
+  return 'ya existe un movimiento igual registrado';
+}
 
 export default function GastosApp() {
   const [authed, setAuthed] = useState(Boolean(getToken()));
@@ -38,9 +46,13 @@ export default function GastosApp() {
       <main className="flex-1">
         {dup ? (
           <div className="p-6 max-w-sm mx-auto grid gap-3">
-            <h2 className="text-xl font-black" style={{ color: '#C9A24B' }}>Posible duplicado</h2>
-            <div className="rounded-2xl bg-black/5 p-4 border text-sm">
-              Esto ya fue registrado{dup.info && dup.info.existente ? ` (${dup.info.existente.proveedor || 's/proveedor'} · ${clp(dup.info.existente.total)})` : ''}. ¿Registrarlo igual?
+            <h2 className="text-xl font-black" style={{ color: '#C9A24B' }}>🚫 No lo registré</h2>
+            <div className="rounded-2xl bg-black/5 p-4 border text-sm grid gap-2">
+              <div><b>Por qué:</b> {motivoText(dup.info && dup.info.motivo)}.</div>
+              {dup.info && dup.info.existente ? (
+                <div className="opacity-80">Ya estaba registrado{dup.info.existente.fecha ? ' (' + fechaCorta(dup.info.existente.fecha) + ')' : ''}: {dup.info.existente.proveedor || 's/proveedor'} · {clp(dup.info.existente.total)}{dup.info.existente.folio ? ' · folio ' + dup.info.existente.folio : ''}{dup.info.existente.nro_operacion ? ' · N° op ' + dup.info.existente.nro_operacion : ''}.</div>
+              ) : null}
+              <div>Para no registrar/pagar dos veces, no lo guardé. ¿Registrarlo igual de todas formas?</div>
             </div>
             <button onClick={() => submit(dup.imageBase64, dup.mimeType, true)} className="rounded-xl font-black py-3 text-black" style={{ background: '#C9A24B' }}>Registrar igual</button>
             <button onClick={() => setDup(null)} className="rounded-xl font-black py-3 bg-black/10 border">Descartar</button>

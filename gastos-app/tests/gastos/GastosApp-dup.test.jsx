@@ -11,11 +11,13 @@ jest.mock('../../src/components/EvidenceIntake.jsx', () => ({ __esModule: true, 
 beforeEach(() => { setToken('TK'); api.listExpenses.mockResolvedValue([]); });
 
 test('al capturar un duplicado fuerte ofrece registrar igual', async () => {
-  const err = new Error('duplicado'); err.status = 409; err.data = { duplicado: { nivel: 'fuerte', existente: { proveedor: 'Sodimac', total: 11900 } } };
+  const err = new Error('duplicado'); err.status = 409; err.data = { duplicado: { nivel: 'fuerte', motivo: 'folio', existente: { proveedor: 'Sodimac', total: 11900, folio: '1234' } } };
   api.createExpense.mockRejectedValueOnce(err).mockResolvedValueOnce({ id: 'x9', tipo: 'gasto', proveedor: 'Sodimac', total: 11900 });
   render(<GastosApp />);
   fireEvent.click(screen.getByText('fake-capture'));
   await waitFor(() => expect(screen.getByText(/ya.*registrad/i)).toBeInTheDocument());
+  expect(screen.getByText(/Por qué/i)).toBeInTheDocument();
+  expect(screen.getByText(/mismo folio/i)).toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: /registrar igual/i }));
   await waitFor(() => expect(api.createExpense).toHaveBeenLastCalledWith('B64', 'image/jpeg', true));
   await waitFor(() => expect(screen.getByText(/Revisa el/i)).toBeInTheDocument());
