@@ -1,8 +1,10 @@
 const FIELDS = [
   'company_id', 'employee_id', 'wa_message_id', 'foto_path', 'canal',
-  'tipo_documento', 'rut_emisor', 'proveedor', 'folio', 'direccion_emisor',
+  'tipo', 'tipo_documento', 'rut_emisor', 'proveedor', 'folio', 'direccion_emisor',
   'fecha', 'neto', 'iva', 'total', 'moneda', 'categoria',
   'cuenta_sii_codigo', 'cuenta_sii_nombre', 'glosa', 'confianza', 'raw_ocr',
+  'nro_operacion', 'image_hash', 'estado_pago', 'dedup_override',
+  'wa_sender_name', 'wa_sender_phone',
 ];
 
 async function createExpense(db, data) {
