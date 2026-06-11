@@ -43,7 +43,11 @@
     <label for="email">Correo</label>
     <input id="email" type="email" style="width:100%" autocapitalize="none" />
     <label for="password" style="margin-top:10px">Contraseña</label>
-    <input id="password" type="password" style="width:100%" />
+    <div style="position:relative">
+      <input id="password" type="password" style="width:100%; padding-right:44px" />
+      <button type="button" id="togglePass" aria-label="Mostrar contraseña"
+        style="position:absolute; right:6px; top:50%; transform:translateY(-50%); background:transparent; padding:4px 6px; font-size:18px">👁️</button>
+    </div>
     <p id="loginErr" class="err"></p>
     <button id="loginBtn" class="btn-gold" style="width:100%; margin-top:8px">Entrar</button>
   </div>
@@ -186,6 +190,12 @@
     } catch (e) { $('loginErr').textContent = 'Correo o contraseña incorrectos.'; }
   };
   $('logoutBtn').onclick = function () { clearToken(); showLogin(); };
+  $('togglePass').onclick = function () {
+    var p = $('password');
+    var show = p.type === 'password';
+    p.type = show ? 'text' : 'password';
+    $('togglePass').textContent = show ? '🙈' : '👁️';
+  };
 
   var tabs = document.querySelectorAll('.tab');
   tabs.forEach(function (b) {
