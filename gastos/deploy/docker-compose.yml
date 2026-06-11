@@ -1,0 +1,15 @@
+services:
+  atiko-gastos-db:
+    image: postgres:16
+    container_name: atiko-gastos-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: atiko
+      POSTGRES_PASSWORD: ${GASTOS_DB_PASSWORD}
+      POSTGRES_DB: atiko_gastos
+    ports:
+      - "127.0.0.1:5434:5432"
+    volumes:
+      - atiko_gastos_data:/var/lib/postgresql/data
+volumes:
+  atiko_gastos_data:
