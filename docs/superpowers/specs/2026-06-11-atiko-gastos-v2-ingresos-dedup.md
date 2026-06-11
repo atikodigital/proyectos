@@ -26,7 +26,9 @@ suma **ingresos**, evita **duplicados** (clave para no pagar dos veces), y entre
 6. **WhatsApp**: enviar el resumen al WhatsApp del dueño desde el número de Atiko.
 7. **Fechas contables**: guardar fecha de emisión y de carga; contabilizar por la de
    emisión; permitir filtro por período (mes/año).
-8. Onboarding de la empresa real **matikoapp**.
+8. **Cobranzas**: guardar quién envió la imagen por WhatsApp (nombre + número) y el
+   pagador/origen leído del comprobante, para cruzar qué cliente pagó.
+9. Onboarding de la empresa real **matikoapp**.
 
 ## No-objetivos (YAGNI)
 
@@ -49,6 +51,14 @@ Nuevos campos:
 | `image_hash` | text, nullable | Huella (SHA-256) del archivo de imagen para dedup exacto. |
 | `estado_pago` | text | `registrada` \| `pagada`. Default `registrada`. Solo aplica a gastos. |
 | `dedup_override` | boolean | `true` si se forzó el registro pese a ser duplicado. Default `false`. |
+| `wa_sender_name` | text, nullable | Nombre de perfil de WhatsApp de **quien envió** la imagen (solo canal WhatsApp). |
+| `wa_sender_phone` | text, nullable | Número de WhatsApp de quien envió la imagen (solo canal WhatsApp). |
+
+El campo existente `proveedor` actúa como **contraparte**: en un gasto es el
+proveedor/comercio; en un ingreso es el **pagador/origen** leído del comprobante (de quién
+viene la transferencia/depósito). Es un dato distinto de `wa_sender_*` (quién mandó la foto):
+en cobranzas suele coincidir, pero no siempre (un empleado puede reenviar el pago de un
+cliente).
 
 Campos ya existentes que se reutilizan para la clave de duplicado: `rut_proveedor`,
 `folio`, `monto`, `fecha`, `proveedor`, `company_id`.
@@ -79,6 +89,19 @@ descargando ese Excel.
   tributario) → `ingreso`. Gemini decide con un prompt explícito que devuelve `tipo`.
 - La app muestra la sugerencia; el empleado confirma o la cambia con un toque antes de
   guardar. El `tipo` final viaja en el `confirm`/`PATCH`.
+- El OCR extrae **toda** la información disponible de la imagen. Para ingresos, además del
+  monto/fecha, intenta leer el **pagador/origen** (de quién viene la transferencia/depósito)
+  y el `nro_operacion`; eso queda en `proveedor` (contraparte) y `nro_operacion`.
+
+### 1b. Identidad del remitente por WhatsApp (cobranzas)
+- En el canal WhatsApp, el webhook ya recibe del payload el **nombre de perfil** y el
+  **número** de quien envía (`contacts[].profile.name`, `contacts[].wa_id`). Se guardan en
+  `wa_sender_name` / `wa_sender_phone` en cada movimiento que entra por WhatsApp.
+- Sirve para **cobranzas**: cruzar qué cliente reportó/realizó el pago. Especialmente útil en
+  transferencias, depósitos y pagos en efectivo (donde el comprobante puede no traer todos
+  los datos).
+- En el canal **app**, el remitente es el empleado logueado (ya identificado por
+  `employee_id`); `wa_sender_*` quedan nulos.
 
 ### 2. Detección de duplicados — `src/expenses/dedup.js` (nuevo)
 Función pura `findDuplicate(db, companyId, candidate)` que aplica 3 capas y devuelve el
@@ -108,12 +131,14 @@ movimiento existente + el nivel, o `null`:
   seleccionado.
 - Columna **Tipo** y **Estado** visibles; cada fila muestra `fecha` (emisión) y, en el
   detalle, la fecha de carga.
+- Para ingresos, el detalle muestra **pagador/origen** (`proveedor`) y **quién lo envió por
+  WhatsApp** (`wa_sender_name` + `wa_sender_phone`) → vista de cobranzas.
 - Acción para marcar un gasto como **pagado** (`estado_pago = pagada`).
 
 ### 5. Excel — `src/panel/excel.js`
-- Agrega columnas **Tipo**, **Estado**, **Fecha emisión** y **Fecha carga**; incluye gastos
-  e ingresos; respeta los filtros (tipo + período). El período elegido se usa para el cierre
-  mensual.
+- Agrega columnas **Tipo**, **Estado**, **Fecha emisión**, **Fecha carga**, **Pagador/Origen**
+  y **Enviado por (WhatsApp)**; incluye gastos e ingresos; respeta los filtros (tipo +
+  período). El período elegido se usa para el cierre mensual.
 
 ### 6. WhatsApp resumen — `src/whatsapp` + `src/expenses/summary.js`
 - Endpoint en el panel: `POST /api/panel/whatsapp/resumen` (auth dueño) → arma el resumen
@@ -146,7 +171,9 @@ movimiento existente + el nivel, o `null`:
 
 - `dedup.js`: unit tests de las 3 capas (match y no-match) con pg-mem.
 - `intake.js`: 409 en duplicado fuerte; registro con `override`; alerta suave no bloquea.
-- `extract.js`: clasificación `tipo` (mock de Gemini devolviendo gasto/ingreso).
+- `extract.js`: clasificación `tipo` y extracción de pagador/origen + `nro_operacion`
+  (mock de Gemini devolviendo gasto/ingreso).
+- webhook WhatsApp: guarda `wa_sender_name`/`wa_sender_phone` del payload en el movimiento.
 - `excel.js`: columnas Tipo/Estado y filas de ambos tipos.
 - Panel: filtro por tipo, filtro por período (mes/año sobre `fecha` de emisión) y cálculo
   de saldo del período.
