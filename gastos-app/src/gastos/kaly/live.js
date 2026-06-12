@@ -2,7 +2,8 @@ const WS_HOST = 'wss://generativelanguage.googleapis.com/ws/google.ai.generative
 
 export function openLiveSession(opts) {
   const { token, model, systemPrompt, tools, onAudioLevel, onState, onUserTranscript, onToolCall, onClose, wsFactory, audio = true } = opts;
-  const ws = (wsFactory || ((url) => new WebSocket(url)))(`${WS_HOST}?access_token=${encodeURIComponent(token)}`);
+  // El token efímero se pasa como `key` (Gemini lo acepta en lugar de la API key real).
+  const ws = (wsFactory || ((url) => new WebSocket(url)))(`${WS_HOST}?key=${encodeURIComponent(token)}`);
   let closed = false; let micStop = null; let player = null;
 
   const send = (obj) => { try { ws.send(JSON.stringify(obj)); } catch (e) {} };

@@ -48,9 +48,9 @@ function makeSession(overrides = {}) {
 
 // ── Tests ────────────────────────────────────────────────────────────────────
 
-test('URL contains access_token', () => {
+test('URL contains the ephemeral token as key', () => {
   const { fake } = makeSession();
-  expect(fake.url).toContain('access_token=t');
+  expect(fake.url).toContain('key=t');
 });
 
 test('on open, sends setup with model, Charon, systemInstruction, tools, inputAudioTranscription', () => {
