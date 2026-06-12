@@ -7,9 +7,11 @@ const { intakeFromImage } = require('../expenses/intake');
 const { getExpense, confirmExpense, updateExpense, rejectExpense, annulExpense } = require('../expenses/repo');
 const realExtract = require('../ocr/extract');
 const { readImage, contentTypeFor } = require('../expenses/storage');
+const { buildAgentContext } = require('../agent/context');
 
-function createAppRouter({ db, extractExpense } = {}) {
+function createAppRouter({ db, extractExpense, createLiveToken } = {}) {
   const _extract = extractExpense || realExtract.extractExpense;
+  const _liveToken = createLiveToken || (() => require('../agent/token').createEphemeralToken({ apiKey: process.env.GEMINI_API_KEY }));
   const router = express.Router();
 
   router.post('/login', async (req, res) => {
@@ -27,6 +29,15 @@ function createAppRouter({ db, extractExpense } = {}) {
   router.patch('/agent/prefs', async (req, res) => {
     const prefs = await setAgentPrefs(db, req.auth.employeeId, req.body || {});
     return res.json({ agent_prefs: prefs });
+  });
+
+  router.post('/agent/session', async (req, res) => {
+    let tok;
+    try { tok = await _liveToken(); }
+    catch (e) { return res.status(503).json({ error: 'live_no_disponible', detalle: e.message }); }
+    const context = await buildAgentContext(db, { companyId: req.auth.companyId, employeeId: req.auth.employeeId });
+    console.log('[kaly] token live emitido para empleado', req.auth.employeeId);
+    return res.json({ ...tok, context });
   });
 
   async function ownedExpense(req, res) {
