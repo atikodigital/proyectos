@@ -14,6 +14,13 @@ test('GET /panel/ sirve el html del panel branded', async () => {
   expect(res.text).toContain('id="settingsSection"');
 });
 
+test('el modal de detalle parte oculto: .modal.hidden gana a .modal { display:flex }', async () => {
+  const res = await request(app).get('/panel/');
+  // .modal define display:flex después de .hidden (misma especificidad), así que
+  // sin esta regla el modal queda visible y vacío tapando todo el panel.
+  expect(res.text).toMatch(/\.modal\.hidden\s*\{\s*display:\s*none/);
+});
+
 test('GET /panel/lib.js sirve la lib', async () => {
   const res = await request(app).get('/panel/lib.js');
   expect(res.status).toBe(200);
