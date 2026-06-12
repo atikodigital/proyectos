@@ -7,6 +7,7 @@ jest.mock('../../src/gastos/api', () => ({ api: { createExpense: jest.fn(), conf
 jest.mock('../../src/components/EvidenceIntake.jsx', () => ({ __esModule: true, default: ({ onChange }) => (
   <button onClick={() => onChange([{ imageBase64: 'B64', imageMimeType: 'image/jpeg' }])}>fake-capture</button>
 ) }));
+jest.mock('../../src/gastos/kaly/KalyAgent.jsx', () => ({ __esModule: true, default: () => <div>kaly-mock</div> }));
 
 beforeEach(() => { setToken('TK'); api.listExpenses.mockResolvedValue([]); });
 

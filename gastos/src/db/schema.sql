@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS employees (
   password_hash text,
   rol          text NOT NULL DEFAULT 'empleado',
   activo       boolean NOT NULL DEFAULT true,
+  agent_prefs  jsonb,
   created_at   timestamptz NOT NULL DEFAULT now()
 );
 

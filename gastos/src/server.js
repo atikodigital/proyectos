@@ -19,7 +19,9 @@ app.get('/health', (_req, res) => {
 app.use('/api/whatsapp/webhook', createWebhookRouter({ db: getPool() }));
 app.use('/api/app', createAppRouter({ db: getPool() }));
 app.use('/api/panel', createPanelRouter({ db: getPool() }));
-app.use('/panel', express.static(path.join(__dirname, '..', 'public', 'panel')));
+app.use('/panel', express.static(path.join(__dirname, '..', 'public', 'panel'), {
+  setHeaders: (res) => res.setHeader('Cache-Control', 'no-cache'),
+}));
 
 // eslint-disable-next-line no-unused-vars
 app.use((err, req, res, next) => {

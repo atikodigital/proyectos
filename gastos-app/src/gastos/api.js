@@ -31,5 +31,19 @@ export const api = {
   confirmExpense(id) { return req(`/api/app/expenses/${id}/confirm`, { method: 'POST' }); },
   updateExpense(id, patch) { return req(`/api/app/expenses/${id}`, { method: 'PATCH', body: patch }); },
   rejectExpense(id) { return req(`/api/app/expenses/${id}/reject`, { method: 'POST' }); },
+  annulExpense(id) { return req(`/api/app/expenses/${id}/anular`, { method: 'POST' }); },
   listExpenses() { return req('/api/app/expenses'); },
+  async fotoUrl(id) {
+    const t = getToken();
+    const res = await fetch(`${API_BASE}/api/app/expenses/${id}/foto`, { headers: t ? { Authorization: `Bearer ${t}` } : {} });
+    if (!res.ok) return null;
+    const blob = await res.blob();
+    return URL.createObjectURL(blob);
+  },
+
+  // K.A.L.Y. agent endpoints
+  agentSession() { return req('/api/app/agent/session', { method: 'POST', body: {} }); },
+  agentPrefs(patch) { return req('/api/app/agent/prefs', { method: 'PATCH', body: patch }); },
+  pagarExpense(id) { return req(`/api/app/expenses/${id}/pagar`, { method: 'PATCH' }); },
+  resumenWhatsapp() { return req('/api/app/agent/resumen-whatsapp', { method: 'POST', body: {} }); },
 };

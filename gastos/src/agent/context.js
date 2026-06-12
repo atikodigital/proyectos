@@ -1,0 +1,32 @@
+const { cashflowSummary } = require('../expenses/summary');
+const { getAgentPrefs, getCompany } = require('../companies/repo');
+
+function saludoHora(now = new Date()) {
+  // Hora de Chile continental
+  const h = Number(new Intl.DateTimeFormat('es-CL', { hour: 'numeric', hour12: false, timeZone: 'America/Santiago' }).format(now));
+  if (h >= 6 && h < 12) return 'dia';
+  if (h >= 12 && h < 20) return 'tarde';
+  return 'noche';
+}
+
+async function buildAgentContext(db, { companyId, employeeId, now = new Date() }) {
+  const [prefs, company] = await Promise.all([
+    getAgentPrefs(db, employeeId),
+    getCompany(db, companyId),
+  ]);
+  const s = await cashflowSummary(db, companyId, { year: now.getFullYear(), month: now.getMonth() + 1 });
+  const pend = await db.query(
+    "SELECT count(*)::int AS n FROM expenses WHERE company_id=$1 AND tipo='gasto' AND estado='confirmado' AND estado_pago='registrada'",
+    [companyId]
+  );
+  return {
+    nombre: prefs.nombre || '',
+    trato: prefs.trato || '',
+    onboarded: Boolean(prefs.onboarded_at),
+    saludoHora: saludoHora(now),
+    empresaNombre: (company && company.nombre) || '',
+    resumen: { ...s, pendientesPago: pend.rows[0].n },
+  };
+}
+
+module.exports = { buildAgentContext, saludoHora };

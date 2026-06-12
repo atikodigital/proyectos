@@ -28,6 +28,7 @@ async function listExpenses(db, companyId, filtros = {}) {
   if (filtros.tipo === 'gasto' || filtros.tipo === 'ingreso') add('e.tipo = ?', filtros.tipo);
   if (filtros.tipoDocumento) add('e.tipo_documento = ?', filtros.tipoDocumento);
   if (filtros.proveedor) add('e.proveedor ILIKE ?', `%${filtros.proveedor}%`);
+  if (!filtros.estado) where.push("e.estado <> 'anulado'");
 
   const r = await db.query(
     `SELECT e.*, emp.nombre AS empleado_nombre

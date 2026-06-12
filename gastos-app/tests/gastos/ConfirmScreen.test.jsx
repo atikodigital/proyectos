@@ -30,3 +30,17 @@ test('muestra badge GASTO y permite cambiar a ingreso', async () => {
   await waitFor(() => expect(api.updateExpense).toHaveBeenCalledWith('x1', { tipo: 'ingreso' }));
   await waitFor(() => expect(screen.getByText(/INGRESO/)).toBeInTheDocument());
 });
+
+test('la categoría es una sugerencia editable; cambiarla llama a updateExpense', async () => {
+  api.updateExpense.mockResolvedValue({});
+  render(<ConfirmScreen expense={exp} onDone={jest.fn()} />);
+  expect(screen.getByText(/sugerencia de la IA/i)).toBeInTheDocument();
+  fireEvent.change(screen.getByRole('combobox'), { target: { value: 'Útiles de oficina / generales' } });
+  await waitFor(() => expect(api.updateExpense).toHaveBeenCalledWith('x1', { categoria: 'Útiles de oficina / generales' }));
+});
+
+test('muestra la foto capturada si se pasa', () => {
+  render(<ConfirmScreen expense={exp} onDone={jest.fn()} photo={{ base64: 'QUJD', mime: 'image/jpeg' }} />);
+  const img = screen.getByAltText('factura');
+  expect(img.getAttribute('src')).toContain('data:image/jpeg;base64,QUJD');
+});

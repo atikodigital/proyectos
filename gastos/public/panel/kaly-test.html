@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>K.A.L.Y. — Prueba de voz</title>
+<style>
+  body { margin:0; background:#0E0E0E; color:#fff; font-family:system-ui,Segoe UI,sans-serif; }
+  .wrap { max-width:560px; margin:0 auto; padding:24px; }
+  h1 { color:#C9A24B; }
+  input { width:100%; background:#ffffff10; color:#fff; border:1px solid #ffffff26; border-radius:10px; padding:10px 12px; margin:4px 0 10px; box-sizing:border-box; }
+  button { cursor:pointer; border:0; border-radius:10px; padding:12px 16px; font-weight:800; width:100%; margin-top:6px; }
+  .gold { background:#C9A24B; color:#000; } .ghost { background:#ffffff14; color:#fff; }
+  #log { background:#000; border:1px solid #ffffff22; border-radius:10px; padding:10px; font-family:monospace; font-size:12px; height:300px; overflow:auto; white-space:pre-wrap; margin-top:14px; }
+  #estado { font-weight:900; color:#C9A24B; margin-top:10px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>K.A.L.Y. — Prueba de voz 🎙️</h1>
+  <div id="loginBox">
+    <label>Correo</label><input id="email" value="" autocapitalize="none" />
+    <label>Contraseña</label><input id="pass" type="password" />
+    <button class="gold" onclick="iniciar()">▶ Conectar y hablar con K.A.L.Y.</button>
+  </div>
+  <button class="ghost" onclick="cerrar()">■ Terminar</button>
+  <div id="estado">estado: idle</div>
+  <div id="log"></div>
+</div>
+<script>
+var ws=null, micCtx=null, outCtx=null, micStream=null, cursor=0;
+function log(s){ var el=document.getElementById('log'); el.textContent += s+'\n'; el.scrollTop=el.scrollHeight; }
+function estado(s){ document.getElementById('estado').textContent='estado: '+s; }
+
+async function iniciar(){
+  try{
+    log('1) login...');
+    var r=await fetch('/api/app/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({usuario:document.getElementById('email').value,password:document.getElementById('pass').value})});
+    if(!r.ok){ log('LOGIN FALLÓ '+r.status); return; }
+    var jwt=(await r.json()).token; log('   login OK');
+    log('2) pidiendo sesión K.A.L.Y. (token efímero)...');
+    r=await fetch('/api/app/agent/session',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+jwt},body:'{}'});
+    if(!r.ok){ log('SESSION FALLÓ '+r.status+' '+(await r.text())); return; }
+    var s=await r.json(); log('   token OK · modelo '+s.model+' · onboarded='+s.context.onboarded);
+    log('3) abriendo micrófono...');
+    micStream=await navigator.mediaDevices.getUserMedia({audio:{channelCount:1,echoCancellation:true,noiseSuppression:true}});
+    log('   mic OK');
+    log('4) conectando WebSocket Gemini Live...');
+    ws=new WebSocket('wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent?key='+encodeURIComponent(s.token));
+    ws.onopen=function(){
+      log('   WS abierto, enviando setup...');
+      ws.send(JSON.stringify({setup:{model:'models/'+s.model,generationConfig:{responseModalities:['AUDIO'],speechConfig:{voiceConfig:{prebuiltVoiceConfig:{voiceName:'Charon'}},languageCode:'es-US'}},systemInstruction:{parts:[{text:'Eres Kaly (escrito K.A.L.Y.), asistente contable de Hash IA de la empresa '+(s.context.empresaNombre||'')+'. Tu nombre se pronuncia "Kali", dilo SIEMPRE como una palabra corrida, nunca deletreado letra por letra. Hablas español, formal, tratas de señor o señora, respuestas de 1 a 3 frases.'}]},inputAudioTranscription:{}}}));
+    };
+    ws.onmessage=async function(ev){
+      var d=ev.data; if(d instanceof Blob) d=await d.text();
+      var m; try{ m=JSON.parse(d); }catch(e){ return; }
+      if(m.setupComplete){ log('5) setupComplete ✓ — empieza a HABLAR. Saludando...'); estado('en vivo'); empezarMic(); ws.send(JSON.stringify({clientContent:{turns:[{role:'user',parts:[{text:'Salúdame brevemente.'}]}],turnComplete:true}})); return; }
+      var sc=m.serverContent; if(!sc) { log('   msg: '+d.slice(0,120)); return; }
+      if(sc.inputTranscription&&sc.inputTranscription.text) log('   tú: '+sc.inputTranscription.text);
+      if(sc.modelTurn&&sc.modelTurn.parts){ for(var i=0;i<sc.modelTurn.parts.length;i++){ var p=sc.modelTurn.parts[i]; if(p.inlineData&&p.inlineData.data){ estado('hablando'); reproducir(p.inlineData.data); } } }
+      if(sc.turnComplete) estado('escuchando');
+      if(sc.interrupted){ cursor=0; if(outCtx){try{outCtx.close();}catch(e){}} outCtx=null; }
+    };
+    ws.onerror=function(){ log('WS ERROR'); estado('error'); };
+    ws.onclose=function(ev){ log('WS cerrado ('+ev.code+') '+(ev.reason||'')); estado('idle'); };
+  }catch(e){ log('EXCEPCIÓN: '+e.message); }
+}
+
+function empezarMic(){
+  micCtx=new (window.AudioContext||window.webkitAudioContext)({sampleRate:16000});
+  micCtx.resume();
+  var src=micCtx.createMediaStreamSource(micStream);
+  var proc=micCtx.createScriptProcessor(4096,1,1);
+  src.connect(proc); proc.connect(micCtx.destination);
+  proc.onaudioprocess=function(e){
+    if(!ws||ws.readyState!==1) return;
+    var f=e.inputBuffer.getChannelData(0);
+    var i16=new Int16Array(f.length);
+    for(var i=0;i<f.length;i++){ var v=Math.max(-1,Math.min(1,f[i])); i16[i]=v*32767; }
+    var bytes=new Uint8Array(i16.buffer); var bin='';
+    for(var j=0;j<bytes.length;j+=8192) bin+=String.fromCharCode.apply(null,bytes.subarray(j,j+8192));
+    ws.send(JSON.stringify({realtimeInput:{audio:{data:btoa(bin),mimeType:'audio/pcm;rate=16000'}}}));
+  };
+  log('   mic transmitiendo (16 kHz)');
+}
+
+function reproducir(b64){
+  if(!outCtx){ outCtx=new (window.AudioContext||window.webkitAudioContext)({sampleRate:24000}); cursor=0; }
+  outCtx.resume();
+  var bin=atob(b64); var n=bin.length/2; var f=new Float32Array(n);
+  for(var i=0;i<n;i++){ var lo=bin.charCodeAt(i*2), hi=bin.charCodeAt(i*2+1); var v=(hi<<8)|lo; if(v>=32768) v-=65536; f[i]=v/32768; }
+  var buf=outCtx.createBuffer(1,n,24000); buf.getChannelData(0).set(f);
+  var srcN=outCtx.createBufferSource(); srcN.buffer=buf; srcN.connect(outCtx.destination);
+  var t=Math.max(outCtx.currentTime,cursor); srcN.start(t); cursor=t+buf.duration;
+}
+
+function cerrar(){
+  try{ if(ws) ws.close(); }catch(e){}
+  try{ if(micStream) micStream.getTracks().forEach(function(t){t.stop();}); }catch(e){}
+  try{ if(micCtx) micCtx.close(); }catch(e){}
+  try{ if(outCtx) outCtx.close(); }catch(e){}
+  ws=null; micCtx=null; outCtx=null; estado('idle'); log('— sesión terminada —');
+}
+</script>
+</body>
+</html>

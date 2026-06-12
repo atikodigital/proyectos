@@ -1,7 +1,9 @@
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import MyExpenses from '../../src/gastos/MyExpenses.jsx';
 import { api } from '../../src/gastos/api';
-jest.mock('../../src/gastos/api', () => ({ api: { listExpenses: jest.fn() } }));
+jest.mock('../../src/gastos/api', () => ({ api: { listExpenses: jest.fn(), updateExpense: jest.fn(), annulExpense: jest.fn(), fotoUrl: jest.fn() } }));
+
+beforeEach(() => { jest.clearAllMocks(); });
 
 test('lista', async () => {
   api.listExpenses.mockResolvedValue([
@@ -26,4 +28,42 @@ test('al tocar un movimiento muestra todo el detalle (voucher, teléfono, fechas
   expect(screen.getByText(/56999111222/)).toBeInTheDocument();
   expect(screen.getByText(/2026-06-07/)).toBeInTheDocument();
   expect(screen.getByText(/Volver/)).toBeInTheDocument();
+});
+
+test('editar un movimiento llama a updateExpense', async () => {
+  api.listExpenses.mockResolvedValue([{ id: 'g1', tipo: 'gasto', proveedor: 'Sodimac', total: 11900, estado: 'confirmado', categoria: 'Otros gastos' }]);
+  api.updateExpense.mockResolvedValue({ id: 'g1', proveedor: 'Lider', total: 5000 });
+  render(<MyExpenses />);
+  await waitFor(() => expect(screen.getByText(/Sodimac/)).toBeInTheDocument());
+  fireEvent.click(screen.getByText(/Sodimac/));
+  await waitFor(() => expect(screen.getByText(/Editar/)).toBeInTheDocument());
+  fireEvent.click(screen.getByText(/Editar/));
+  const prov = await screen.findByDisplayValue('Sodimac');
+  fireEvent.change(prov, { target: { value: 'Lider' } });
+  fireEvent.click(screen.getByRole('button', { name: /guardar cambios/i }));
+  await waitFor(() => expect(api.updateExpense).toHaveBeenCalledWith('g1', expect.objectContaining({ proveedor: 'Lider' })));
+});
+
+test('ver foto de la factura llama a fotoUrl y muestra la imagen', async () => {
+  api.listExpenses.mockResolvedValue([{ id: 'g3', tipo: 'gasto', proveedor: 'Sodimac', total: 1000, estado: 'confirmado' }]);
+  api.fotoUrl.mockResolvedValue('blob:fake-url');
+  render(<MyExpenses />);
+  await waitFor(() => expect(screen.getByText(/Sodimac/)).toBeInTheDocument());
+  fireEvent.click(screen.getByText(/Sodimac/));
+  await waitFor(() => expect(screen.getByText(/Ver foto/)).toBeInTheDocument());
+  fireEvent.click(screen.getByText(/Ver foto/));
+  await waitFor(() => expect(api.fotoUrl).toHaveBeenCalledWith('g3'));
+  await waitFor(() => expect(screen.getByAltText('factura')).toBeInTheDocument());
+});
+
+test('anular un movimiento pide confirmación y llama a annulExpense', async () => {
+  api.listExpenses.mockResolvedValue([{ id: 'g2', tipo: 'gasto', proveedor: 'Sodimac', total: 11900, estado: 'confirmado' }]);
+  api.annulExpense.mockResolvedValue({ id: 'g2', estado: 'anulado' });
+  render(<MyExpenses />);
+  await waitFor(() => expect(screen.getByText(/Sodimac/)).toBeInTheDocument());
+  fireEvent.click(screen.getByText(/Sodimac/));
+  await waitFor(() => expect(screen.getByText(/Anular/)).toBeInTheDocument());
+  fireEvent.click(screen.getByText(/🗑️ Anular/));
+  fireEvent.click(screen.getByRole('button', { name: /sí, anular/i }));
+  await waitFor(() => expect(api.annulExpense).toHaveBeenCalledWith('g2'));
 });

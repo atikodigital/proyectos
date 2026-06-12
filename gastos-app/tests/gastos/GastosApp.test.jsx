@@ -10,6 +10,7 @@ jest.mock('../../src/components/EvidenceIntake.jsx', () => ({
     <button onClick={() => onChange([{ imageBase64: 'B64', imageMimeType: 'image/jpeg' }])}>fake-capture</button>
   ),
 }));
+jest.mock('../../src/gastos/kaly/KalyAgent.jsx', () => ({ __esModule: true, default: () => <div>kaly-mock</div> }));
 
 beforeEach(() => clearToken());
 
@@ -25,4 +26,36 @@ test('con token: capturar crea gasto y pasa a confirmar', async () => {
   fireEvent.click(screen.getByText('fake-capture'));
   await waitFor(() => expect(api.createExpense).toHaveBeenCalledWith('B64', 'image/jpeg', false));
   expect(await screen.findByText(/Revisa el gasto/i)).toBeInTheDocument();
+});
+
+test('nav muestra los 4 botones: Captura, Movimientos, Transaccional, Match', () => {
+  setToken('TK');
+  render(<GastosApp />);
+  expect(screen.getByRole('button', { name: /^Captura$/i })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: /^Movimientos$/i })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: /^Transaccional$/i })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: /^Match$/i })).toBeInTheDocument();
+});
+
+test('click en Match muestra placeholder de conciliación', () => {
+  setToken('TK');
+  render(<GastosApp />);
+  fireEvent.click(screen.getByRole('button', { name: /^Match$/i }));
+  expect(screen.getByText(/Conciliación automática/i)).toBeInTheDocument();
+});
+
+test('click en Transaccional muestra placeholder Próximamente', () => {
+  setToken('TK');
+  render(<GastosApp />);
+  fireEvent.click(screen.getByRole('button', { name: /^Transaccional$/i }));
+  expect(screen.getByText(/Próximamente/i)).toBeInTheDocument();
+  expect(screen.getByText(/Regístralo sin imagen/i)).toBeInTheDocument();
+});
+
+test('createExpense con documento:cartola cambia a tab Match y muestra cartola bancaria', async () => {
+  setToken('TK');
+  api.createExpense.mockResolvedValue({ documento: 'cartola' });
+  render(<GastosApp />);
+  fireEvent.click(screen.getByText('fake-capture'));
+  await waitFor(() => expect(screen.getByText(/cartola bancaria/i)).toBeInTheDocument());
 });
