@@ -1,5 +1,5 @@
 const express = require('express');
-const { getEmployeeByUsuario } = require('../companies/repo');
+const { getEmployeeByUsuario, getAgentPrefs, setAgentPrefs } = require('../companies/repo');
 const { verifyPassword } = require('../auth/password');
 const { signToken } = require('../auth/jwt');
 const { requireAuth, requireKind } = require('../auth/middleware');
@@ -23,6 +23,11 @@ function createAppRouter({ db, extractExpense } = {}) {
   });
 
   router.use(requireAuth, requireKind('employee'));
+
+  router.patch('/agent/prefs', async (req, res) => {
+    const prefs = await setAgentPrefs(db, req.auth.employeeId, req.body || {});
+    return res.json({ agent_prefs: prefs });
+  });
 
   async function ownedExpense(req, res) {
     const exp = await getExpense(db, req.params.id);
