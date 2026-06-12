@@ -8,6 +8,7 @@ export default defineConfig({
   define: {
     // Makes __VITE_API_BASE__ available in source (falls back to env var or undefined)
     __VITE_API_BASE__: JSON.stringify(process.env.VITE_API_BASE || ''),
+    __KALY_LIVE_MODEL__: JSON.stringify(process.env.KALY_LIVE_MODEL || 'gemini-2.5-flash-native-audio-preview-09-2025'),
   },
   resolve: {
     alias: {

@@ -5,6 +5,7 @@ import LoginScreen from './LoginScreen.jsx';
 import ConfirmScreen from './ConfirmScreen.jsx';
 import MyExpenses from './MyExpenses.jsx';
 import EvidenceIntake from '../components/EvidenceIntake.jsx';
+import KalyAgent from './kaly/KalyAgent.jsx';
 
 function clp(n) { return '$' + (Math.round(Number(n) || 0)).toLocaleString('es-CL'); }
 function fechaCorta(v) { if (!v) return ''; const s = String(v); return s.length >= 10 ? s.slice(0, 10) : s; }
@@ -22,12 +23,23 @@ export default function GastosApp() {
   const [pending, setPending] = useState(null);
   const [dup, setDup] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [matchDoc, setMatchDoc] = useState(null);
 
   if (!authed) return <LoginScreen onLoggedIn={() => setAuthed(true)} />;
 
   async function submit(imageBase64, mimeType, override) {
     setBusy(true);
-    try { const exp = await api.createExpense(imageBase64, mimeType, override); setPending({ exp, img: imageBase64, mime: mimeType }); setDup(null); }
+    try {
+      const exp = await api.createExpense(imageBase64, mimeType, override);
+      if (exp && exp.documento) {
+        setMatchDoc(exp.documento);
+        setDup(null);
+        setTab('match');
+        return;
+      }
+      setPending({ exp, img: imageBase64, mime: mimeType });
+      setDup(null);
+    }
     catch (e) { if (e && e.status === 409) setDup({ imageBase64, mimeType, info: (e.data && e.data.duplicado) || {} }); }
     finally { setBusy(false); }
   }
@@ -61,16 +73,34 @@ export default function GastosApp() {
           <ConfirmScreen expense={pending.exp} photo={{ base64: pending.img, mime: pending.mime }} onDone={() => { setPending(null); setTab('mis'); }} />
         ) : tab === 'capturar' ? (
           busy ? <div className="p-6">Procesando…</div>
-               : <div className="p-4"><p className="px-2 mb-2 opacity-70">Captura la boleta, factura o comprobante:</p>
-                   <EvidenceIntake maxEvidence={1} value={[]} onChange={onChange} showNativeCapture /></div>
-        ) : (
+               : <div className="p-4">
+                   <KalyAgent />
+                   <p className="px-2 mb-2 opacity-70">Captura la boleta, factura o comprobante:</p>
+                   <EvidenceIntake maxEvidence={1} value={[]} onChange={onChange} showNativeCapture />
+                 </div>
+        ) : tab === 'mis' ? (
           <MyExpenses />
+        ) : tab === 'transaccional' ? (
+          <div className="p-6 grid gap-2">
+            <h2 className="text-xl font-black" style={{ color: '#C9A24B' }}>Transaccional</h2>
+            <p className="text-sm opacity-70">Regístralo sin imagen: díctame o escríbeme el detalle (monto, RUT, folio…) y yo deduzco si es gasto o ingreso, calculo el IVA y lo registro contigo. Próximamente.</p>
+          </div>
+        ) : (
+          <div className="p-6 grid gap-2">
+            <h2 className="text-xl font-black" style={{ color: '#b91c1c' }}>Match</h2>
+            {matchDoc ? (
+              <p className="text-sm">📄 Detecté {matchDoc === 'cartola' ? 'una cartola bancaria' : 'un libro de compra/venta del SII'}. Aquí se activará la conciliación. Próximamente.</p>
+            ) : null}
+            <p className="text-sm opacity-70">Conciliación automática: cotejo tus movimientos con el Libro de Compra/Venta del SII y tus cartolas bancarias, incluso pagos masivos (iterando sumas de facturas). Próximamente.</p>
+          </div>
         )}
       </main>
       {!pending && !dup && (
         <nav className="flex border-t">
-          <button className={`flex-1 py-3 font-black ${tab === 'capturar' ? '' : 'opacity-50'}`} style={tab === 'capturar' ? { color: '#C9A24B' } : {}} onClick={() => setTab('capturar')}>Capturar</button>
-          <button className={`flex-1 py-3 font-black ${tab === 'mis' ? '' : 'opacity-50'}`} style={tab === 'mis' ? { color: '#C9A24B' } : {}} onClick={() => setTab('mis')}>Mis movimientos</button>
+          <button className={`flex-1 py-3 font-black ${tab === 'capturar' ? '' : 'opacity-50'}`} style={tab === 'capturar' ? { color: '#C9A24B' } : {}} onClick={() => setTab('capturar')}>Captura</button>
+          <button className={`flex-1 py-3 font-black ${tab === 'mis' ? '' : 'opacity-50'}`} style={tab === 'mis' ? { color: '#C9A24B' } : {}} onClick={() => setTab('mis')}>Movimientos</button>
+          <button className={`flex-1 py-3 font-black ${tab === 'transaccional' ? '' : 'opacity-50'}`} style={tab === 'transaccional' ? { color: '#C9A24B' } : {}} onClick={() => setTab('transaccional')}>Transaccional</button>
+          <button className={`flex-1 py-3 font-black`} style={tab === 'match' ? { background: '#b91c1c', color: '#fff' } : { color: '#b91c1c' }} onClick={() => setTab('match')}>Match</button>
         </nav>
       )}
     </div>
