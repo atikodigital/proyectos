@@ -49,7 +49,7 @@ async function iniciar(){
     ws=new WebSocket('wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent?key='+encodeURIComponent(s.token));
     ws.onopen=function(){
       log('   WS abierto, enviando setup...');
-      ws.send(JSON.stringify({setup:{model:'models/'+s.model,generationConfig:{responseModalities:['AUDIO'],speechConfig:{voiceConfig:{prebuiltVoiceConfig:{voiceName:'Charon'}},languageCode:'es-US'}},systemInstruction:{parts:[{text:'Eres K.A.L.Y., asistente contable de Hash IA de la empresa '+(s.context.empresaNombre||'')+'. Hablas español, formal, tratas de señor o señora, respuestas de 1 a 3 frases.'}]},inputAudioTranscription:{}}}));
+      ws.send(JSON.stringify({setup:{model:'models/'+s.model,generationConfig:{responseModalities:['AUDIO'],speechConfig:{voiceConfig:{prebuiltVoiceConfig:{voiceName:'Charon'}},languageCode:'es-US'}},systemInstruction:{parts:[{text:'Eres Kaly (escrito K.A.L.Y.), asistente contable de Hash IA de la empresa '+(s.context.empresaNombre||'')+'. Tu nombre se pronuncia "Kali", dilo SIEMPRE como una palabra corrida, nunca deletreado letra por letra. Hablas español, formal, tratas de señor o señora, respuestas de 1 a 3 frases.'}]},inputAudioTranscription:{}}}));
     };
     ws.onmessage=async function(ev){
       var d=ev.data; if(d instanceof Blob) d=await d.text();
