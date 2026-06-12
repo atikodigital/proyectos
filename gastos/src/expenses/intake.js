@@ -16,6 +16,11 @@ async function intakeFromImage({
   const run = extract || extractExpense;
   const _store = storeImage || realStorage.storeImage;
   const extracted = await run({ imageBuffer, mimeType });
+
+  if (extracted.tipo === 'cartola' || extracted.tipo === 'libro_compra_venta') {
+    return { expense: null, duplicado: null, documento: extracted.tipo };
+  }
+
   const image_hash = imageHash(imageBuffer);
   const tipo = extracted.tipo === 'ingreso' ? 'ingreso' : 'gasto';
 

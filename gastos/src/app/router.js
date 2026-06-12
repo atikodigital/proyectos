@@ -66,11 +66,12 @@ function createAppRouter({ db, extractExpense, createLiveToken, sendText } = {})
   router.post('/expenses', async (req, res) => {
     const { imageBase64, mimeType, override } = req.body || {};
     if (!imageBase64) return res.status(400).json({ error: 'falta_imagen' });
-    const { expense, duplicado } = await intakeFromImage({
+    const { expense, duplicado, documento } = await intakeFromImage({
       db, companyId: req.auth.companyId, employeeId: req.auth.employeeId,
       imageBuffer: Buffer.from(imageBase64, 'base64'), mimeType: mimeType || 'image/jpeg',
       canal: 'app', extract: _extract, override: !!override,
     });
+    if (documento) return res.status(202).json({ documento, match: 'pendiente' });
     if (!expense) return res.status(409).json({ error: 'duplicado', duplicado });
     return res.status(201).json({ ...expense, duplicado: duplicado || null });
   });

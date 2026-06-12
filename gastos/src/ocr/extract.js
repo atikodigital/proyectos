@@ -32,12 +32,23 @@ async function extractExpense({ imageBuffer, mimeType = 'image/jpeg' }) {
   const fecha = parseFecha(pick(docai.fecha, gem.fecha));
   const direccion = String(pick(docai.direccion_emisor, gem.direccion_emisor) || '').trim();
 
-  const tipo = String(gem.tipo || '').toLowerCase() === 'ingreso' ? 'ingreso' : 'gasto';
+  const tipoRaw = String(gem.tipo || '').toLowerCase();
+  let tipo;
+  if (tipoRaw === 'cartola' || tipoRaw === 'libro_compra_venta') {
+    tipo = tipoRaw;
+  } else if (tipoRaw === 'ingreso') {
+    tipo = 'ingreso';
+  } else {
+    tipo = 'gasto';
+  }
   const nro_operacion = String(gem.nro_operacion || '').trim();
 
   let categoria;
   let sii;
-  if (tipo === 'ingreso') {
+  if (tipo === 'cartola' || tipo === 'libro_compra_venta') {
+    categoria = '';
+    sii = { codigo: '', nombre: '' };
+  } else if (tipo === 'ingreso') {
     categoria = 'Ingreso';
     sii = { codigo: '', nombre: '' };
   } else {
