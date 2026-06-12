@@ -1,4 +1,4 @@
-﻿# Arquitectura del Sitio Atiko
+# Arquitectura del Sitio Atiko
 
 **Fecha:** 2026-05-22
 **VersiÃ³n:** 2.0 (refactor multi-pÃ¡gina)
@@ -63,6 +63,7 @@ atikodigital.cl/
 | `/servicios/automatizar-boletas-sii/` | automatizar boletas sii chile | medio | baja |
 | `/servicios/automatizar-cobranza/` | automatizar cobranza whatsapp pyme | bajo | muy baja |
 | `/servicios/voucher-whatsapp-sheets/` | voucher whatsapp google sheets | bajo | nula |
+| `/servicios/automatizacion-redes-sociales-ia/` | redes sociales ia pyme chile | bajo | media |
 
 ### PÃ¡ginas de industria (segmentaciÃ³n B2B)
 | PÃ¡gina | Keyword principal | Vol estimado |

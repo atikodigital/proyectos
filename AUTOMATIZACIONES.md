@@ -212,6 +212,25 @@ Stack técnico recomendado:
 
 ---
 
+### 🔥 #11 — Creación y publicación automática en Redes Sociales con IA
+
+**Dolor:** "No tengo tiempo para crear imágenes, videos y copys todas las semanas para mantener mis redes activas."
+
+**Solución técnica:**
+1. Mapeo semanal de temas relevantes del sector con GPT-4/Claude.
+2. Generación de imágenes fotorrealistas u orientadas a marca usando Stable Diffusion XL / DALL-E 3 API.
+3. Generación de copys formateados con el tono de marca y hashtags correspondientes.
+4. Envío de propuesta preliminar por WhatsApp al dueño para aprobación mediante un botón ("OK" / "Ajustar").
+5. Publicación calendarizada a través de la API Graph de Meta (Instagram y Facebook) y la API de LinkedIn.
+
+**Stack:** n8n / Make + Meta Content Publishing API + LinkedIn API + OpenAI/Stable Diffusion API + WhatsApp API
+
+**Precio sugerido:**
+- Setup: **$590.000 CLP** (Complejo por configuraciones de APIs de redes y generación de imágenes de calidad)
+- Mantenimiento: **$59.000 CLP/mes** + consumo de APIs
+
+---
+
 ## 2. Automatizaciones por industria
 
 ### 🍽️ HORECA (Restaurantes, Cafés, Hoteles)

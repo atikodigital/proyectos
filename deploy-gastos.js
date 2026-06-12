@@ -53,6 +53,8 @@ conn.on('ready', () => {
     ].join(' && '));
     console.log('npm install...');
     console.log((await sh(`cd ${REMOTE} && npm install --no-audit --no-fund 2>&1 | tail -3`)).out.trim());
+    console.log('migrating database...');
+    console.log((await sh(`cd ${REMOTE} && node scripts/migrate.js`)).out.trim());
     console.log('pm2...');
     console.log((await sh(`cd ${REMOTE} && (pm2 describe atiko-gastos >/dev/null 2>&1 && pm2 restart atiko-gastos --update-env || pm2 start src/server.js --name atiko-gastos) 2>&1 | tail -4`)).out.trim());
     await new Promise(r => setTimeout(r, 1500));

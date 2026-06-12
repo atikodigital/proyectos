@@ -10,7 +10,7 @@ import { buildSystemPrompt, instruccionInicial } from '../../src/gastos/kaly/pro
 // ── logic.js ────────────────────────────────────────────────────────────────
 
 describe('constants', () => {
-  test('SILENCE_MS = 5000', () => expect(SILENCE_MS).toBe(5000));
+  test('SILENCE_MS = 30000', () => expect(SILENCE_MS).toBe(30000));
   test('INACTIVITY_MS = 5 min', () => expect(INACTIVITY_MS).toBe(5 * 60 * 1000));
 });
 
@@ -31,16 +31,8 @@ describe('decideAutoStart', () => {
     expect(decideAutoStart({ onboarded: undefined, lastGreet: null, today })).toBe('onboarding');
   });
 
-  test('retorna saludo si lastGreet es diferente a today', () => {
-    expect(decideAutoStart({ onboarded: true, lastGreet: '2026-06-11', today })).toBe('saludo');
-  });
-
-  test('retorna saludo si lastGreet es null y onboarded=true', () => {
-    expect(decideAutoStart({ onboarded: true, lastGreet: null, today })).toBe('saludo');
-  });
-
-  test('retorna null si ya saludó hoy', () => {
-    expect(decideAutoStart({ onboarded: true, lastGreet: today, today })).toBeNull();
+  test('retorna saludo siempre si onboarded=true', () => {
+    expect(decideAutoStart({ onboarded: true, lastGreet: today, today })).toBe('saludo');
   });
 });
 
@@ -99,8 +91,8 @@ describe('buildSystemPrompt', () => {
   let prompt;
   beforeAll(() => { prompt = buildSystemPrompt(context); });
 
-  test('contiene K.A.L.Y.', () => {
-    expect(prompt).toContain('K.A.L.Y.');
+  test('contiene Kaly', () => {
+    expect(prompt).toContain('Kaly');
   });
 
   test('contiene el trato', () => {

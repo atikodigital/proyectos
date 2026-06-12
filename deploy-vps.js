@@ -61,13 +61,13 @@ function runSetupCommands() {
   // Lista de comandos a ejecutar en secuencia
   const commands = [
     // Actualizar e instalar unzip si no existe
-    'apt-get update && apt-get install -y unzip',
+    'export DEBIAN_FRONTEND=noninteractive && apt-get update -y && apt-get install -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" unzip',
     
     // Crear directorio para la web
     'mkdir -p /var/www/atikodigital',
     
     // Descomprimir el archivo en /var/www/atikodigital
-    'unzip -o /root/atiko-dist.zip -d /var/www/atikodigital',
+    'unzip -o /root/atiko-dist.zip -d /var/www/atikodigital || true',
     
     // Limpiar el zip del servidor
     'rm -f /root/atiko-dist.zip',

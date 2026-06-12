@@ -166,10 +166,7 @@ export default function KalyAgent() {
 
   useEffect(() => {
     const onboarded = localStorage.getItem('kaly_onboarded') === '1';
-    const lastGreet = localStorage.getItem('kaly_last_greet');
-    const today = hoyStr();
-
-    const motivo = decideAutoStart({ onboarded, lastGreet, today });
+    const motivo = decideAutoStart({ onboarded });
     if (motivo) {
       start(motivo);
     }
@@ -246,7 +243,7 @@ export default function KalyAgent() {
     <div className="flex flex-col items-center pt-2 pb-1">
       <KalyOrb state={state} audioLevel={level} onTap={handleTap} />
       {state === 'error' ? (
-        <p className="text-xs text-red-400">K.A.L.Y. no disponible</p>
+        <p className="text-xs text-red-400">Kaly no disponible</p>
       ) : null}
     </div>
   );

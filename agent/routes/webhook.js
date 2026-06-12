@@ -8,6 +8,7 @@ const express = require('express');
 const router = express.Router();
 const aiService = require('../services/ai');
 const whatsappService = require('../services/whatsapp');
+const crm = require('../services/crm');
 
 // Mensajes que actualmente están siendo procesados (evitar duplicados)
 const processingMessages = new Set();
@@ -75,12 +76,23 @@ async function handleIncomingMessage(message, value) {
   await whatsappService.markAsRead(messageId);
 
   // Extraer texto del mensaje
-  const text = whatsappService.extractMessageText(message);
+  let text = whatsappService.extractMessageText(message);
+
+  // Si es una NOTA DE VOZ / audio, la descargamos y transcribimos (KAI entiende audios).
+  if (!text && message.type === 'audio' && message.audio && message.audio.id) {
+    try {
+      const media = await whatsappService.downloadMedia(message.audio.id);
+      text = await aiService.transcribeAudio(media.buffer, media.mime);
+      console.log(`[WhatsApp] 🎤 Audio transcrito de ${from}: "${(text || '').slice(0, 80)}"`);
+    } catch (e) {
+      console.error('[WhatsApp] Error transcribiendo audio:', e.message);
+    }
+  }
 
   if (!text) {
-    // Mensaje de tipo no soportado (imagen, audio, video, etc.)
+    // Tipo no soportado (imagen/archivo) o transcripción fallida
     await whatsappService.sendText(from,
-      '👋 Hola, por ahora solo puedo leer mensajes de texto. Si tienes alguna consulta sobre los servicios de Atiko, escríbela acá o llámanos al +56 9 2713 0792'
+      '👋 Hola, recibí tu mensaje pero no pude leerlo. Escríbeme tu consulta o mándame una nota de voz y te ayudo. 🙌'
     );
     return;
   }
@@ -88,14 +100,26 @@ async function handleIncomingMessage(message, value) {
   // Usar el número de WhatsApp como sessionId (así se mantiene el contexto de la conversación)
   const sessionId = `wa_${from}`;
 
+  // Multi-tenant: el número de negocio que recibió (phone_number_id) define a qué cliente va el lead.
+  const phoneId = value && value.metadata && value.metadata.phone_number_id;
+  const clientSlug = await crm.clientSlugForChannel('whatsapp', phoneId);
+
+  // Datos del contacto: nombre de perfil de WhatsApp + número, para que se vean en el CRM.
+  const contact = (value && value.contacts && value.contacts[0]) || {};
+  const contactName = contact.profile && contact.profile.name;
+  const contactPhone = '+' + (contact.wa_id || from);
+
   try {
     // Obtener respuesta del agente IA
-    const reply = await aiService.chat(sessionId, text, { channel: 'whatsapp' });
+    const reply = await aiService.chat(sessionId, text, { channel: 'whatsapp', client: clientSlug, contactName, contactPhone });
 
-    // Enviar respuesta
-    await whatsappService.sendText(from, reply);
-
-    console.log(`[WhatsApp] Respuesta enviada a ${from}`);
+    // Si KAI está en pausa (un humano tomó el chat), no respondemos automáticamente.
+    if (reply) {
+      await whatsappService.sendText(from, reply);
+      console.log(`[WhatsApp] Respuesta enviada a ${from}`);
+    } else {
+      console.log(`[WhatsApp] KAI en pausa para ${from} — espera respuesta humana`);
+    }
   } catch (error) {
     console.error(`[WhatsApp] Error procesando mensaje de ${from}:`, error.message);
     await whatsappService.sendText(from,

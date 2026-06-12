@@ -33,29 +33,30 @@ export default function KalyOrb({ state = 'off', audioLevel = 0, onTap }) {
   const error = state === 'error';
   const idle = state === 'off';
 
-  // Color by state
+  // Color by state (Sky-blue / Celeste / Cybernetic virtual computer theme)
   let color;
-  if (error) color = '#ff5a5a';
-  else if (state === 'connecting') color = '#d8b25e';
-  else if (speaking) color = '#E6C36A';
-  else color = '#C9A24B';
+  if (error) color = '#ff5a5a'; // Red for errors
+  else if (state === 'connecting') color = '#60a5fa'; // Soft light-blue
+  else if (speaking) color = '#00f0ff'; // Bright neon cyan
+  else if (listening) color = '#38bdf8'; // Sky blue
+  else color = '#0284c7'; // Darker sky blue for idle/off
 
   const lvl = Math.min(1, audioLevel);
 
-  // Waveform polygon
+  // Waveform polygon — highly reactive
   const wavePath = useMemo(() => {
     let d = '';
     const N = 96;
     for (let i = 0; i < N; i++) {
       const a = (i / N) * Math.PI * 2 - Math.PI / 2;
       const wobble =
-        Math.sin(a * 5 + tick * 3) * 6 + Math.sin(a * 11 + tick * 5) * 4;
+        Math.sin(a * 5 + tick * 3.5) * 7 + Math.sin(a * 11 + tick * 6) * 5;
       const audio = speaking
-        ? lvl * 22 * (1 + Math.sin(a * 3 + tick * 8) * 0.4)
+        ? (12 + lvl * 55) * (1 + Math.sin(a * 4 + tick * 14) * 0.5)
         : listening
-          ? lvl * 10
+          ? (8 + lvl * 30) * (1 + Math.sin(a * 3 + tick * 7) * 0.3)
           : 0;
-      const r = 80 + wobble * (0.6 + lvl * 0.6) + audio;
+      const r = 80 + wobble * (0.6 + lvl * 0.8) + audio;
       d +=
         (i === 0 ? 'M' : 'L') +
         (150 + Math.cos(a) * r).toFixed(2) +
@@ -77,7 +78,7 @@ export default function KalyOrb({ state = 'off', audioLevel = 0, onTap }) {
   return (
     <div
       role="button"
-      aria-label="K.A.L.Y."
+      aria-label="Kaly"
       data-state={state}
       onClick={onTap}
       className="flex flex-col items-center cursor-pointer select-none"
@@ -90,11 +91,11 @@ export default function KalyOrb({ state = 'off', audioLevel = 0, onTap }) {
           style={{
             width: 190,
             height: 190,
-            background: color,
+            background: 'radial-gradient(circle, #38bdf8 0%, #0369a1 70%, transparent 100%)',
             opacity:
-              (0.08 + lvl * 0.25 + (speaking ? 0.1 : 0)) * baseOpacity,
-            transform: `scale(${1 + lvl * 0.35})`,
-            transition: 'opacity .25s, background .8s',
+              (0.15 + lvl * 0.35 + (speaking ? 0.15 : 0)) * baseOpacity,
+            transform: `scale(${1 + lvl * 0.45})`,
+            transition: 'opacity .25s, transform .1s ease-out',
           }}
         />
         {/* Inner halo — scaled down from 220→110 */}
@@ -103,8 +104,10 @@ export default function KalyOrb({ state = 'off', audioLevel = 0, onTap }) {
           style={{
             width: 110,
             height: 110,
-            background: color,
-            opacity: (0.18 + lvl * 0.4) * baseOpacity,
+            background: 'radial-gradient(circle, #00f0ff 0%, #0ea5e9 70%, transparent 100%)',
+            opacity: (0.28 + lvl * 0.5) * baseOpacity,
+            transform: `scale(${1 + lvl * 0.25})`,
+            transition: 'transform .1s ease-out',
           }}
         />
 
@@ -233,9 +236,9 @@ export default function KalyOrb({ state = 'off', audioLevel = 0, onTap }) {
             Array.from({ length: 64 }).map((_, i) => {
               const a = (i / 64) * Math.PI * 2;
               const seed = Math.sin(i * 1.3 + tick * 8) * 0.5 + 0.5;
-              const h = 20 + seed * (40 + lvl * 60);
+              const h = 30 + seed * (50 + lvl * 100);
               const r1 = 60;
-              const r2 = r1 + h * (speaking ? lvl + 0.3 : 0.4);
+              const r2 = r1 + h * (speaking ? lvl + 0.5 : lvl + 0.3);
               return (
                 <line
                   key={i}
@@ -244,8 +247,8 @@ export default function KalyOrb({ state = 'off', audioLevel = 0, onTap }) {
                   x2={150 + Math.cos(a) * r2}
                   y2={150 + Math.sin(a) * r2}
                   stroke={color}
-                  strokeWidth="1.2"
-                  opacity={0.4 + seed * 0.5}
+                  strokeWidth="1.5"
+                  opacity={0.5 + seed * 0.5}
                   strokeLinecap="round"
                 />
               );
@@ -312,12 +315,12 @@ export default function KalyOrb({ state = 'off', audioLevel = 0, onTap }) {
         </svg>
       </div>
 
-      {/* K.A.L.Y. label below the orb */}
+      {/* Kaly label below the orb */}
       <span
         className="font-black text-xs tracking-widest mt-1"
-        style={{ color: '#C9A24B', letterSpacing: '0.15em' }}
+        style={{ color: '#38bdf8', letterSpacing: '0.15em' }}
       >
-        K.A.L.Y.
+        Kaly
       </span>
     </div>
   );

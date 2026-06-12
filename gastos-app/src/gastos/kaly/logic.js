@@ -1,12 +1,11 @@
-export const SILENCE_MS = 5000;
+export const SILENCE_MS = 30000; // 30 seconds of silence before closing
 export const INACTIVITY_MS = 5 * 60 * 1000;
 
 export function hoyStr(d = new Date()) { return d.toISOString().slice(0, 10); }
 
-export function decideAutoStart({ onboarded, lastGreet, today }) {
+export function decideAutoStart({ onboarded }) {
   if (!onboarded) return 'onboarding';
-  if (lastGreet !== today) return 'saludo';
-  return null;
+  return 'saludo'; // Always auto-start when the component mounts
 }
 
 export function esNegativa(texto) {

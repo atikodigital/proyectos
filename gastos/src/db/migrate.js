@@ -26,6 +26,12 @@ const V2_COLUMNS = [
   "ALTER TABLE employees ADD COLUMN IF NOT EXISTS agent_prefs jsonb",
 ];
 
+const KALY_COLUMNS = [
+  "ALTER TABLE employees ADD COLUMN IF NOT EXISTS kaly_nombre text",
+  "ALTER TABLE employees ADD COLUMN IF NOT EXISTS kaly_trato text",
+  "ALTER TABLE employees ADD COLUMN IF NOT EXISTS kaly_onboarded boolean NOT NULL DEFAULT false",
+];
+
 // Índices de dedup (no únicos: el override permite una 2ª fila a propósito).
 const DEDUP_INDEXES = [
   "CREATE INDEX IF NOT EXISTS idx_expenses_dedup_doc ON expenses(company_id, rut_emisor, folio)",
@@ -44,6 +50,9 @@ async function migrate(db) {
   }
 
   for (const stmt of V2_COLUMNS) {
+    try { await db.query(stmt); } catch (e) { /* pg-mem: ya existen del schema */ }
+  }
+  for (const stmt of KALY_COLUMNS) {
     try { await db.query(stmt); } catch (e) { /* pg-mem: ya existen del schema */ }
   }
   for (const stmt of DEDUP_INDEXES) {

@@ -8,7 +8,11 @@ const WebSocket = require("ws");
 
 const chatRoutes = require("./routes/chat");
 const webhookRoutes = require("./routes/webhook");
+const metaWebhookRoutes = require("./routes/meta-webhook");
+const portalRoutes = require("./routes/portal");
+const crmRoutes = require("./routes/crm");
 const realtime = require("./services/realtime");
+const scheduler = require("./services/scheduler");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -41,8 +45,8 @@ app.use(cors({
       callback(new Error("CORS bloqueado: " + origin));
     }
   },
-  methods: ["GET", "POST", "DELETE"],
-  allowedHeaders: ["Content-Type", "Authorization"],
+  methods: ["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Client"],
 }));
 
 // Capturar body raw para debug de errores JSON (Caddy proxy)
@@ -71,9 +75,23 @@ const webhookLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+// Auth del portal: protege contra fuerza bruta (login/registro)
+const portalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 40,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Demasiados intentos. Espera unos minutos." },
+});
+
 app.use("/widget", express.static(path.join(__dirname, "public")));
 app.use("/api/chat", chatLimiter, chatRoutes);
 app.use("/api/whatsapp/webhook", webhookLimiter, webhookRoutes);
+app.use("/api/meta/webhook", webhookLimiter, metaWebhookRoutes);
+app.use("/api/portal", portalLimiter, portalRoutes);
+
+const crmLimiter = rateLimit({ windowMs: 60 * 1000, max: 240, standardHeaders: true, legacyHeaders: false });
+app.use("/api/crm", crmLimiter, crmRoutes);
 
 app.get("/health", function(req, res) {
   res.json({
@@ -86,6 +104,7 @@ app.get("/health", function(req, res) {
       openai: process.env.OPENAI_API_KEY ? "configurado" : "falta OPENAI_API_KEY",
       deepseek: process.env.DEEPSEEK_API_KEY ? "configurado" : "falta DEEPSEEK_API_KEY",
       whatsapp: (process.env.WHATSAPP_TOKEN && process.env.WHATSAPP_PHONE_ID) ? "configurado" : "pendiente",
+      meta_messaging: process.env.META_PAGE_TOKEN ? "configurado" : "pendiente",
     }
   });
 });
@@ -98,6 +117,7 @@ app.get("/", function(req, res) {
       tts: "POST /api/chat/tts",
       stt: "POST /api/chat/stt",
       whatsapp: "GET/POST /api/whatsapp/webhook",
+      meta: "GET/POST /api/meta/webhook (Messenger + Instagram)",
       health: "GET /health",
     }
   });
@@ -133,8 +153,12 @@ server.on("upgrade", function(req, socket, head) {
     return;
   }
 
+  // Extraer el sessionId (sid) de la query para enlazar la voz con el lead del CRM (omnicanal)
+  let sid = null;
+  try { sid = new URL(req.url, "http://localhost").searchParams.get("sid"); } catch (e) {}
+
   wss.handleUpgrade(req, socket, head, function(ws) {
-    realtime.handleConnection(ws);
+    realtime.handleConnection(ws, { sessionId: sid, channel: "web" });
   });
 });
 
@@ -144,9 +168,14 @@ server.listen(PORT, function() {
   console.log("  Puerto: " + PORT);
   console.log("  OpenAI: " + (process.env.OPENAI_API_KEY ? "OK" : "FALTA KEY"));
   console.log("  DeepSeek: " + (process.env.DEEPSEEK_API_KEY ? "OK" : "FALTA KEY"));
-  console.log("  Voz tiempo real (WS): /api/voice/live · modelo " + realtime.REALTIME_MODEL + " · voz " + realtime.REALTIME_VOICE);
+  if (realtime.PROVIDER === "gemini") {
+    console.log("  Voz tiempo real (WS): /api/voice/live · GEMINI LIVE · modelo " + realtime.GEMINI_LIVE_MODEL + " · voz " + realtime.GEMINI_LIVE_VOICE);
+  } else {
+    console.log("  Voz tiempo real (WS): /api/voice/live · OPENAI · modelo " + realtime.REALTIME_MODEL + " · voz " + realtime.REALTIME_VOICE);
+  }
   console.log("  WhatsApp: " + ((process.env.WHATSAPP_TOKEN && process.env.WHATSAPP_PHONE_ID) ? "OK" : "pendiente"));
   console.log("");
+  scheduler.start(); // recordatorios de citas + recontacto de leads fríos
 });
 
 module.exports = app;

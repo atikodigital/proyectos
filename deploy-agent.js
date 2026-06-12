@@ -14,8 +14,19 @@ const FILES = [
   'server.js',
   'package.json',
   'services/realtime.js',
+  'services/scheduler.js',
   'services/ai.js',
+  'services/portal-auth.js',
+  'services/crm-db.js',
+  'services/crm.js',
+  'services/nexo.js',
+  'services/whatsapp.js',
+  'services/meta-messaging.js',
   'routes/chat.js',
+  'routes/portal.js',
+  'routes/crm.js',
+  'routes/webhook.js',
+  'routes/meta-webhook.js',
   'config/prompt.js',
 ];
 
@@ -60,9 +71,11 @@ async function afterUpload() {
   const envCmds = [
     `cp ${REMOTE}/.env ${REMOTE}/.env.bak.${STAMP} || true`,
     setEnv('AGENT_TTS_MODEL', 'gpt-4o-mini-tts'),
-    setEnv('AGENT_TTS_VOICE', 'onyx'),
+    setEnv('AGENT_TTS_VOICE', 'ballad'),
     setEnv('REALTIME_MODEL', 'gpt-realtime'),
     setEnv('REALTIME_VOICE', 'ballad'),
+    // Secreto del portal: generar SOLO si no existe (no invalidar sesiones en cada deploy)
+    `grep -q '^PORTAL_JWT_SECRET=' ${REMOTE}/.env || echo "PORTAL_JWT_SECRET=$(openssl rand -hex 32)" >> ${REMOTE}/.env`,
   ].join(' && ');
 
   console.log('Ajustando .env (respaldo + vars de voz)...');

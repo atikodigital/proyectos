@@ -96,9 +96,9 @@ test('(1) first time (no localStorage) → auto-start onboarding: agentSession c
   expect(sentText.toLowerCase()).toContain('onboarding');
 });
 
-// ── Test 2: already onboarded + greeted today → no auto-start; tap starts manually ──
+// ── Test 2: already onboarded + greeted today → auto-start anyway ──────────────────
 
-test('(2) kaly_onboarded=1 + kaly_last_greet=today → no auto-start; tap orb → starts (agentSession called)', async () => {
+test('(2) kaly_onboarded=1 + kaly_last_greet=today → auto-starts (greeted today does not prevent auto-start)', async () => {
   // Simulate having onboarded and greeted today
   const today = new Date().toISOString().slice(0, 10);
   localStorage.setItem('kaly_onboarded', '1');
@@ -108,23 +108,14 @@ test('(2) kaly_onboarded=1 + kaly_last_greet=today → no auto-start; tap orb �
     render(<KalyAgent />);
   });
 
-  // No auto-start should have happened
-  expect(api.agentSession).not.toHaveBeenCalled();
-  expect(openLiveSession).not.toHaveBeenCalled();
-
-  // Tap the orb (state is 'off') → manual start
-  const btn = screen.getByRole('button', { name: 'K.A.L.Y.' });
-  await act(async () => {
-    fireEvent.click(btn);
-  });
-
+  // Auto-start should have happened
   expect(api.agentSession).toHaveBeenCalledTimes(1);
   expect(openLiveSession).toHaveBeenCalledTimes(1);
 });
 
-// ── Test 3: silence timer — onState('listening') then 5s → session.close ────
+// ── Test 3: silence timer — onState('listening') then 30s → session.close ───
 
-test('(3) silence: onState("listening") → advance 5000ms → session.close called', async () => {
+test('(3) silence: onState("listening") → advance 30000ms → session.close called', async () => {
   await act(async () => {
     render(<KalyAgent />);
   });
@@ -145,8 +136,8 @@ test('(3) silence: onState("listening") → advance 5000ms → session.close cal
   expect(lastSession.close).toHaveBeenCalled();
 });
 
-// Helper constant — import from logic or use inline value (5000)
-const SILENCE_MS_VALUE = 5000;
+// Helper constant — import from logic or use inline value (30000)
+const SILENCE_MS_VALUE = 30000;
 
 // ── Test 4: negative transcript → 2.5s → session.close ──────────────────────
 

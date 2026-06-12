@@ -39,7 +39,7 @@
       display:flex; flex-direction:column; align-items:flex-end; gap:12px;
     }
     #atiko-kai-win {
-      width:360px; height:min(590px, calc(100vh - 110px));
+      width:360px; height:min(590px, calc(100vh - 170px));
       background:linear-gradient(180deg,#03060f 0%,#050d1a 65%,#030810 100%);
       border:1px solid rgba(0,180,255,.22);
       box-shadow:0 0 60px rgba(0,150,255,.1),inset 0 0 60px rgba(0,80,180,.04);
@@ -88,7 +88,7 @@
       flex-shrink:0; z-index:2; position:relative;
       display:flex; flex-direction:column; align-items:center;
       padding:14px 0 8px;
-      background:linear-gradient(180deg,rgba(0,30,80,.3) 0%,transparent 100%);
+      background:transparent;
       border-bottom:1px solid rgba(0,180,255,.1);
     }
     #atiko-kai-canvas-orb { display:block; }
@@ -371,8 +371,8 @@
 
     ctx.clearRect(0, 0, W, H);
 
-    // ── 1. Fondo ─────────────────────────────────────────
-    ctx.fillStyle = '#000a0f'; ctx.fillRect(0, 0, W, H);
+    // ── 1. Fondo transparente — se mezcla con el fondo del chat ──
+    // (sin fillRect: el clearRect previo deja ver el degradado de la ventana)
 
     // ── 2. Grid de puntos (más visible) ──────────────────
     for (let x = 6; x < W; x += 9) {
@@ -390,7 +390,7 @@
 
     // ── 4. Halo (6 círculos concéntricos) ────────────────
     const haloI = spk ? 0.6 : lst ? 0.45 : thk ? 0.35 : 0.15;
-    const halo  = haloI + Math.sin(t*(spk?5:lst?7:1.5))*0.1;
+    const halo  = haloI + Math.sin(t*(spk?9:lst?7:1.5))*(spk?0.3:0.1);
     [0.75, 0.63, 0.51, 0.41, 0.33, 0.26].forEach((rf, i) => {
       const a = halo * (1 - i/6) * 0.35;
       ctx.beginPath(); ctx.arc(cx, cy, R*rf, 0, Math.PI*2);
@@ -398,11 +398,11 @@
     });
 
     // ── 5. Pulse rings ────────────────────────────────────
-    const pSpd = spk ? 55 : lst ? 40 : 20;
+    const pSpd = spk ? 78 : lst ? 40 : 20;
     for (let i = 0; i < 3; i++) {
       const r = ((t*pSpd + i*(R/3)*1.1) % (R*1.12));
       if (r < 1) continue;
-      const a = (1 - r/(R*1.12)) * (spk ? 0.45 : 0.18);
+      const a = (1 - r/(R*1.12)) * (spk ? 0.6 : 0.18);
       ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2);
       ctx.strokeStyle = `rgba(0,212,255,${a})`; ctx.lineWidth = 1; ctx.stroke();
     }
@@ -502,15 +502,6 @@
     }
     ctx.restore();
 
-    // ── 11. Corner brackets (más grandes y gruesos) ───────
-    const bS = 16, bG = 6;
-    ctx.strokeStyle = 'rgba(0,212,255,0.65)'; ctx.lineWidth = 2;
-    [[bG,bG,1,1],[W-bG,bG,-1,1],[bG,H-bG,1,-1],[W-bG,H-bG,-1,-1]].forEach(([x,y,dx,dy]) => {
-      ctx.beginPath();
-      ctx.moveTo(x+dx*bS, y); ctx.lineTo(x,y); ctx.lineTo(x, y+dy*bS);
-      ctx.stroke();
-    });
-
     // ── 12. Partículas (speaking) ─────────────────────────
     if (spk && Math.random() < 0.32) {
       const ang = Math.random()*Math.PI*2, rS = R*0.28;
@@ -532,7 +523,10 @@
     ctx.globalAlpha = 1;
 
     // ── 13. Core central (multicapa, muy luminoso) ────────
-    const intens = spk ? Math.min(1, 0.72+Math.sin(t*5)*0.06 + liveAmp*0.5) : lst ? 0.65+Math.sin(t*7)*0.14
+    // Hablando: parpadeo orgánico fuerte (dos frecuencias) para que se note que está hablando,
+    // incluso reproduciendo TTS sin micrófono. Con voz real (liveAmp) reacciona aún más.
+    const intens = spk ? Math.min(1, 0.42 + Math.abs(Math.sin(t*8))*0.38 + Math.abs(Math.sin(t*17))*0.18 + liveAmp*0.4)
+      : lst ? 0.65+Math.sin(t*7)*0.14
       : thk ? 0.5+Math.sin(t*4)*0.12 : 0.25+Math.sin(t*1.5)*0.06;
     // capas de glow
     for (let i = 5; i >= 0; i--) {
@@ -1015,7 +1009,7 @@
   function openChat() {
     isOpen=true; win.classList.add('open');
     bubble.classList.remove('show'); badge.classList.remove('show');
-    if (!msgs.children.length) addBot('KAI operativo. ¿En qué te puedo ayudar?');
+    if (!msgs.children.length) addBot('Hola, soy KAI, el asistente de Atiko Digital. Somos una agencia que crea agentes de IA y automatizaciones para que las pymes vendan más y trabajen menos. ¿En qué te puedo ayudar hoy?');
     setTimeout(()=>input.focus(),300);
   }
   function closeChat() {
@@ -1059,7 +1053,7 @@
   clearBtn.addEventListener('click', ()=>{
     msgs.innerHTML=''; sessionId=null;
     try{sessionStorage.removeItem('atiko_session');}catch(e){}
-    addBot('KAI operativo. ¿En qué te puedo ayudar?');
+    addBot('Hola, soy KAI, el asistente de Atiko Digital. Somos una agencia que crea agentes de IA y automatizaciones para que las pymes vendan más y trabajen menos. ¿En qué te puedo ayudar hoy?');
   });
   bubble.addEventListener('click', openChat);
   send.addEventListener('click', sendMsg);

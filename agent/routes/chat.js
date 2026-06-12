@@ -23,7 +23,7 @@ const upload = multer({
  * Response: { reply: string, sessionId: string }
  */
 router.post('/', async (req, res) => {
-  const { message, sessionId, images } = req.body;
+  const { message, sessionId, images, client } = req.body;
 
   // Validaciones básicas
   if (!message || typeof message !== 'string') {
@@ -42,14 +42,17 @@ router.post('/', async (req, res) => {
   const sid = sessionId || uuidv4();
 
   try {
-    const reply = await aiService.chat(sid, message.trim(), { 
+    const reply = await aiService.chat(sid, message.trim(), {
       channel: 'web',
+      client: typeof client === 'string' ? client : undefined,
       images: Array.isArray(images) ? images : []
     });
 
+    // Si KAI está en pausa (un ejecutivo tomó el chat), avisamos amablemente al visitante.
     res.json({
-      reply,
+      reply: reply || 'En un momento te atiende un ejecutivo de Atiko. 🙌',
       sessionId: sid,
+      paused: !reply,
     });
   } catch (error) {
     console.error('[Chat API] Error:', error.message);
@@ -82,7 +85,7 @@ router.post('/tts', async (req, res) => {
   try {
     const buffer = await aiService.textToSpeech(text, voice);
     res.set({
-      'Content-Type': 'audio/mpeg',
+      'Content-Type': aiService.TTS_IS_GEMINI ? 'audio/wav' : 'audio/mpeg',
       'Content-Length': buffer.length,
       'Cache-Control': 'no-cache'
     });

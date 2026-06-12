@@ -133,6 +133,26 @@ function extractMessageText(message) {
 }
 
 /**
+ * Descarga un archivo de media (audio/imagen) de WhatsApp por su media_id.
+ * 1) pide la URL temporal del media; 2) descarga los bytes (ambos con el token).
+ * @returns {Promise<{buffer: Buffer, mime: string}>}
+ */
+async function downloadMedia(mediaId) {
+  const token = process.env.WHATSAPP_TOKEN;
+  if (!token) throw new Error('WHATSAPP_TOKEN no configurado');
+  const meta = await axios.get(`${WA_BASE_URL}/${mediaId}`, {
+    headers: { Authorization: `Bearer ${token}` }, timeout: 15000,
+  });
+  const url = meta.data && meta.data.url;
+  const mime = (meta.data && meta.data.mime_type) || 'audio/ogg';
+  if (!url) throw new Error('No se pudo obtener la URL del media');
+  const bin = await axios.get(url, {
+    headers: { Authorization: `Bearer ${token}` }, responseType: 'arraybuffer', timeout: 25000,
+  });
+  return { buffer: Buffer.from(bin.data), mime };
+}
+
+/**
  * Divide un texto largo en partes respetando palabras completas
  */
 function splitMessage(text, maxLength = 4000) {
@@ -158,4 +178,4 @@ function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-module.exports = { sendText, sendTemplate, markAsRead, extractMessageText };
+module.exports = { sendText, sendTemplate, markAsRead, extractMessageText, downloadMedia };
