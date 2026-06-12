@@ -50,3 +50,45 @@ test('createExpense con override manda override:true', async () => {
   const [, opts] = fetch.mock.calls[fetch.mock.calls.length - 1];
   expect(JSON.parse(opts.body)).toEqual({ imageBase64: 'B64', mimeType: 'image/jpeg', override: true });
 });
+
+// ── K.A.L.Y. agent endpoints ─────────────────────────────────────────────────
+
+test('agentSession hace POST /api/app/agent/session', async () => {
+  setToken('TK');
+  fetch.mockResolvedValue({ ok: true, status: 200, json: async () => ({ token: 'ephemeral', expireAt: '2026-06-12T01:00:00Z', context: {} }) });
+  const r = await api.agentSession();
+  expect(r.token).toBe('ephemeral');
+  const [url, opts] = fetch.mock.calls[fetch.mock.calls.length - 1];
+  expect(url).toContain('/api/app/agent/session');
+  expect(opts.method).toBe('POST');
+});
+
+test('agentPrefs hace PATCH /api/app/agent/prefs con el patch', async () => {
+  setToken('TK');
+  fetch.mockResolvedValue({ ok: true, status: 200, json: async () => ({ ok: true }) });
+  await api.agentPrefs({ nombre: 'José', trato: 'señor', onboarded: true });
+  const [url, opts] = fetch.mock.calls[fetch.mock.calls.length - 1];
+  expect(url).toContain('/api/app/agent/prefs');
+  expect(opts.method).toBe('PATCH');
+  expect(JSON.parse(opts.body)).toMatchObject({ nombre: 'José', trato: 'señor', onboarded: true });
+});
+
+test('pagarExpense hace PATCH /api/app/expenses/:id/pagar', async () => {
+  setToken('TK');
+  fetch.mockResolvedValue({ ok: true, status: 200, json: async () => ({ estado_pago: 'pagado' }) });
+  const r = await api.pagarExpense('exp-42');
+  expect(r.estado_pago).toBe('pagado');
+  const [url, opts] = fetch.mock.calls[fetch.mock.calls.length - 1];
+  expect(url).toContain('/api/app/expenses/exp-42/pagar');
+  expect(opts.method).toBe('PATCH');
+});
+
+test('resumenWhatsapp hace POST /api/app/agent/resumen-whatsapp', async () => {
+  setToken('TK');
+  fetch.mockResolvedValue({ ok: true, status: 200, json: async () => ({ ok: true, to: '+56912345678' }) });
+  const r = await api.resumenWhatsapp();
+  expect(r.to).toBe('+56912345678');
+  const [url, opts] = fetch.mock.calls[fetch.mock.calls.length - 1];
+  expect(url).toContain('/api/app/agent/resumen-whatsapp');
+  expect(opts.method).toBe('POST');
+});
