@@ -36,8 +36,14 @@ function createAppRouter({ db, extractExpense, createLiveToken, sendText } = {})
 
   router.post('/agent/session', async (req, res) => {
     let tok;
-    try { tok = await _liveToken(); }
-    catch (e) { return res.status(503).json({ error: 'live_no_disponible', detalle: e.message }); }
+    if (process.env.KALY_TOKEN_MODE === 'key') {
+      // Modo directo: entrega la API key real SOLO a empleados autenticados (fallback
+      // mientras el WS no acepte tokens efimeros como key).
+      tok = { token: process.env.GEMINI_API_KEY, expireAt: null, model: process.env.GEMINI_LIVE_MODEL || 'gemini-2.5-flash-native-audio-preview-09-2025' };
+    } else {
+      try { tok = await _liveToken(); }
+      catch (e) { return res.status(503).json({ error: 'live_no_disponible', detalle: e.message }); }
+    }
     const context = await buildAgentContext(db, { companyId: req.auth.companyId, employeeId: req.auth.employeeId });
     console.log('[kaly] token live emitido para empleado', req.auth.employeeId);
     return res.json({ ...tok, context });
