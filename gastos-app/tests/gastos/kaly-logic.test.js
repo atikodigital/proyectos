@@ -10,7 +10,7 @@ import { buildSystemPrompt, instruccionInicial } from '../../src/gastos/kaly/pro
 // ── logic.js ────────────────────────────────────────────────────────────────
 
 describe('constants', () => {
-  test('SILENCE_MS = 30000', () => expect(SILENCE_MS).toBe(30000));
+  test('SILENCE_MS = 5000', () => expect(SILENCE_MS).toBe(5000));
   test('INACTIVITY_MS = 5 min', () => expect(INACTIVITY_MS).toBe(5 * 60 * 1000));
 });
 

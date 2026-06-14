@@ -1,4 +1,4 @@
-export const SILENCE_MS = 30000; // 30 seconds of silence before closing
+export const SILENCE_MS = 5000; // 5 seconds of silence before closing
 export const INACTIVITY_MS = 5 * 60 * 1000;
 
 export function hoyStr(d = new Date()) { return d.toISOString().slice(0, 10); }

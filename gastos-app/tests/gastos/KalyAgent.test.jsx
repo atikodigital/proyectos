@@ -136,8 +136,8 @@ test('(3) silence: onState("listening") → advance 30000ms → session.close ca
   expect(lastSession.close).toHaveBeenCalled();
 });
 
-// Helper constant — import from logic or use inline value (30000)
-const SILENCE_MS_VALUE = 30000;
+// Helper constant — import from logic or use inline value (5000)
+const SILENCE_MS_VALUE = 5000;
 
 // ── Test 4: negative transcript → 2.5s → session.close ──────────────────────
 

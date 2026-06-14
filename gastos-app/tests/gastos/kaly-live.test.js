@@ -5,6 +5,7 @@ import { openLiveSession } from '../../src/gastos/kaly/live';
 class FakeWS {
   constructor(url) {
     this.url = url;
+    this.readyState = 1; // WebSocket.OPEN
     this.send = jest.fn();
     this.close = jest.fn();
     // callbacks to be set by openLiveSession
@@ -107,9 +108,11 @@ test('serverContent.inputTranscription → onUserTranscript called with the text
   expect(onUserTranscript).toHaveBeenCalledWith('hola kaly');
 });
 
-test('sendToolResponse sends functionResponses', () => {
+test('sendToolResponse sends functionResponses', async () => {
   const { fake, session } = makeSession();
   fake.onopen();
+  fake.receive({ setupComplete: true });
+  await new Promise((r) => setTimeout(r, 0));
 
   session.sendToolResponse('id1', 'guardar_preferencias', { ok: true });
 
@@ -132,9 +135,11 @@ test('close() calls ws.close and fires onClose exactly once', () => {
   expect(onClose).toHaveBeenCalledTimes(1);
 });
 
-test('sendText sends clientContent with the text', () => {
+test('sendText sends clientContent with the text', async () => {
   const { fake, session } = makeSession();
   fake.onopen();
+  fake.receive({ setupComplete: true });
+  await new Promise((r) => setTimeout(r, 0));
 
   session.sendText('listar mis gastos');
 

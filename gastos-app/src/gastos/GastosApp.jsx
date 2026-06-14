@@ -56,6 +56,11 @@ export default function GastosApp() {
         <button className="text-xs opacity-60" onClick={() => { clearToken(); setAuthed(false); }}>Salir</button>
       </header>
       <main className="flex-1">
+        {!pending && !dup && (
+          <div className="p-4 bg-slate-50/50 border-b border-slate-200/40">
+            <KalyAgent />
+          </div>
+        )}
         {dup ? (
           <div className="p-6 max-w-sm mx-auto grid gap-3">
             <h2 className="text-xl font-black" style={{ color: '#C9A24B' }}>🚫 No lo registré</h2>
@@ -74,8 +79,7 @@ export default function GastosApp() {
         ) : tab === 'capturar' ? (
           busy ? <div className="p-6">Procesando…</div>
                : <div className="p-4">
-                   <KalyAgent />
-                   <p className="px-2 mb-2 opacity-70">Captura la boleta, factura o comprobante:</p>
+                   <p className="px-2 mb-2 opacity-70 text-xs font-bold">Captura la boleta, factura o comprobante:</p>
                    <EvidenceIntake maxEvidence={1} value={[]} onChange={onChange} showNativeCapture />
                  </div>
         ) : tab === 'mis' ? (
@@ -96,11 +100,19 @@ export default function GastosApp() {
         )}
       </main>
       {!pending && !dup && (
-        <nav className="flex border-t">
-          <button className={`flex-1 py-3 font-black ${tab === 'capturar' ? '' : 'opacity-50'}`} style={tab === 'capturar' ? { color: '#C9A24B' } : {}} onClick={() => setTab('capturar')}>Captura</button>
-          <button className={`flex-1 py-3 font-black ${tab === 'mis' ? '' : 'opacity-50'}`} style={tab === 'mis' ? { color: '#C9A24B' } : {}} onClick={() => setTab('mis')}>Movimientos</button>
-          <button className={`flex-1 py-3 font-black ${tab === 'transaccional' ? '' : 'opacity-50'}`} style={tab === 'transaccional' ? { color: '#C9A24B' } : {}} onClick={() => setTab('transaccional')}>Transaccional</button>
-          <button className={`flex-1 py-3 font-black`} style={tab === 'match' ? { background: '#b91c1c', color: '#fff' } : { color: '#b91c1c' }} onClick={() => setTab('match')}>Match</button>
+        <nav className="flex border-t border-slate-300 bg-white shadow-lg justify-around items-stretch h-14">
+          <button className={`flex-1 flex flex-col justify-center items-center text-[10.5px] font-bold border-r border-slate-300 transition-all duration-200 ${tab === 'capturar' ? 'text-[#C9A24B] bg-slate-50/50' : 'text-neutral-500 opacity-60 hover:opacity-100'}`} onClick={() => setTab('capturar')}>
+            <span>Captura</span>
+          </button>
+          <button className={`flex-1 flex flex-col justify-center items-center text-[10.5px] font-bold border-r border-slate-300 transition-all duration-200 ${tab === 'mis' ? 'text-[#C9A24B] bg-slate-50/50' : 'text-neutral-500 opacity-60 hover:opacity-100'}`} onClick={() => setTab('mis')}>
+            <span>Movimientos</span>
+          </button>
+          <button className={`flex-1 flex flex-col justify-center items-center text-[10.5px] font-bold border-r border-slate-300 transition-all duration-200 ${tab === 'transaccional' ? 'text-[#C9A24B] bg-slate-50/50' : 'text-neutral-500 opacity-60 hover:opacity-100'}`} onClick={() => setTab('transaccional')}>
+            <span>Transaccional</span>
+          </button>
+          <button className={`flex-1 flex flex-col justify-center items-center text-[10.5px] font-bold transition-all duration-200 ${tab === 'match' ? 'bg-[#b91c1c] text-white font-bold' : 'text-[#b91c1c] opacity-80 hover:opacity-100 hover:bg-red-50/30'}`} onClick={() => setTab('match')}>
+            <span>Match</span>
+          </button>
         </nav>
       )}
     </div>

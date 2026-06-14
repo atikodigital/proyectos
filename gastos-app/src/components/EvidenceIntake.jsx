@@ -289,7 +289,46 @@ const EvidenceIntake = ({
         for (const file of files) {
             const isImage = file.type.startsWith('image/');
             if (!isImage) {
-                handleError('Por ahora sube imagen (foto/screenshot).');
+                const allowedMimes = [
+                    'application/pdf',
+                    'application/msword',
+                    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                    'application/vnd.ms-excel',
+                    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                ];
+                const allowedExtensions = ['.pdf', '.doc', '.docx', '.xls', '.xlsx'];
+                const fileExt = file.name.slice(file.name.lastIndexOf('.')).toLowerCase();
+                const isValidDoc = allowedMimes.includes(file.type) || allowedExtensions.includes(fileExt);
+
+                if (!isValidDoc) {
+                    handleError('Permitido: Imágenes, PDFs, Word (.doc, .docx) y Excel (.xls, .xlsx).');
+                    continue;
+                }
+
+                try {
+                    await new Promise((resolve) => {
+                        const reader = new FileReader();
+                        reader.onload = () => {
+                            try {
+                                const base64Content = reader.result.split(',')[1];
+                                addAsset({
+                                    id: `evidence_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+                                    previewUrl: '', // Document icon instead
+                                    isDoc: true,
+                                    docName: file.name,
+                                    imageBase64: base64Content,
+                                    imageMimeType: file.type || 'application/pdf',
+                                    sourceType: 'upload'
+                                });
+                            } catch (error) {
+                                handleError('Error al leer el documento.');
+                            }
+                            resolve();
+                        };
+                        reader.onerror = () => { handleError('No se pudo leer el archivo.'); resolve(); };
+                        reader.readAsDataURL(file);
+                    });
+                } catch { /* continua con la siguiente */ }
                 continue;
             }
             try {
@@ -502,10 +541,10 @@ const EvidenceIntake = ({
                 <button type="button" onClick={openCamera} className="rounded-2xl border-2 border-gray-200 bg-white px-3 py-3 text-sm font-black text-[#2B2E4A] hover:border-[#7C3AED]/50 flex items-center justify-center gap-2">
                     <Camera className="w-4 h-4" /> Tomar foto
                 </button>
-                {/* Subir imagen: permite MULTIPLES imagenes desde galeria en una sola seleccion. */}
+                {/* Subir archivo: permite MULTIPLES imagenes/documentos desde la seleccion. */}
                 <label className="rounded-2xl border-2 border-[#4D96FF] bg-[#EEF4FF] px-3 py-3 text-sm font-black text-[#1D4ED8] hover:border-[#1D4ED8] flex items-center justify-center gap-2 cursor-pointer">
-                    <UploadCloud className="w-4 h-4" /> Subir imagen
-                    <input type="file" accept="image/*" multiple className="hidden" onChange={handleFileUpload} />
+                    <UploadCloud className="w-4 h-4" /> Subir archivo
+                    <input type="file" accept="image/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" multiple className="hidden" onChange={handleFileUpload} />
                 </label>
                 {/* Capturar pantalla (web getDisplayMedia): solo en web/desktop y modo completo.
                     En APK el dialogo nativo es confuso y para eso esta "Captura de pantalla celular". */}
@@ -618,7 +657,15 @@ const EvidenceIntake = ({
                     <div className="grid md:grid-cols-3 gap-3">
                         {items.map((page, index) => (
                             <div key={page.id} className="relative rounded-2xl overflow-hidden border border-gray-200 bg-white">
-                                <img src={page.previewUrl} alt={`captura-${page.pageNumber}`} className="w-full h-28 object-cover" />
+                                {page.isDoc || !page.previewUrl ? (
+                                    <div className="w-full h-28 bg-slate-100 flex flex-col items-center justify-center p-3 text-center">
+                                        <Clipboard className="w-8 h-8 text-neutral-500 mb-1" />
+                                        <span className="text-[10px] font-black text-neutral-700 truncate w-full px-1">{page.docName || 'Documento'}</span>
+                                        <span className="text-[8px] font-bold text-neutral-400 uppercase">{page.imageMimeType.split('/')[1] || 'pdf'}</span>
+                                    </div>
+                                ) : (
+                                    <img src={page.previewUrl} alt={`captura-${page.pageNumber}`} className="w-full h-28 object-cover" />
+                                )}
                                 <div className="absolute top-2 left-2 rounded-lg bg-black/70 text-white text-[10px] px-2 py-1 font-black">
                                     {index + 1}/{maxEvidence}
                                 </div>

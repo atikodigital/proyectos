@@ -33,13 +33,13 @@ export default function KalyOrb({ state = 'off', audioLevel = 0, onTap }) {
   const error = state === 'error';
   const idle = state === 'off';
 
-  // Color by state (Sky-blue / Celeste / Cybernetic virtual computer theme)
+  // Color by state — Celeste sky/cyber-blue theme
   let color;
   if (error) color = '#ff5a5a'; // Red for errors
-  else if (state === 'connecting') color = '#60a5fa'; // Soft light-blue
-  else if (speaking) color = '#00f0ff'; // Bright neon cyan
-  else if (listening) color = '#38bdf8'; // Sky blue
-  else color = '#0284c7'; // Darker sky blue for idle/off
+  else if (state === 'connecting') color = '#8ec9ff'; // Connecting: soft blue
+  else if (speaking) color = '#7ad6ff'; // Speaking: brighter celeste
+  else if (listening) color = '#4fc3f7'; // Listening/live: bright sky blue
+  else color = '#5ad7ff'; // Off/idle: celeste low opacity base
 
   const lvl = Math.min(1, audioLevel);
 
@@ -52,9 +52,9 @@ export default function KalyOrb({ state = 'off', audioLevel = 0, onTap }) {
       const wobble =
         Math.sin(a * 5 + tick * 3.5) * 7 + Math.sin(a * 11 + tick * 6) * 5;
       const audio = speaking
-        ? (12 + lvl * 55) * (1 + Math.sin(a * 4 + tick * 14) * 0.5)
+        ? (21.6 + lvl * 99) * (1 + Math.sin(a * 4 + tick * 14) * 0.5)  // ~1.8x amplified
         : listening
-          ? (8 + lvl * 30) * (1 + Math.sin(a * 3 + tick * 7) * 0.3)
+          ? (14.4 + lvl * 54) * (1 + Math.sin(a * 3 + tick * 7) * 0.3) // ~1.8x amplified
           : 0;
       const r = 80 + wobble * (0.6 + lvl * 0.8) + audio;
       d +=
@@ -72,8 +72,12 @@ export default function KalyOrb({ state = 'off', audioLevel = 0, onTap }) {
     return `M ${150 + Math.cos(a1) * rad} ${150 + Math.sin(a1) * rad} A ${rad} ${rad} 0 ${span > 180 ? 1 : 0} 1 ${150 + Math.cos(a2) * rad} ${150 + Math.sin(a2) * rad}`;
   };
 
-  // Base opacity for halo/core when idle (off)
-  const baseOpacity = idle ? 0.35 : 1;
+  // Base opacity for halo/core when idle (off) — celeste low opacity
+  const baseOpacity = idle ? 0.5 : 1;
+
+  // Slow breathing pulse for listening state (scale/opacity oscillation)
+  const breathScale = listening ? 1 + Math.sin(tick * 1.8) * 0.06 : 1;
+  const breathOpacity = listening ? 0.18 + Math.abs(Math.sin(tick * 1.8)) * 0.12 : 0;
 
   return (
     <div
@@ -91,10 +95,10 @@ export default function KalyOrb({ state = 'off', audioLevel = 0, onTap }) {
           style={{
             width: 190,
             height: 190,
-            background: 'radial-gradient(circle, #38bdf8 0%, #0369a1 70%, transparent 100%)',
+            background: 'radial-gradient(circle, #5ad7ff 0%, #0369a1 70%, transparent 100%)',
             opacity:
-              (0.15 + lvl * 0.35 + (speaking ? 0.15 : 0)) * baseOpacity,
-            transform: `scale(${1 + lvl * 0.45})`,
+              (0.15 + lvl * 0.35 + (speaking ? 0.25 : 0) + breathOpacity) * baseOpacity,
+            transform: `scale(${(1 + lvl * 0.45) * breathScale})`,
             transition: 'opacity .25s, transform .1s ease-out',
           }}
         />
@@ -104,9 +108,9 @@ export default function KalyOrb({ state = 'off', audioLevel = 0, onTap }) {
           style={{
             width: 110,
             height: 110,
-            background: 'radial-gradient(circle, #00f0ff 0%, #0ea5e9 70%, transparent 100%)',
-            opacity: (0.28 + lvl * 0.5) * baseOpacity,
-            transform: `scale(${1 + lvl * 0.25})`,
+            background: 'radial-gradient(circle, #7ad6ff 0%, #0ea5e9 70%, transparent 100%)',
+            opacity: (0.28 + lvl * 0.5 + (speaking ? 0.15 : 0)) * baseOpacity,
+            transform: `scale(${(1 + lvl * 0.25) * breathScale})`,
             transition: 'transform .1s ease-out',
           }}
         />

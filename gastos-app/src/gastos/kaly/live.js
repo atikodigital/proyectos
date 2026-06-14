@@ -5,8 +5,18 @@ export function openLiveSession(opts) {
   // El token efímero se pasa como `key` (Gemini lo acepta en lugar de la API key real).
   const ws = (wsFactory || ((url) => new WebSocket(url)))(`${WS_HOST}?key=${encodeURIComponent(token)}`);
   let closed = false; let micStop = null; let player = null;
+  let sessionReady = false;
+  const queue = [];
 
-  const send = (obj) => { try { ws.send(JSON.stringify(obj)); } catch (e) {} };
+  const send = (obj) => {
+    if (obj.setup) {
+      try { ws.send(JSON.stringify(obj)); } catch (e) {}
+    } else if (sessionReady && ws.readyState === WebSocket.OPEN) {
+      try { ws.send(JSON.stringify(obj)); } catch (e) {}
+    } else {
+      queue.push(obj);
+    }
+  };
   const setState = (s) => { if (onState) onState(s); };
 
   ws.onopen = () => {
@@ -23,15 +33,30 @@ export function openLiveSession(opts) {
     let data = ev.data;
     if (data instanceof Blob) data = await data.text();
     let msg; try { msg = JSON.parse(data); } catch (e) { return; }
-    if (msg.setupComplete) { setState('live'); if (audio) micStop = await startMic(send, onAudioLevel).catch(() => null); if (audio) player = createPlayer(onAudioLevel, setState); return; }
+    if (msg.setupComplete) {
+      setState('live');
+      sessionReady = true;
+      while (queue.length > 0) {
+        const q = queue.shift();
+        try { ws.send(JSON.stringify(q)); } catch (e) {}
+      }
+      if (audio) micStop = await startMic(send, onAudioLevel).catch(() => null);
+      if (audio) player = createPlayer(onAudioLevel, setState);
+      return;
+    }
     if (msg.toolCall && msg.toolCall.functionCalls) { for (const fc of msg.toolCall.functionCalls) onToolCall && onToolCall(fc); return; }
     const sc = msg.serverContent;
     if (!sc) return;
     if (sc.inputTranscription && sc.inputTranscription.text) onUserTranscript && onUserTranscript(sc.inputTranscription.text);
     if (sc.interrupted) { if (player) player.flush(); setState('listening'); }
     if (sc.modelTurn && sc.modelTurn.parts) {
+      let textContent = '';
       for (const p of sc.modelTurn.parts) {
         if (p.inlineData && p.inlineData.data) { setState('speaking'); if (player) player.push(p.inlineData.data); }
+        if (p.text) textContent += p.text;
+      }
+      if (textContent && opts.onAgentTranscript) {
+        opts.onAgentTranscript(textContent);
       }
     }
     if (sc.turnComplete) { if (player) player.onDrain(() => setState('listening')); else setState('listening'); }
@@ -127,8 +152,21 @@ export function createPlayer(onLevel, setState) {
     }
   }
 
+  const resume = () => {
+    if (ctx && ctx.state === 'suspended') {
+      ctx.resume().catch(() => {});
+    }
+  };
+  if (typeof window !== 'undefined') {
+    window.addEventListener('click', resume);
+    window.addEventListener('touchstart', resume, { passive: true });
+  }
+
   return {
     push(b64) {
+      if (ctx && ctx.state === 'suspended') {
+        ctx.resume().catch(() => {});
+      }
       try {
         // atob → binary string → Int16Array (little-endian pairs)
         const binary = atob(b64);
@@ -187,6 +225,10 @@ export function createPlayer(onLevel, setState) {
     },
 
     stop() {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('click', resume);
+        window.removeEventListener('touchstart', resume);
+      }
       try {
         activeSources.forEach((s) => { try { s.stop(); } catch (_) {} });
         activeSources.clear();

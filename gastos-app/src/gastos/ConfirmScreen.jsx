@@ -37,6 +37,10 @@ export default function ConfirmScreen({ expense, onDone, photo }) {
         <div className="text-2xl font-black" style={{ color: '#C9A24B' }}>{clp(e.total)}</div>
         <div className="text-sm opacity-70">{e.tipo_documento || 'documento'} · {e.fecha || 's/fecha'}</div>
         <div className="text-sm opacity-70">{esIngreso ? (e.nro_operacion ? 'N° ' + e.nro_operacion : 'Transferencia/depósito') : 'IVA ' + clp(e.iva)}</div>
+        {e.rut_emisor ? <div className="text-xs opacity-80 mt-1 border-t pt-1 border-black/5"><b>RUT Emisor:</b> {e.rut_emisor}</div> : null}
+        {e.folio ? <div className="text-xs opacity-80"><b>Folio / N° Doc:</b> {e.folio}</div> : null}
+        {e.direccion_emisor ? <div className="text-xs opacity-80"><b>Dirección:</b> {e.direccion_emisor}</div> : null}
+        {e.glosa ? <div className="text-xs opacity-80 mt-1 border-t pt-1 border-black/5"><b>Detalle / Glosa:</b> {e.glosa}</div> : null}
       </div>
       {!esIngreso ? (
         <div className="grid gap-1">

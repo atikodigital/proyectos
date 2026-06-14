@@ -9,6 +9,7 @@ jest.mock('../../src/gastos/api', () => ({
     pagarExpense: jest.fn(),
     annulExpense: jest.fn(),
     resumenWhatsapp: jest.fn(),
+    createManualExpense: jest.fn(),
   },
 }));
 
@@ -20,8 +21,8 @@ beforeEach(() => {
 
 // ── TOOL_DECLARATIONS ─────────────────────────────────────────────────────────
 
-test('TOOL_DECLARATIONS has 6 entries', () => {
-  expect(TOOL_DECLARATIONS).toHaveLength(6);
+test('TOOL_DECLARATIONS has 7 entries', () => {
+  expect(TOOL_DECLARATIONS).toHaveLength(7);
   const names = TOOL_DECLARATIONS.map((t) => t.name);
   expect(names).toContain('guardar_preferencias');
   expect(names).toContain('obtener_resumen');
@@ -29,6 +30,7 @@ test('TOOL_DECLARATIONS has 6 entries', () => {
   expect(names).toContain('marcar_pagada');
   expect(names).toContain('anular_movimiento');
   expect(names).toContain('enviar_resumen_whatsapp');
+  expect(names).toContain('crear_movimiento_manual');
 });
 
 // ── guardar_preferencias ──────────────────────────────────────────────────────
@@ -161,6 +163,27 @@ test('enviar_resumen_whatsapp llama resumenWhatsapp y devuelve enviado_a', async
 
   expect(api.resumenWhatsapp).toHaveBeenCalled();
   expect(result).toEqual({ ok: true, enviado_a: '+56912345678' });
+});
+
+// ── crear_movimiento_manual ──────────────────────────────────────────────────
+
+test('crear_movimiento_manual llama createManualExpense y devuelve datos del gasto', async () => {
+  const mockGasto = { id: 'manual-1', proveedor: 'Comercializadora del Sur', total: 150000 };
+  api.createManualExpense.mockResolvedValue(mockGasto);
+
+  const inputArgs = {
+    tipo: 'gasto',
+    proveedor: 'Comercializadora del Sur',
+    total: 150000,
+    neto: 126050,
+    iva: 23950,
+    estado_pago: 'pendiente'
+  };
+
+  const result = await executeTool('crear_movimiento_manual', inputArgs);
+
+  expect(api.createManualExpense).toHaveBeenCalledWith(inputArgs);
+  expect(result).toEqual({ ok: true, id: 'manual-1', proveedor: 'Comercializadora del Sur', total: 150000 });
 });
 
 // ── unknown tool ──────────────────────────────────────────────────────────────

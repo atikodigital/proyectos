@@ -7,6 +7,26 @@ export const TOOL_DECLARATIONS = [
   { name: 'marcar_pagada', description: 'Marca como pagado un gasto YA CONFIRMADO VERBALMENTE por el usuario', parameters: { type: 'OBJECT', properties: { proveedor: { type: 'STRING', description: 'proveedor o descripción del gasto' } } } },
   { name: 'anular_movimiento', description: 'Anula un movimiento YA CONFIRMADO VERBALMENTE por el usuario', parameters: { type: 'OBJECT', properties: { proveedor: { type: 'STRING' } } } },
   { name: 'enviar_resumen_whatsapp', description: 'Envía el resumen de flujo de caja al WhatsApp del dueño (requiere confirmación verbal previa)', parameters: { type: 'OBJECT', properties: {} } },
+  {
+    name: 'crear_movimiento_manual',
+    description: 'Registra un gasto o ingreso manual sin imagen en la base de datos (Transaccional)',
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        tipo: { type: 'STRING', enum: ['ingreso', 'gasto'], description: 'tipo de movimiento' },
+        proveedor: { type: 'STRING', description: 'Nombre del proveedor o descripción' },
+        rut_emisor: { type: 'STRING', description: 'RUT del emisor' },
+        folio: { type: 'STRING', description: 'Folio o número de documento' },
+        fecha: { type: 'STRING', description: 'Fecha en formato YYYY-MM-DD' },
+        neto: { type: 'NUMBER', description: 'Monto neto' },
+        iva: { type: 'NUMBER', description: 'Monto de IVA (19%)' },
+        total: { type: 'NUMBER', description: 'Monto total' },
+        categoria: { type: 'STRING', description: 'Categoría contable' },
+        estado_pago: { type: 'STRING', enum: ['pagada', 'pendiente'], description: 'Estado de pago inicial' }
+      },
+      required: ['tipo', 'total']
+    }
+  }
 ];
 
 function buscarMovimiento(rows, proveedor) {
@@ -37,6 +57,10 @@ export async function executeTool(name, args = {}, { onPrefsSaved } = {}) {
       return { ok: true, anulado: mov.proveedor, total: mov.total };
     }
     if (name === 'enviar_resumen_whatsapp') { const r = await api.resumenWhatsapp(); return { ok: true, enviado_a: r.to }; }
+    if (name === 'crear_movimiento_manual') {
+      const r = await api.createManualExpense(args);
+      return { ok: true, id: r.id, proveedor: r.proveedor, total: r.total };
+    }
     return { error: 'tool_desconocida' };
   } catch (e) {
     return { error: 'fallo_operacion', detalle: e.message || 'error' };
