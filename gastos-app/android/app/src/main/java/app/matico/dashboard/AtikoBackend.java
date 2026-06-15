@@ -24,7 +24,8 @@ import java.nio.charset.StandardCharsets;
  */
 public class AtikoBackend {
 
-    public static final String BASE = "https://agent.atikodigital.cl";
+    // Hash IA → backend de GASTOS (gastos.atikodigital.cl). El APK del CRM usa otra base.
+    public static final String BASE = "https://gastos.atikodigital.cl";
     private static final String PREFS = "atiko_overlay";
     private static final String KEY_TOKEN = "portal_token";
 
@@ -38,11 +39,11 @@ public class AtikoBackend {
     }
 
     /** Login del portal. Guarda el token. Devuelve true si quedó autenticado. */
-    public static boolean login(Context ctx, String email, String password) throws Exception {
+    public static boolean login(Context ctx, String usuario, String password) throws Exception {
         JSONObject body = new JSONObject();
-        body.put("email", email);
+        body.put("usuario", usuario);
         body.put("password", password);
-        JSONObject res = post(BASE + "/api/portal/login", body, null);
+        JSONObject res = post(BASE + "/api/app/login", body, null);
         String token = res.optString("token", "");
         if (token.isEmpty()) return false;
         prefs(ctx).edit().putString(KEY_TOKEN, token).apply();
@@ -59,12 +60,12 @@ public class AtikoBackend {
         body.put("channel", channel == null ? "whatsapp" : channel);
         body.put("contact", contact);
         body.put("conversation", conversation == null ? "" : conversation);
-        return post(BASE + "/api/crm/overlay/pedido/suggest", body, getToken(ctx));
+        return post(BASE + "/api/app/overlay/pedido/suggest", body, getToken(ctx));
     }
 
     /** Marca el pedido como enviado (el teléfono ya lo mandó por el chat real). */
     public static void markSent(Context ctx, String pedidoId) throws Exception {
-        post(BASE + "/api/crm/overlay/pedido/" + pedidoId + "/sent", new JSONObject(), getToken(ctx));
+        post(BASE + "/api/app/overlay/pedido/" + pedidoId + "/sent", new JSONObject(), getToken(ctx));
     }
 
     // ── HTTP ──────────────────────────────────────────────────────────────

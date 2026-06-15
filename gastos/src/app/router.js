@@ -10,6 +10,8 @@ const { readImage, contentTypeFor } = require('../expenses/storage');
 const { buildAgentContext } = require('../agent/context');
 const { cashflowSummary } = require('../expenses/summary');
 const { formatCashflowSummary } = require('../whatsapp/format');
+const pedidosRepo = require('../pedidos/repo');
+const { suggestOrder } = require('../pedidos/suggest');
 
 function createAppRouter({ db, extractExpense, createLiveToken, sendText } = {}) {
   const _extract = extractExpense || realExtract.extractExpense;
@@ -28,6 +30,36 @@ function createAppRouter({ db, extractExpense, createLiveToken, sendText } = {})
   });
 
   router.use(requireAuth, requireKind('employee'));
+
+  // ── Overlay "Crear pedido" (cotización desde un chat, vía el APK Hash IA) ──
+  router.post('/overlay/pedido/suggest', async (req, res) => {
+    try {
+      const { channel = 'whatsapp', contact = {}, conversation = '' } = req.body || {};
+      const convo = String(conversation || '').trim();
+      if (!convo) return res.status(400).json({ error: 'sin_conversacion' });
+      const sug = await suggestOrder(convo);
+      if (!sug.items.length) return res.status(422).json({ error: 'sin_pedido' });
+      const ped = await pedidosRepo.createPedido(db, req.auth.companyId, {
+        channel, contact_name: contact.name, contact_phone: contact.phone,
+        items: sug.items, impuesto_pct: sug.impuesto_pct, moneda: sug.moneda,
+        entrega: sug.entrega, direccion: sug.direccion, nota: sug.nota,
+      });
+      const pie = await pedidosRepo.getCompanyPie(db, req.auth.companyId);
+      return res.json({ pedido: ped, confianza: sug.confianza, text: pedidosRepo.pedidoToText(ped, { pie }) });
+    } catch (e) { console.error('[pedido suggest]', e.message); return res.status(500).json({ error: 'error_pedido' }); }
+  });
+  router.post('/overlay/pedido/:id/sent', async (req, res) => {
+    const ped = await pedidosRepo.markSent(db, req.auth.companyId, req.params.id);
+    if (!ped) return res.status(404).json({ error: 'no_existe' });
+    return res.json({ pedido: ped });
+  });
+  router.get('/pedido-pie', async (req, res) => {
+    return res.json({ pie: await pedidosRepo.getCompanyPie(db, req.auth.companyId) });
+  });
+  router.patch('/pedido-pie', async (req, res) => {
+    await pedidosRepo.setCompanyPie(db, req.auth.companyId, (req.body || {}).pie);
+    return res.json({ ok: true });
+  });
 
   router.patch('/agent/prefs', async (req, res) => {
     const prefs = await setAgentPrefs(db, req.auth.employeeId, req.body || {});
@@ -80,6 +112,31 @@ function createAppRouter({ db, extractExpense, createLiveToken, sendText } = {})
     if (documento) return res.status(202).json({ documento, match: 'pendiente' });
     if (!expense) return res.status(409).json({ error: 'duplicado', duplicado });
     return res.status(201).json({ ...expense, duplicado: duplicado || null });
+  });
+
+  router.post('/expenses/manual', async (req, res) => {
+    const { tipo, proveedor, rut_emisor, folio, fecha, neto, iva, total, categoria, estado_pago } = req.body || {};
+    if (!tipo || total === undefined) {
+      return res.status(400).json({ error: 'tipo_y_total_requeridos' });
+    }
+    const { createExpense } = require('../expenses/repo');
+    const expense = await createExpense(db, {
+      company_id: req.auth.companyId,
+      employee_id: req.auth.employeeId,
+      canal: 'app',
+      estado: 'confirmado',
+      tipo,
+      proveedor: proveedor || 'Transacción manual',
+      rut_emisor,
+      folio,
+      fecha: fecha || new Date().toISOString().slice(0, 10),
+      neto: Number(neto) || 0,
+      iva: Number(iva) || 0,
+      total: Number(total) || 0,
+      categoria,
+      estado_pago: estado_pago || 'pendiente',
+    });
+    return res.status(201).json(expense);
   });
 
   router.post('/expenses/:id/confirm', async (req, res) => {

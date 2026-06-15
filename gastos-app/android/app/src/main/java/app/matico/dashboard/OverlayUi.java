@@ -169,10 +169,10 @@ public class OverlayUi {
         root.addView(title);
 
         final EditText email = new EditText(service);
-        email.setHint("Correo");
+        email.setHint("Usuario");
         email.setHintTextColor(0x88FFFFFF);
         email.setTextColor(0xFFFFFFFF);
-        email.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);
+        email.setInputType(InputType.TYPE_CLASS_TEXT);
         email.setBackgroundColor(0x22FFFFFF);
         email.setPadding(dp(10), dp(10), dp(10), dp(10));
         LinearLayout.LayoutParams em = new LinearLayout.LayoutParams(
