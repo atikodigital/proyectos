@@ -6,6 +6,7 @@ import ConfirmScreen from './ConfirmScreen.jsx';
 import MyExpenses from './MyExpenses.jsx';
 import EvidenceIntake from '../components/EvidenceIntake.jsx';
 import KalyAgent from './kaly/KalyAgent.jsx';
+import PedidoOverlaySetup from './PedidoOverlaySetup.jsx';
 
 function clp(n) { return '$' + (Math.round(Number(n) || 0)).toLocaleString('es-CL'); }
 function fechaCorta(v) { if (!v) return ''; const s = String(v); return s.length >= 10 ? s.slice(0, 10) : s; }
@@ -84,6 +85,8 @@ export default function GastosApp() {
                  </div>
         ) : tab === 'mis' ? (
           <MyExpenses />
+        ) : tab === 'pedidos' ? (
+          <PedidoOverlaySetup />
         ) : tab === 'transaccional' ? (
           <div className="p-6 grid gap-2">
             <h2 className="text-xl font-black" style={{ color: '#C9A24B' }}>Transaccional</h2>
@@ -109,6 +112,9 @@ export default function GastosApp() {
           </button>
           <button className={`flex-1 flex flex-col justify-center items-center text-[10.5px] font-bold border-r border-slate-300 transition-all duration-200 ${tab === 'transaccional' ? 'text-[#C9A24B] bg-slate-50/50' : 'text-neutral-500 opacity-60 hover:opacity-100'}`} onClick={() => setTab('transaccional')}>
             <span>Transaccional</span>
+          </button>
+          <button className={`flex-1 flex flex-col justify-center items-center text-[10.5px] font-bold border-r border-slate-300 transition-all duration-200 ${tab === 'pedidos' ? 'text-[#C9A24B] bg-slate-50/50' : 'text-neutral-500 opacity-60 hover:opacity-100'}`} onClick={() => setTab('pedidos')}>
+            <span>Pedidos</span>
           </button>
           <button className={`flex-1 flex flex-col justify-center items-center text-[10.5px] font-bold transition-all duration-200 ${tab === 'match' ? 'bg-[#b91c1c] text-white font-bold' : 'text-[#b91c1c] opacity-80 hover:opacity-100 hover:bg-red-50/30'}`} onClick={() => setTab('match')}>
             <span>Match</span>
