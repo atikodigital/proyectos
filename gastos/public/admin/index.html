@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Hash IA — Admin</title>
+<style>
+  :root { --gold:#C9A24B; --bg:#0E0E0E; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:#fff; font-family:system-ui,Segoe UI,sans-serif; }
+  a { color:var(--gold); }
+  .wrap { max-width:1100px; margin:0 auto; padding:16px; }
+  header.top { display:flex; justify-content:space-between; align-items:center; padding:14px 16px; border-bottom:1px solid #ffffff1a; }
+  .brand { color:var(--gold); font-weight:900; font-size:18px; }
+  .brand small { color:#fff; opacity:.5; font-weight:700; font-size:12px; margin-left:6px; }
+  button { cursor:pointer; border:0; border-radius:10px; padding:10px 14px; font-weight:800; }
+  .btn-gold { background:var(--gold); color:#000; }
+  .btn-ghost { background:#ffffff14; color:#fff; }
+  .btn-sm { padding:6px 10px; font-size:12px; }
+  input, select { background:#ffffff10; color:#fff; border:1px solid #ffffff26; border-radius:10px; padding:9px 11px; }
+  label { font-size:12px; opacity:.8; display:block; margin-bottom:3px; }
+  .row { display:flex; gap:10px; flex-wrap:wrap; align-items:end; }
+  .card { background:#ffffff08; border:1px solid #ffffff14; border-radius:14px; padding:14px; margin:12px 0; }
+  .card h3 { margin:0 0 10px; color:var(--gold); font-size:15px; }
+  table.exp { width:100%; border-collapse:collapse; font-size:13px; }
+  table.exp th, table.exp td { text-align:left; padding:9px 10px; border-bottom:1px solid #ffffff12; white-space:nowrap; }
+  table.exp th { color:var(--gold); position:sticky; top:0; background:#161616; }
+  table.exp td.num, table.exp th.num { text-align:right; }
+  .hidden { display:none; }
+  .err { color:#ff6b6b; font-size:13px; min-height:18px; }
+  .ok { color:#7be07b; font-size:13px; min-height:18px; }
+  .muted { opacity:.6; }
+  .scroll { overflow:auto; max-height:60vh; border:1px solid #ffffff12; border-radius:12px; }
+  .pill { display:inline-block; padding:3px 9px; border-radius:999px; font-size:11px; font-weight:900; letter-spacing:.04em; background:#ffffff14; }
+  .pill.free { background:#ffffff14; color:#fff; }
+  .pill.basico { background:#2b3d5a; color:#cfe0ff; }
+  .pill.pyme { background:#3a2f5a; color:#dccfff; }
+  .pill.empresa { background:#5a3a2f; color:#ffd9c4; }
+  .big { font-size:23px; font-weight:900; color:var(--gold); }
+  .modal { position:fixed; inset:0; background:#000000cc; display:flex; align-items:center; justify-content:center; padding:16px; z-index:50; }
+  .modal.hidden { display:none; }
+  .modal .box { background:#161616; border:1px solid #ffffff22; border-radius:14px; max-width:440px; width:100%; max-height:85vh; overflow:auto; padding:18px; }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginView" class="wrap" style="max-width:380px;">
+  <h1 class="brand" style="font-size:24px; margin-top:48px;">Hash IA <small>Admin</small></h1>
+  <p class="muted">Administración de Atiko Digital</p>
+  <div class="card">
+    <label for="usuario">Usuario</label>
+    <input id="usuario" type="text" style="width:100%" autocapitalize="none" value="atiko" />
+    <label for="password" style="margin-top:10px">Contraseña</label>
+    <div style="position:relative">
+      <input id="password" type="password" style="width:100%; padding-right:44px" />
+      <button type="button" id="togglePass" aria-label="Mostrar clave"
+        style="position:absolute; right:6px; top:50%; transform:translateY(-50%); background:transparent; padding:4px 6px; font-size:18px">👁️</button>
+    </div>
+    <p id="loginErr" class="err"></p>
+    <button id="loginBtn" class="btn-gold" style="width:100%; margin-top:8px">Entrar</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="appView" class="hidden">
+  <header class="top">
+    <span class="brand">Hash IA <small>Admin · Atiko</small></span>
+    <button id="logoutBtn" class="btn-ghost">Salir</button>
+  </header>
+  <div class="wrap">
+
+    <!-- CREAR CLIENTE -->
+    <div class="card">
+      <h3>➕ Nuevo cliente</h3>
+      <div class="row">
+        <div><label>Empresa</label><input id="nc_empresa" placeholder="Pastelería Dulce" /></div>
+        <div><label>RUT (opcional)</label><input id="nc_rut" placeholder="76.111.111-1" /></div>
+        <div><label>Plan</label>
+          <select id="nc_plan">
+            <option value="free">free</option>
+            <option value="basico">basico</option>
+            <option value="pyme" selected>pyme</option>
+            <option value="empresa">empresa</option>
+          </select>
+        </div>
+        <div><label>Usuario (login dueño)</label><input id="nc_usuario" autocapitalize="none" placeholder="dulce" /></div>
+        <div><label>Contraseña</label><input id="nc_password" placeholder="Clave123" /></div>
+        <div><button id="nc_btn" class="btn-gold">Crear</button></div>
+      </div>
+      <p id="nc_msg" class="ok"></p>
+    </div>
+
+    <!-- LISTA -->
+    <div class="card">
+      <div class="row" style="justify-content:space-between">
+        <h3 style="margin:0">📋 Clientes <span id="periodoLbl" class="muted" style="font-weight:600"></span></h3>
+        <button id="refreshBtn" class="btn-ghost btn-sm">↻ Actualizar</button>
+      </div>
+      <div class="scroll" style="margin-top:10px">
+        <table class="exp">
+          <thead><tr>
+            <th>Empresa</th><th>RUT</th><th>Plan</th>
+            <th class="num">Empleados</th><th class="num">Mov. del mes</th><th>Acciones</th>
+          </tr></thead>
+          <tbody id="clientesBody"><tr><td colspan="6" class="muted">Cargando…</td></tr></tbody>
+        </table>
+      </div>
+      <p id="listErr" class="err"></p>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL RESET LOGIN -->
+<div id="loginModal" class="modal hidden">
+  <div class="box">
+    <h3 style="margin:0 0 4px; color:var(--gold)">🔑 Login del dueño</h3>
+    <p class="muted" id="lm_empresa" style="margin-top:0"></p>
+    <label>Usuario</label><input id="lm_usuario" autocapitalize="none" style="width:100%" />
+    <label style="margin-top:10px">Nueva contraseña</label><input id="lm_password" style="width:100%" />
+    <p id="lm_msg" class="ok"></p>
+    <div class="row" style="justify-content:flex-end; margin-top:12px">
+      <button id="lm_cancel" class="btn-ghost">Cerrar</button>
+      <button id="lm_save" class="btn-gold">Guardar login</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const TKEY = 'hashia_admin_jwt';
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let token = localStorage.getItem(TKEY) || '';
+
+async function api(path, opts = {}) {
+  const headers = { 'Content-Type': 'application/json', ...(opts.headers || {}) };
+  if (token) headers.Authorization = 'Bearer ' + token;
+  const r = await fetch('/api/admin' + path, { ...opts, headers });
+  let body = null; try { body = await r.json(); } catch (_) {}
+  if (!r.ok) { const e = new Error((body && body.error) || ('HTTP ' + r.status)); e.status = r.status; e.body = body; throw e; }
+  return body;
+}
+
+function show(view) {
+  $('loginView').classList.toggle('hidden', view !== 'login');
+  $('appView').classList.toggle('hidden', view !== 'app');
+}
+
+// ---- login ----
+$('togglePass').onclick = () => { const p = $('password'); p.type = p.type === 'password' ? 'text' : 'password'; };
+$('loginBtn').onclick = async () => {
+  $('loginErr').textContent = '';
+  try {
+    const r = await api('/login', { method: 'POST', body: JSON.stringify({ usuario: $('usuario').value.trim(), password: $('password').value }) });
+    token = r.token; localStorage.setItem(TKEY, token);
+    show('app'); cargar();
+  } catch (e) {
+    $('loginErr').textContent = e.status === 401 ? 'Usuario o clave incorrectos' : (e.status === 503 ? 'Admin no configurado en el servidor' : 'Error: ' + e.message);
+  }
+};
+$('password').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('loginBtn').click(); });
+$('logoutBtn').onclick = () => { token = ''; localStorage.removeItem(TKEY); show('login'); };
+
+// ---- lista de clientes ----
+const PLANES = ['free', 'basico', 'pyme', 'empresa'];
+function planSelect(id, plan) {
+  return '<select data-plan="' + esc(id) + '" class="btn-sm">' +
+    PLANES.map(p => '<option value="' + p + '"' + (p === plan ? ' selected' : '') + '>' + p + '</option>').join('') + '</select>';
+}
+async function cargar() {
+  $('listErr').textContent = '';
+  const now = new Date();
+  $('periodoLbl').textContent = '(' + now.toLocaleString('es-CL', { month: 'long', year: 'numeric' }) + ')';
+  try {
+    const cli = await api('/clientes');
+    const body = $('clientesBody');
+    if (!cli.length) { body.innerHTML = '<tr><td colspan="6" class="muted">Aún no hay clientes. Crea el primero arriba.</td></tr>'; return; }
+    body.innerHTML = cli.map(c => (
+      '<tr>' +
+      '<td><b>' + esc(c.nombre) + '</b>' + (c.contacto ? '<br><span class="muted" style="font-size:11px">' + esc(c.contacto) + '</span>' : '') + '</td>' +
+      '<td class="muted">' + esc(c.rut || '—') + '</td>' +
+      '<td>' + planSelect(c.id, c.plan) + '</td>' +
+      '<td class="num">' + c.empleados + '</td>' +
+      '<td class="num"><span class="big" style="font-size:16px">' + c.movimientos + '</span></td>' +
+      '<td><button class="btn-ghost btn-sm" data-login="' + esc(c.id) + '" data-nombre="' + esc(c.nombre) + '">🔑 Login</button></td>' +
+      '</tr>'
+    )).join('');
+    body.querySelectorAll('select[data-plan]').forEach(sel => {
+      sel.onchange = async () => {
+        try { await api('/clientes/' + sel.dataset.plan + '/plan', { method: 'PATCH', body: JSON.stringify({ plan: sel.value }) }); }
+        catch (e) { $('listErr').textContent = 'No se pudo cambiar el plan: ' + e.message; cargar(); }
+      };
+    });
+    body.querySelectorAll('button[data-login]').forEach(btn => {
+      btn.onclick = () => openLoginModal(btn.dataset.login, btn.dataset.nombre);
+    });
+  } catch (e) {
+    if (e.status === 401) { $('logoutBtn').click(); return; }
+    $('listErr').textContent = 'Error al cargar: ' + e.message;
+  }
+}
+$('refreshBtn').onclick = cargar;
+
+// ---- crear cliente ----
+$('nc_btn').onclick = async () => {
+  $('nc_msg').textContent = ''; $('nc_msg').className = 'ok';
+  const empresa = $('nc_empresa').value.trim();
+  if (!empresa) { $('nc_msg').className = 'err'; $('nc_msg').textContent = 'Falta el nombre de la empresa'; return; }
+  try {
+    await api('/clientes', { method: 'POST', body: JSON.stringify({
+      nombreEmpresa: empresa, rut: $('nc_rut').value.trim() || undefined, plan: $('nc_plan').value,
+      usuario: $('nc_usuario').value.trim() || undefined, password: $('nc_password').value || undefined,
+    }) });
+    $('nc_msg').textContent = '✓ Cliente "' + empresa + '" creado';
+    ['nc_empresa', 'nc_rut', 'nc_usuario', 'nc_password'].forEach(id => $(id).value = '');
+    cargar();
+  } catch (e) { $('nc_msg').className = 'err'; $('nc_msg').textContent = 'Error: ' + e.message; }
+};
+
+// ---- modal reset login ----
+let lm_id = null;
+function openLoginModal(id, nombre) {
+  lm_id = id;
+  $('lm_empresa').textContent = nombre;
+  $('lm_usuario').value = ''; $('lm_password').value = ''; $('lm_msg').textContent = ''; $('lm_msg').className = 'ok';
+  $('loginModal').classList.remove('hidden');
+}
+$('lm_cancel').onclick = () => $('loginModal').classList.add('hidden');
+$('lm_save').onclick = async () => {
+  $('lm_msg').textContent = ''; $('lm_msg').className = 'ok';
+  const usuario = $('lm_usuario').value.trim(), password = $('lm_password').value;
+  if (!usuario || !password) { $('lm_msg').className = 'err'; $('lm_msg').textContent = 'Usuario y contraseña son obligatorios'; return; }
+  try {
+    await api('/clientes/' + lm_id + '/login', { method: 'POST', body: JSON.stringify({ usuario, password }) });
+    $('lm_msg').textContent = '✓ Login guardado para "' + usuario + '"';
+    setTimeout(() => { $('loginModal').classList.add('hidden'); cargar(); }, 900);
+  } catch (e) { $('lm_msg').className = 'err'; $('lm_msg').textContent = 'Error: ' + e.message; }
+};
+
+// init
+if (token) { show('app'); cargar(); } else { show('login'); }
+</script>
+</body>
+</html>

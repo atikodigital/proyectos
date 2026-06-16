@@ -1,0 +1,654 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Hash IA — Panel</title>
+<style>
+  :root { --gold:#C9A24B; --bg:#0E0E0E; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:#fff; font-family:system-ui,Segoe UI,sans-serif; }
+  a { color:var(--gold); }
+  .wrap { max-width:1100px; margin:0 auto; padding:16px; }
+  header.top { display:flex; justify-content:space-between; align-items:center; padding:14px 16px; border-bottom:1px solid #ffffff1a; }
+  .brand { color:var(--gold); font-weight:900; font-size:18px; }
+  button { cursor:pointer; border:0; border-radius:10px; padding:10px 14px; font-weight:800; }
+  .btn-gold { background:var(--gold); color:#000; }
+  .btn-ghost { background:#ffffff14; color:#fff; }
+  input, select { background:#ffffff10; color:#fff; border:1px solid #ffffff26; border-radius:10px; padding:9px 11px; }
+  label { font-size:12px; opacity:.8; display:block; margin-bottom:3px; }
+  .row { display:flex; gap:10px; flex-wrap:wrap; align-items:end; }
+  .card { background:#ffffff08; border:1px solid #ffffff14; border-radius:14px; padding:14px; margin:12px 0; }
+  table.exp { width:100%; border-collapse:collapse; font-size:13px; }
+  table.exp th, table.exp td { text-align:left; padding:8px 10px; border-bottom:1px solid #ffffff12; white-space:nowrap; }
+  table.exp th { color:var(--gold); position:sticky; top:0; background:#161616; }
+  table.exp td.num, table.exp th.num { text-align:right; }
+  .tabs { display:flex; gap:8px; margin:12px 0; }
+  .tab { background:#ffffff10; }
+  .tab.active { background:var(--gold); color:#000; }
+  .hidden { display:none; }
+  .err { color:#ff6b6b; font-size:13px; }
+  .muted { opacity:.6; }
+  .scroll { overflow:auto; max-height:62vh; border:1px solid #ffffff12; border-radius:12px; }
+  .emp { display:flex; justify-content:space-between; align-items:center; padding:8px 10px; border-bottom:1px solid #ffffff12; }
+  table.exp tr.exp-row { cursor:pointer; }
+  table.exp tr.exp-row:hover td { background:#ffffff0a; }
+  .modal { position:fixed; inset:0; background:#000000cc; display:flex; align-items:center; justify-content:center; padding:16px; z-index:50; }
+  .modal.hidden { display:none; }
+  .modal .box { background:#161616; border:1px solid #ffffff22; border-radius:14px; max-width:480px; width:100%; max-height:85vh; overflow:auto; padding:16px; }
+  .detrow { display:flex; justify-content:space-between; gap:12px; padding:8px 4px; border-bottom:1px solid #ffffff12; font-size:14px; }
+  .detrow .detk { opacity:.6; } .detrow .detv { font-weight:700; text-align:right; }
+  .carousel { display:flex; gap:12px; overflow-x:auto; padding:6px 2px 16px; scroll-snap-type:x proximity; -webkit-overflow-scrolling:touch; }
+  .carousel::-webkit-scrollbar { height:9px; } .carousel::-webkit-scrollbar-thumb { background:#ffffff26; border-radius:5px; } .carousel::-webkit-scrollbar-track { background:#ffffff0a; }
+  .movcard { scroll-snap-align:start; flex:0 0 230px; background:#ffffff08; border:1px solid #ffffff1a; border-radius:16px; padding:14px; cursor:pointer; display:flex; flex-direction:column; gap:6px; transition:border-color .15s, transform .15s; }
+  .movcard:hover { border-color:var(--gold); transform:translateY(-2px); }
+  .movtipo { font-size:11px; font-weight:900; letter-spacing:.08em; }
+  .movprov { font-weight:800; font-size:15px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .movtotal { font-size:23px; font-weight:900; color:var(--gold); }
+  .movmeta { font-size:12px; opacity:.7; }
+  .movpago { margin-top:6px; }
+</style>
+<!-- Meta Pixel - Atiko Digital -->
+<script>window.ATIKO_META_PIXEL_ID='1768028951050353';</script>
+<script src="https://atikodigital.cl/assets/meta-pixel.js" async crossorigin="anonymous"></script>
+<noscript><img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=1768028951050353&ev=PageView&noscript=1"/></noscript>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginView" class="wrap" style="max-width:380px;">
+  <h1 class="brand" style="font-size:24px; margin-top:48px;">Hash IA</h1>
+  <p class="muted">Panel del dueño</p>
+  <div class="card">
+    <label for="email">Correo</label>
+    <input id="email" type="email" style="width:100%" autocapitalize="none" />
+    <label for="password" style="margin-top:10px">Contraseña</label>
+    <div style="position:relative">
+      <input id="password" type="password" style="width:100%; padding-right:44px" />
+      <button type="button" id="togglePass" aria-label="Mostrar contraseña"
+        style="position:absolute; right:6px; top:50%; transform:translateY(-50%); background:transparent; padding:4px 6px; font-size:18px">👁️</button>
+    </div>
+    <p id="loginErr" class="err"></p>
+    <button id="loginBtn" class="btn-gold" style="width:100%; margin-top:8px">Entrar</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="appView" class="hidden">
+  <header class="top">
+    <span class="brand">Hash IA</span>
+    <button id="logoutBtn" class="btn-ghost">Salir</button>
+  </header>
+  <div class="wrap">
+    <div class="tabs">
+      <button class="tab active" data-tab="gastos">Gastos</button>
+      <button class="tab" data-tab="empleados">Empleados</button>
+      <button class="tab" data-tab="productos">Productos</button>
+      <button class="tab" data-tab="ajustes">Ajustes</button>
+      <button class="tab" data-tab="contabilidad">Contabilidad</button>
+    </div>
+
+    <!-- GASTOS -->
+    <section id="gastosSection">
+      <div class="card">
+        <div class="row">
+          <div><label>Desde</label><input id="fFrom" type="date" /></div>
+          <div><label>Hasta</label><input id="fTo" type="date" /></div>
+          <div><label>Categoría</label>
+            <select id="fCategoria"><option value="">Todas</option></select>
+          </div>
+          <div><label>Estado</label>
+            <select id="fEstado">
+              <option value="">Todos</option>
+              <option value="confirmado">Confirmado</option>
+              <option value="pendiente_confirmacion">Pendiente</option>
+              <option value="rechazado">Rechazado</option>
+            </select>
+          </div>
+          <div><label>Proveedor</label><input id="fProveedor" placeholder="buscar…" /></div>
+          <div><label>Tipo</label>
+            <select id="fTipo">
+              <option value="">Todos</option>
+              <option value="gasto">Gastos</option>
+              <option value="ingreso">Ingresos</option>
+            </select>
+          </div>
+          <div><label>Período</label><input id="fPeriodo" type="month" /></div>
+          <button id="mesBtn" class="btn-ghost">📅 Este mes</button>
+          <button id="anioBtn" class="btn-ghost">🗓️ Este año</button>
+          <button id="applyBtn" class="btn-gold">Aplicar</button>
+          <button id="excelBtn" class="btn-ghost">Descargar Excel</button>
+          <button id="resumenBtn" class="btn-ghost">📲 Enviarme resumen</button>
+        </div>
+        <p id="resumenMsg" class="muted" style="margin:8px 2px 0"></p>
+      </div>
+      <div id="saldoCard" class="card hidden">
+        <div class="row" style="gap:28px">
+          <div><label>Ingresos</label><div id="sIngresos" style="font-size:20px;font-weight:900;color:#7CFC9B">$0</div></div>
+          <div><label>Gastos</label><div id="sGastos" style="font-size:20px;font-weight:900;color:#ff8a8a">$0</div></div>
+          <div><label>Saldo</label><div id="sSaldo" style="font-size:20px;font-weight:900;color:var(--gold)">$0</div></div>
+        </div>
+      </div>
+      <div id="expensesTable" class="scroll"><p class="muted" style="padding:16px">Cargando…</p></div>
+      <div id="detalleModal" class="modal hidden">
+        <div class="box">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px">
+            <span class="brand" id="detalleTitulo">Detalle</span>
+            <button id="detalleClose" class="btn-ghost">Cerrar</button>
+          </div>
+          <div id="detalleBody"></div>
+          <div id="detalleActions" style="display:flex; gap:8px; margin-top:12px"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- EMPLEADOS -->
+    <section id="employeesSection" class="hidden">
+      <div class="card">
+        <h3 style="margin-top:0">Agregar empleado</h3>
+        <div class="row">
+          <div><label>Nombre</label><input id="eNombre" /></div>
+          <div><label>WhatsApp (E.164)</label><input id="ePhone" placeholder="569…" /></div>
+          <div><label>Usuario (app)</label><input id="eUsuario" autocapitalize="none" /></div>
+          <div><label>Contraseña (app)</label><input id="ePassword" type="password" /></div>
+          <button id="addEmpBtn" class="btn-gold">Agregar</button>
+        </div>
+        <p id="empErr" class="err"></p>
+      </div>
+      <div id="empList" class="card"><p class="muted">Cargando…</p></div>
+    </section>
+
+    <!-- PRODUCTOS -->
+    <section id="productosSection" class="hidden">
+      <div class="card">
+        <div class="row" style="justify-content:space-between">
+          <h3 style="margin:0;color:var(--gold)">Productos</h3>
+          <button id="prodNuevo" class="btn-gold btn-sm">+ Nuevo</button>
+        </div>
+        <div style="display:grid;grid-template-columns:300px 1fr;gap:14px;margin-top:10px">
+          <div id="prodLista" class="scroll"></div>
+          <div id="prodForm" class="card" style="margin:0">
+            <label>Nombre</label><input id="prodNombre" style="width:100%" />
+            <div class="row" style="margin-top:8px">
+              <div><label>Tipo</label>
+                <select id="prodTipo"><option value="producto">Producto</option><option value="servicio">Servicio</option></select></div>
+              <div><label>Categoría</label><input id="prodCategoria" /></div>
+              <div><label>Precio base</label><input id="prodPrecio" type="number" /></div>
+              <div><label>Stock</label><input id="prodStock" type="number" /></div>
+            </div>
+            <p id="prodMsg" class="ok"></p>
+            <div class="row" style="justify-content:flex-end"><button id="prodGuardar" class="btn-gold">Guardar</button></div>
+            <p class="muted" style="font-size:11px">Variantes y extras se editan en la app (próxima iteración del panel).</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CONTABILIDAD -->
+    <section id="contabilidadSection" class="hidden">
+      <div class="card">
+        <div class="row">
+          <div><label>Período</label><input id="cPeriodo" type="month" /></div>
+          <div class="tabs" style="margin:0">
+            <button class="tab csub active" data-libro="diario">Diario</button>
+            <button class="tab csub" data-libro="mayor">Mayor</button>
+            <button class="tab csub" data-libro="balance">Balance</button>
+            <button class="tab csub" data-libro="flujo">Flujo de Caja</button>
+            <button class="tab csub" data-libro="conciliacion">Conciliación</button>
+            <button class="tab csub" data-libro="iva">IVA (SII)</button>
+          </div>
+          <button id="cExcelBtn" class="btn-ghost">Descargar Excel</button>
+        </div>
+      </div>
+      <div id="cContenido" class="scroll" style="padding:12px"><p class="muted">Cargando…</p></div>
+    </section>
+
+    <!-- AJUSTES -->
+    <section id="settingsSection" class="hidden">
+      <div class="card">
+        <h3 style="margin-top:0">Empresa</h3>
+        <div class="row">
+          <div><label>Nombre</label><input id="cNombre" /></div>
+          <div><label>RUT</label><input id="cRut" /></div>
+          <div><label>WhatsApp del dueño</label><input id="cOwnerWa" placeholder="569…" /></div>
+          <div><label>Resumen</label>
+            <select id="cFreq">
+              <option value="diario">Diario</option>
+              <option value="semanal">Semanal</option>
+              <option value="mensual">Mensual</option>
+            </select>
+          </div>
+          <button id="saveCompanyBtn" class="btn-gold">Guardar</button>
+        </div>
+        <p id="settingsMsg" class="muted"></p>
+      </div>
+      <div class="card">
+        <label style="display:flex; align-items:center; gap:8px;">
+          <input type="checkbox" id="ivaIncluido" />
+          <span>Mis precios ya incluyen IVA (el pedido muestra el total final, sin sumar 19%)</span>
+        </label>
+      </div>
+      <div class="card">
+        <h3 style="margin:0 0 8px;color:var(--gold)">Zonas de despacho</h3>
+        <div id="zonasLista" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px"></div>
+        <div class="row">
+          <div><label>Nombre de zona</label><input id="zonaNombre" placeholder="RM cercana" /></div>
+          <div><label>Costo</label><input id="zonaCosto" type="number" placeholder="2500" /></div>
+          <div style="flex:1"><label>Comunas</label>
+            <select id="zonaComunas" multiple size="6" style="width:100%"></select>
+          </div>
+          <div><button id="zonaAgregar" class="btn-gold btn-sm">+ Zona</button></div>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <div><label>Envío gratis desde $</label><input id="deliveryGratis" type="number" placeholder="(opcional)" /></div>
+          <div><button id="deliveryGuardar" class="btn-gold btn-sm">Guardar envío</button></div>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script src="lib.js"></script>
+<script>
+(function () {
+  var TOKEN_KEY = 'atiko_gastos_panel_jwt';
+  var CATEGORIES = [
+    'Mercadería e insumos del giro','Alimentación y representación','Combustible y transporte',
+    'Mantención y reparaciones','Arriendos','Servicios básicos','Útiles de oficina / generales',
+    'Seguros','Publicidad y promoción','Honorarios','Contribuciones, patentes e impuestos',
+    'Gastos financieros','Otros gastos'
+  ];
+  var $ = function (id) { return document.getElementById(id); };
+  function token() { try { return localStorage.getItem(TOKEN_KEY); } catch (e) { return null; } }
+  function setToken(t) { try { localStorage.setItem(TOKEN_KEY, t); } catch (e) {} }
+  function clearToken() { try { localStorage.removeItem(TOKEN_KEY); } catch (e) {} }
+
+  async function apiFetch(path, opts) {
+    opts = opts || {};
+    var headers = opts.headers || {};
+    var t = token();
+    if (t) headers['Authorization'] = 'Bearer ' + t;
+    if (opts.body && !(opts.body instanceof Blob)) headers['Content-Type'] = 'application/json';
+    var res = await fetch('/api/panel' + path, { method: opts.method || 'GET', headers: headers, body: opts.body });
+    if (res.status === 401) { clearToken(); showLogin(); throw new Error('401'); }
+    return res;
+  }
+
+  function showLogin() { $('loginView').classList.remove('hidden'); $('appView').classList.add('hidden'); }
+  function ymActual() { var d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); }
+  function showApp() { $('loginView').classList.add('hidden'); $('appView').classList.remove('hidden'); if (!$('fPeriodo').value) $('fPeriodo').value = ymActual(); loadGastos(); }
+
+  $('loginBtn').onclick = async function () {
+    $('loginErr').textContent = '';
+    try {
+      var res = await fetch('/api/panel/login', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: $('email').value, password: $('password').value })
+      });
+      if (!res.ok) throw new Error('bad');
+      var data = await res.json();
+      setToken(data.token);
+      showApp();
+    } catch (e) { $('loginErr').textContent = 'Correo o contraseña incorrectos.'; }
+  };
+  $('logoutBtn').onclick = function () { clearToken(); showLogin(); };
+  $('togglePass').onclick = function () {
+    var p = $('password');
+    var show = p.type === 'password';
+    p.type = show ? 'text' : 'password';
+    $('togglePass').textContent = show ? '🙈' : '👁️';
+  };
+
+  var tabs = document.querySelectorAll('.tab[data-tab]');
+  tabs.forEach(function (b) {
+    b.onclick = function () {
+      tabs.forEach(function (x) { x.classList.remove('active'); });
+      b.classList.add('active');
+      var tab = b.getAttribute('data-tab');
+      $('gastosSection').classList.toggle('hidden', tab !== 'gastos');
+      $('employeesSection').classList.toggle('hidden', tab !== 'empleados');
+      $('productosSection').classList.toggle('hidden', tab !== 'productos');
+      $('settingsSection').classList.toggle('hidden', tab !== 'ajustes');
+      $('contabilidadSection').classList.toggle('hidden', tab !== 'contabilidad');
+      if (tab === 'empleados') loadEmpleados();
+      if (tab === 'ajustes') loadCompany();
+      if (tab === 'productos') cargarProductos();
+      if (tab === 'contabilidad') { if (!$('cPeriodo').value) $('cPeriodo').value = ymActual(); loadContabilidad(); }
+    };
+  });
+
+  CATEGORIES.forEach(function (c) {
+    var o = document.createElement('option'); o.value = c; o.textContent = c; $('fCategoria').appendChild(o);
+  });
+
+  function currentFilters() {
+    return { from: $('fFrom').value, to: $('fTo').value, periodo: $('fPeriodo').value,
+             tipo: $('fTipo').value, categoria: $('fCategoria').value,
+             estado: $('fEstado').value, proveedor: $('fProveedor').value };
+  }
+  var lastRows = [];
+  async function loadGastos() {
+    $('expensesTable').innerHTML = '<p class="muted" style="padding:16px">Cargando…</p>';
+    try {
+      var res = await apiFetch('/expenses' + PanelLib.buildQuery(currentFilters()));
+      var rows = await res.json();
+      lastRows = rows;
+      renderSaldo(rows);
+      $('expensesTable').innerHTML = rows.length ? PanelLib.expensesTableHtml(rows)
+        : '<p class="muted" style="padding:16px">Sin movimientos para esos filtros.</p>';
+      wirePayButtons();
+      wireRowClicks();
+    } catch (e) { if (e.message !== '401') $('expensesTable').innerHTML = '<p class="err" style="padding:16px">Error al cargar.</p>'; }
+  }
+  function wireRowClicks() {
+    $('expensesTable').querySelectorAll('tr.exp-row').forEach(function (tr) {
+      tr.onclick = function (ev) {
+        if (ev.target.closest && ev.target.closest('[data-pay]')) return; // no abrir si tocó "Marcar pagada"
+        var id = tr.getAttribute('data-id');
+        var row = lastRows.filter(function (r) { return String(r.id) === id; })[0];
+        if (row) openDetalle(row);
+      };
+    });
+  }
+  var detSel = null;
+  function openDetalle(row) {
+    detSel = row;
+    $('detalleTitulo').textContent = (row.tipo === 'ingreso' ? 'Ingreso' : 'Gasto') + ' · ' + PanelLib.fmtClp(row.total);
+    $('detalleBody').innerHTML = PanelLib.detalleHtml(row);
+    defaultActions();
+    $('detalleModal').classList.remove('hidden');
+  }
+  function closeDetalle() { $('detalleModal').classList.add('hidden'); $('detalleActions').innerHTML = ''; }
+  function defaultActions() {
+    $('detalleActions').innerHTML = '<button id="detFotoBtn" class="btn-ghost" style="flex:1">📷 Ver foto</button>'
+      + '<button id="detEditBtn" class="btn-ghost" style="flex:1">✏️ Editar</button>'
+      + '<button id="detAnularBtn" class="btn-ghost" style="flex:1; color:#ff8a8a">🗑️ Anular</button>';
+    $('detFotoBtn').onclick = onFoto;
+    $('detEditBtn').onclick = onEdit;
+    $('detAnularBtn').onclick = onAnular;
+  }
+  async function onFoto() {
+    if (!detSel) return;
+    try {
+      var res = await apiFetch('/expenses/' + detSel.id + '/foto');
+      if (!res.ok) { $('detalleBody').insertAdjacentHTML('afterbegin', '<div class="muted" style="margin-bottom:8px">Sin foto disponible (se guarda 2 meses y luego se elimina).</div>'); $('detFotoBtn').disabled = true; return; }
+      var blob = await res.blob();
+      var url = URL.createObjectURL(blob);
+      $('detalleBody').insertAdjacentHTML('afterbegin', '<img alt="factura" src="' + url + '" style="width:100%; max-height:340px; object-fit:contain; border-radius:10px; background:#0008; margin-bottom:10px" />');
+      $('detFotoBtn').disabled = true;
+    } catch (e) {}
+  }
+  function fld(id, label, value, type) {
+    return '<label class="muted" style="display:block; margin-top:8px">' + label + '</label>'
+      + '<input id="' + id + '" ' + (type ? 'type="' + type + '" ' : '') + 'style="width:100%" value="' + PanelLib.escapeHtml(value == null ? '' : value) + '" />';
+  }
+  function onEdit() {
+    var e = detSel; if (!e) return;
+    var esIngreso = e.tipo === 'ingreso';
+    var catOpts = '<option value="">—</option>' + CATEGORIES.map(function (c) {
+      return '<option value="' + PanelLib.escapeHtml(c) + '"' + (c === e.categoria ? ' selected' : '') + '>' + PanelLib.escapeHtml(c) + '</option>';
+    }).join('');
+    $('detalleBody').innerHTML = ''
+      + '<label class="muted" style="display:block">Tipo</label>'
+      + '<select id="edTipo" style="width:100%"><option value="gasto"' + (esIngreso ? '' : ' selected') + '>Gasto</option><option value="ingreso"' + (esIngreso ? ' selected' : '') + '>Ingreso</option></select>'
+      + fld('edProveedor', esIngreso ? 'Pagador / origen' : 'Proveedor', e.proveedor)
+      + fld('edTotal', 'Monto', e.total, 'number')
+      + fld('edFecha', 'Fecha (aaaa-mm-dd)', e.fecha ? String(e.fecha).slice(0, 10) : '')
+      + '<label class="muted" style="display:block; margin-top:8px">Categoría</label><select id="edCategoria" style="width:100%">' + catOpts + '</select>'
+      + fld('edFolio', 'Folio (N° doc)', e.folio)
+      + fld('edNroOp', 'N° operación', e.nro_operacion);
+    $('detalleActions').innerHTML = '<button id="edSave" class="btn-gold" style="flex:1">Guardar</button><button id="edCancel" class="btn-ghost" style="flex:1">Cancelar</button>';
+    $('edSave').onclick = async function () {
+      var patch = { tipo: $('edTipo').value, proveedor: $('edProveedor').value, total: Number($('edTotal').value) || 0,
+        fecha: $('edFecha').value || null, categoria: $('edCategoria').value, folio: $('edFolio').value, nro_operacion: $('edNroOp').value };
+      try { await apiFetch('/expenses/' + e.id, { method: 'PATCH', body: JSON.stringify(patch) }); closeDetalle(); loadGastos(); } catch (err) {}
+    };
+    $('edCancel').onclick = function () { openDetalle(e); };
+  }
+  function onAnular() {
+    $('detalleActions').innerHTML = '<span style="flex:1; font-size:13px; align-self:center">¿Anular este movimiento? (queda el registro)</span>'
+      + '<button id="anYes" class="btn-ghost" style="color:#ff8a8a">Sí, anular</button><button id="anNo" class="btn-ghost">No</button>';
+    $('anYes').onclick = async function () {
+      try { await apiFetch('/expenses/' + detSel.id + '/anular', { method: 'POST', body: JSON.stringify({}) }); closeDetalle(); loadGastos(); } catch (err) {}
+    };
+    $('anNo').onclick = function () { openDetalle(detSel); };
+  }
+  $('detalleClose').onclick = closeDetalle;
+  $('detalleModal').onclick = function (ev) { if (ev.target === $('detalleModal')) closeDetalle(); };
+  function renderSaldo(rows) {
+    var c = PanelLib.cashflowFromRows(rows);
+    $('sIngresos').textContent = PanelLib.fmtClp(c.ingresos);
+    $('sGastos').textContent = PanelLib.fmtClp(c.gastos);
+    $('sSaldo').textContent = PanelLib.fmtClp(c.saldo);
+    $('saldoCard').classList.toggle('hidden', !rows.length);
+  }
+  function wirePayButtons() {
+    $('expensesTable').querySelectorAll('[data-pay]').forEach(function (b) {
+      b.onclick = async function () {
+        b.disabled = true;
+        try { await apiFetch('/expenses/' + b.getAttribute('data-pay') + '/pagar', { method: 'PATCH' }); loadGastos(); }
+        catch (e) { b.disabled = false; }
+      };
+    });
+  }
+  $('applyBtn').onclick = loadGastos;
+  $('mesBtn').onclick = function () {
+    $('fFrom').value = ''; $('fTo').value = ''; $('fPeriodo').value = ymActual(); loadGastos();
+  };
+  $('anioBtn').onclick = function () {
+    var y = new Date().getFullYear();
+    $('fPeriodo').value = ''; $('fFrom').value = y + '-01-01'; $('fTo').value = y + '-12-31'; loadGastos();
+  };
+  $('excelBtn').onclick = async function () {
+    try {
+      var res = await apiFetch('/expenses.xlsx' + PanelLib.buildQuery(currentFilters()));
+      var blob = await res.blob();
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a'); a.href = url; a.download = 'gastos.xlsx';
+      document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    } catch (e) {}
+  };
+  $('resumenBtn').onclick = async function () {
+    $('resumenBtn').disabled = true;
+    $('resumenMsg').textContent = 'Enviando resumen por WhatsApp…';
+    try {
+      var body = {};
+      if ($('fPeriodo').value) body.periodo = $('fPeriodo').value;
+      var res = await apiFetch('/whatsapp/resumen', { method: 'POST', body: JSON.stringify(body) });
+      var d = await res.json().catch(function () { return {}; });
+      if (res.ok) { $('resumenMsg').textContent = '✓ Resumen enviado a tu WhatsApp (' + (d.to || '') + ').'; }
+      else if (d.error === 'whatsapp_no_configurado') { $('resumenMsg').textContent = 'Falta configurar el WhatsApp de la empresa.'; }
+      else { $('resumenMsg').textContent = 'No se pudo enviar. Escríbele "hola" a tu número de WhatsApp para abrir la ventana de 24h y reintenta.'; }
+    } catch (e) { if (e.message !== '401') $('resumenMsg').textContent = 'Error al enviar.'; }
+    $('resumenBtn').disabled = false;
+  };
+
+  async function loadEmpleados() {
+    $('empList').innerHTML = '<p class="muted">Cargando…</p>';
+    try {
+      var res = await apiFetch('/employees');
+      var emps = await res.json();
+      $('empList').innerHTML = emps.length ? emps.map(function (e) {
+        return '<div class="emp"><div><b>' + PanelLib.escapeHtml(e.nombre) + '</b> '
+          + '<span class="muted">' + PanelLib.escapeHtml(e.usuario || '') + ' · ' + PanelLib.escapeHtml(e.phone || '') + '</span></div>'
+          + '<button class="btn-ghost" data-del="' + e.id + '">' + (e.activo ? 'Desactivar' : 'Inactivo') + '</button></div>';
+      }).join('') : '<p class="muted">Sin empleados.</p>';
+      $('empList').querySelectorAll('[data-del]').forEach(function (b) {
+        b.onclick = async function () {
+          await apiFetch('/employees/' + b.getAttribute('data-del'), { method: 'DELETE' });
+          loadEmpleados();
+        };
+      });
+    } catch (e) {}
+  }
+  $('addEmpBtn').onclick = async function () {
+    $('empErr').textContent = '';
+    try {
+      var res = await apiFetch('/employees', { method: 'POST', body: JSON.stringify({
+        nombre: $('eNombre').value, phone: $('ePhone').value, usuario: $('eUsuario').value, password: $('ePassword').value }) });
+      if (!res.ok) throw new Error('bad');
+      $('eNombre').value = $('ePhone').value = $('eUsuario').value = $('ePassword').value = '';
+      loadEmpleados();
+    } catch (e) { $('empErr').textContent = 'Falta el nombre (mínimo).'; }
+  };
+
+  async function loadCompany() {
+    try {
+      var res = await apiFetch('/company');
+      var c = await res.json();
+      $('cNombre').value = c.nombre || ''; $('cRut').value = c.rut || '';
+      $('cOwnerWa').value = c.owner_whatsapp || ''; $('cFreq').value = c.resumen_frecuencia || 'mensual';
+    } catch (e) {}
+    try { var r = await apiFetch('/pedido-config'); var cfg = await r.json(); var el = $('ivaIncluido'); if (el) el.checked = cfg.iva_incluido !== false; } catch (e) {}
+    loadDelivery();
+  }
+
+  var _zonas = [];
+  async function loadDelivery() {
+    try {
+      var cr = await apiFetch('/comunas'); var regs = await cr.json();
+      var sel = $('zonaComunas');
+      if (sel && !sel.dataset.loaded) {
+        sel.innerHTML = regs.map(function (g) {
+          return '<optgroup label="' + PanelLib.escapeHtml(g.region) + '">' + g.comunas.map(function (c) {
+            return '<option value="' + PanelLib.escapeHtml(c) + '">' + PanelLib.escapeHtml(c) + '</option>';
+          }).join('') + '</optgroup>';
+        }).join('');
+        sel.dataset.loaded = '1';
+      }
+      var pr = await apiFetch('/pedido-config'); var cfg = await pr.json();
+      _zonas = (cfg.delivery && cfg.delivery.zonas) || [];
+      $('deliveryGratis').value = (cfg.delivery && cfg.delivery.gratis_desde != null) ? cfg.delivery.gratis_desde : '';
+      renderZonas();
+    } catch (e) {}
+  }
+  function renderZonas() {
+    $('zonasLista').innerHTML = _zonas.length
+      ? _zonas.map(function (z, i) {
+          return '<div class="emp"><div><b>' + PanelLib.escapeHtml(z.nombre) + '</b> · ' + PanelLib.fmtClp(z.costo) + ' · ' + (z.comunas || []).length + ' comunas</div><span data-delz="' + i + '" style="cursor:pointer;color:#ff6b6b">✕</span></div>';
+        }).join('')
+      : '<div class="muted" style="font-size:12px">Sin zonas. Agrega una abajo (si solo despachas plano, crea una sola zona).</div>';
+    $('zonasLista').querySelectorAll('[data-delz]').forEach(function (el) {
+      el.onclick = async function () { _zonas.splice(Number(el.dataset.delz), 1); await saveDelivery(); renderZonas(); };
+    });
+  }
+  async function saveDelivery() {
+    var gratis = $('deliveryGratis').value;
+    await apiFetch('/pedido-config', { method: 'PATCH', body: JSON.stringify({ delivery: { zonas: _zonas, gratis_desde: gratis === '' ? null : Number(gratis) } }) });
+  }
+  $('zonaAgregar').onclick = async function () {
+    var nombre = $('zonaNombre').value.trim();
+    var costo = Number($('zonaCosto').value) || 0;
+    var comunas = Array.from($('zonaComunas').selectedOptions).map(function (o) { return o.value; });
+    if (!nombre || !comunas.length) return;
+    _zonas.push({ nombre: nombre, costo: costo, comunas: comunas });
+    await saveDelivery(); renderZonas();
+    $('zonaNombre').value = ''; $('zonaCosto').value = '';
+  };
+  $('deliveryGuardar').onclick = saveDelivery;
+  $('ivaIncluido').onchange = async function (e) {
+    try { await apiFetch('/pedido-config', { method: 'PATCH', body: JSON.stringify({ iva_incluido: e.target.checked }) }); } catch (_e) {}
+  };
+  $('saveCompanyBtn').onclick = async function () {
+    $('settingsMsg').textContent = '';
+    try {
+      await apiFetch('/company', { method: 'PATCH', body: JSON.stringify({
+        nombre: $('cNombre').value, rut: $('cRut').value,
+        owner_whatsapp: $('cOwnerWa').value, resumen_frecuencia: $('cFreq').value }) });
+      $('settingsMsg').textContent = 'Guardado ✓';
+    } catch (e) { $('settingsMsg').textContent = 'No se pudo guardar.'; }
+  };
+
+  async function cargarProductos() {
+    $('prodLista').innerHTML = '<p class="muted" style="padding:8px">Cargando…</p>';
+    try {
+      var res = await apiFetch('/products?incluirPausados=1');
+      var prods = await res.json();
+      $('prodLista').innerHTML = prods.length
+        ? PanelLib.productosListHtml(prods, PanelLib.fmtClp)
+        : '<p class="muted" style="padding:8px">Sin productos.</p>';
+    } catch (e) { if (e.message !== '401') $('prodLista').innerHTML = '<p class="err" style="padding:8px">Error al cargar.</p>'; }
+  }
+  $('prodGuardar').onclick = async function () {
+    var msg = $('prodMsg');
+    var body = {
+      nombre: $('prodNombre').value.trim(),
+      tipo: $('prodTipo').value,
+      categoria: $('prodCategoria').value.trim() || undefined,
+      precio_base: Number($('prodPrecio').value) || 0,
+      stock: $('prodStock').value === '' ? null : Number($('prodStock').value),
+    };
+    if (!body.nombre) { msg.className = 'err'; msg.textContent = 'Falta el nombre'; return; }
+    try {
+      await apiFetch('/products', { method: 'POST', body: JSON.stringify(body) });
+      msg.className = 'ok'; msg.textContent = '✓ Guardado';
+      ['prodNombre', 'prodCategoria', 'prodPrecio', 'prodStock'].forEach(function (id) { $(id).value = ''; });
+      cargarProductos();
+    } catch (e) { msg.className = 'err'; msg.textContent = 'Error al guardar'; }
+  };
+
+  // ── CONTABILIDAD ─────────────────────────────────────────────────────────
+  var libroActual = 'diario';
+  function cPeriodoVal() { return $('cPeriodo').value || ymActual(); }
+  async function loadContabilidad() {
+    $('cContenido').innerHTML = '<p class="muted" style="padding:8px">Cargando…</p>';
+    $('cExcelBtn').classList.toggle('hidden', libroActual === 'conciliacion' || libroActual === 'iva');
+    var p = '?periodo=' + encodeURIComponent(cPeriodoVal());
+    try {
+      var res, data;
+      if (libroActual === 'diario') {
+        res = await apiFetch('/contabilidad/diario' + p);
+        data = await res.json();
+        $('cContenido').innerHTML = PanelLib.diarioTableHtml(data.asientos);
+      } else if (libroActual === 'mayor') {
+        res = await apiFetch('/contabilidad/mayor' + p);
+        data = await res.json();
+        $('cContenido').innerHTML = PanelLib.mayorTableHtml(data.cuentas);
+      } else if (libroActual === 'balance') {
+        res = await apiFetch('/contabilidad/balance' + p);
+        data = await res.json();
+        $('cContenido').innerHTML = PanelLib.balanceTableHtml(data);
+      } else if (libroActual === 'conciliacion') {
+        res = await apiFetch('/contabilidad/conciliacion');
+        data = await res.json();
+        $('cContenido').innerHTML = PanelLib.conciliacionHtml(data && data.conciliacion === null ? null : data);
+      } else if (libroActual === 'iva') {
+        res = await apiFetch('/contabilidad/conciliacion?tipo=sii');
+        data = await res.json();
+        $('cContenido').innerHTML = PanelLib.ivaResumenHtml(data && data.conciliacion === null ? null : data);
+      } else {
+        res = await apiFetch('/contabilidad/flujo' + p);
+        data = await res.json();
+        $('cContenido').innerHTML = PanelLib.flujoTableHtml(data);
+      }
+    } catch (e) {
+      if (e.message !== '401') $('cContenido').innerHTML = '<p class="err" style="padding:8px">No se pudo cargar.</p>';
+    }
+  }
+  document.querySelectorAll('.csub').forEach(function (b) {
+    b.onclick = function () {
+      document.querySelectorAll('.csub').forEach(function (x) { x.classList.remove('active'); });
+      b.classList.add('active');
+      libroActual = b.getAttribute('data-libro');
+      loadContabilidad();
+    };
+  });
+  $('cPeriodo').onchange = loadContabilidad;
+  $('cExcelBtn').onclick = async function () {
+    var p = '?periodo=' + encodeURIComponent(cPeriodoVal());
+    try {
+      var res = await fetch('/api/panel/contabilidad/' + libroActual + '.xlsx' + p,
+        { headers: { 'Authorization': 'Bearer ' + token() } });
+      if (!res.ok) return;
+      var blob = await res.blob();
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a'); a.href = url; a.download = libroActual + '.xlsx';
+      document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    } catch (e) {}
+  };
+
+  if (token()) showApp(); else showLogin();
+})();
+</script>
+</body>
+</html>

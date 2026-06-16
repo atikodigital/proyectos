@@ -1,0 +1,432 @@
+const express = require('express');
+const { getEmployeeByUsuario, getAgentPrefs, setAgentPrefs, getCompanyWa } = require('../companies/repo');
+const { verifyPassword } = require('../auth/password');
+const { signToken } = require('../auth/jwt');
+const { requireAuth, requireKind } = require('../auth/middleware');
+const { intakeFromImage } = require('../expenses/intake');
+const { getExpense, confirmExpense, updateExpense, rejectExpense, annulExpense, markExpensePaid, markExpenseConciliada, createExpense } = require('../expenses/repo');
+const realExtract = require('../ocr/extract');
+const { conciliarCartola } = require('../match/service');
+const { construirInforme } = require('../match/conciliacion');
+const { conciliarSii } = require('../match/sii');
+const matchRepo = require('../match/repo');
+const { libroMayor } = require('../contabilidad/reportes');
+const contaCuentas = require('../contabilidad/cuentas');
+const { readImage, contentTypeFor } = require('../expenses/storage');
+const { buildAgentContext } = require('../agent/context');
+const { cashflowSummary } = require('../expenses/summary');
+const { formatCashflowSummary } = require('../whatsapp/format');
+const pedidosRepo = require('../pedidos/repo');
+const { buildPedidoPdf } = require('../pedidos/pdf');
+const { suggestOrder } = require('../pedidos/suggest');
+const catalogRepo = require('../catalog/repo');
+const chatRepo = require('../chat/repo');
+const { registerCatalogRoutes } = require('../catalog/routes');
+const { extraerProductos: realExtraerProductos } = require('../catalog/extraer');
+const { aplicarContabilidad } = require('../contabilidad/contabilizar');
+const contaReportes = require('../contabilidad/reportes');
+const { REGIONES_COMUNAS } = require('../pedidos/comunas-chile');
+const { mapCategoryToSii } = require('../domain/categories');
+
+function createAppRouter({ db, extractExpense, createLiveToken, sendText, extractCartola, componer, extraerProductos, extractLibroSii } = {}) {
+  const _extract = extractExpense || realExtract.extractExpense;
+  const _extractCartola = extractCartola || ((b64, mime) => require('../ocr/cartola').geminiExtractCartola(b64, mime));
+  const _extractLibroSii = extractLibroSii || ((b64, mime) => require('../ocr/libro-sii').geminiExtractLibroSii(b64, mime));
+  const _liveToken = createLiveToken || (() => require('../agent/token').createEphemeralToken({ apiKey: process.env.GEMINI_API_KEY }));
+  const _sendText = sendText || require('../whatsapp/client').sendText;
+  const _extraerProductos = extraerProductos || realExtraerProductos;
+  const router = express.Router();
+
+  router.post('/login', async (req, res) => {
+    const { usuario, password } = req.body || {};
+    const emp = await getEmployeeByUsuario(db, usuario);
+    if (!emp || !(await verifyPassword(password, emp.password_hash))) {
+      return res.status(401).json({ error: 'credenciales' });
+    }
+    const token = signToken({ kind: 'employee', companyId: emp.company_id, employeeId: emp.id });
+    return res.json({ token, employee: { id: emp.id, nombre: emp.nombre } });
+  });
+
+  router.use(requireAuth, requireKind('employee'));
+
+  router.get('/comunas', (req, res) => res.json(REGIONES_COMUNAS));
+
+  // ── Reportes contables VARAS (solo lectura) ──
+  router.get('/contabilidad/diario', async (req, res) => {
+    const asientos = await contaReportes.libroDiario(db, req.auth.companyId, req.query);
+    return res.json({ asientos });
+  });
+  router.get('/contabilidad/mayor', async (req, res) => {
+    const cuentas = await contaReportes.libroMayor(db, req.auth.companyId, req.query);
+    return res.json({ cuentas });
+  });
+  router.get('/contabilidad/balance', async (req, res) => {
+    return res.json(await contaReportes.balanceComprobacion(db, req.auth.companyId, req.query));
+  });
+  router.get('/contabilidad/flujo', async (req, res) => {
+    return res.json(await contaReportes.flujoCaja(db, req.auth.companyId, req.query));
+  });
+
+  registerCatalogRoutes(router, { db });
+
+  router.post('/catalog/extraer', async (req, res) => {
+    const { imageBase64, mimeType } = req.body || {};
+    if (!imageBase64) return res.status(400).json({ error: 'falta_imagen' });
+    try {
+      const r = await _extraerProductos(imageBase64, mimeType || 'image/jpeg');
+      return res.json({ productos: (r && r.productos) || [] });
+    } catch (e) { console.error('[catalog extraer]', e.message); return res.status(502).json({ error: 'ocr_falla' }); }
+  });
+
+  router.post('/products/bulk', async (req, res) => {
+    const productos = (req.body && Array.isArray(req.body.productos)) ? req.body.productos : [];
+    if (!productos.length) return res.status(400).json({ error: 'sin_productos' });
+    return res.status(201).json(await catalogRepo.crearProductosBulk(db, req.auth.companyId, productos));
+  });
+
+  router.post('/pedido/from-catalog', async (req, res) => {
+    try {
+      const b = req.body || {};
+      const lineasIn = Array.isArray(b.lineas) ? b.lineas : [];
+      const items = [];
+      for (const ln of lineasIn) {
+        const prod = await catalogRepo.getProduct(db, req.auth.companyId, ln && ln.productId);
+        if (!prod) continue;
+        const sel = { opciones: (ln.opciones) || {}, extras: Array.isArray(ln.extras) ? ln.extras : [] };
+        items.push({
+          descripcion: catalogRepo.describeSelection(prod, sel),
+          cantidad: Math.max(1, parseInt(ln.cantidad, 10) || 1),
+          precio_unitario: catalogRepo.priceForSelection(prod, sel),
+        });
+      }
+      if (!items.length) return res.status(400).json({ error: 'sin_lineas' });
+      const cfg = await pedidosRepo.getPedidoConfig(db, req.auth.companyId);
+      let comuna = null, envio_costo = 0, envio_zona = null;
+      if (b.entrega === 'despacho' && b.comuna) {
+        const subtotalProductos = items.reduce((s, it) => s + it.cantidad * it.precio_unitario, 0);
+        const env = pedidosRepo.costoEnvio(cfg.delivery, b.comuna, subtotalProductos);
+        if (!env.ok) return res.status(400).json({ error: 'sin_despacho_comuna' });
+        comuna = b.comuna; envio_costo = env.costo; envio_zona = env.zona ? env.zona.nombre : null;
+      }
+      const contact = b.contact || {};
+      const ped = await pedidosRepo.createPedido(db, req.auth.companyId, {
+        channel: b.channel || 'whatsapp',
+        contact_name: contact.name, contact_phone: contact.phone,
+        items, impuesto_pct: cfg.iva_incluido ? 0 : 19,
+        entrega: b.entrega, direccion: b.direccion, nota: b.nota,
+        comuna, envio_costo, envio_zona,
+      });
+      const text = pedidosRepo.pedidoToText(ped, { pie: cfg.pie });
+      return res.status(201).json({ pedido: ped, text, waUrl: pedidosRepo.waLink(text, contact.phone) });
+    } catch (e) { console.error('[pedido from-catalog]', e.message); return res.status(500).json({ error: 'error_pedido' }); }
+  });
+
+  router.get('/pedido/:id/pdf', async (req, res) => {
+    try {
+      const ped = await pedidosRepo.getPedido(db, req.auth.companyId, req.params.id);
+      if (!ped) return res.status(404).json({ error: 'no_existe' });
+      const pie = await pedidosRepo.getCompanyPie(db, req.auth.companyId);
+      const buf = await buildPedidoPdf(ped, { pie });
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', 'inline; filename="cotizacion.pdf"');
+      return res.send(buf);
+    } catch (e) {
+      if (e.message && e.message.includes('uuid')) return res.status(404).json({ error: 'no_existe' });
+      console.error('[pedido pdf]', e.message); return res.status(500).json({ error: 'error_pdf' });
+    }
+  });
+
+  router.get('/pedido-config', async (req, res) => {
+    return res.json(await pedidosRepo.getPedidoConfig(db, req.auth.companyId));
+  });
+  router.patch('/pedido-config', async (req, res) => {
+    return res.json(await pedidosRepo.setPedidoConfig(db, req.auth.companyId, req.body || {}));
+  });
+
+  // ── Overlay "Crear pedido" (cotización desde un chat, vía el APK Hash IA) ──
+  router.post('/overlay/pedido/suggest', async (req, res) => {
+    try {
+      const { channel = 'whatsapp', contact = {}, conversation = '' } = req.body || {};
+      const convo = String(conversation || '').trim();
+      if (!convo) return res.status(400).json({ error: 'sin_conversacion' });
+      const sug = await suggestOrder(convo);
+      if (!sug.items.length) return res.status(422).json({ error: 'sin_pedido' });
+      const ped = await pedidosRepo.createPedido(db, req.auth.companyId, {
+        channel, contact_name: contact.name, contact_phone: contact.phone,
+        items: sug.items, impuesto_pct: sug.impuesto_pct, moneda: sug.moneda,
+        entrega: sug.entrega, direccion: sug.direccion, nota: sug.nota,
+      });
+      const pie = await pedidosRepo.getCompanyPie(db, req.auth.companyId);
+      const text = pedidosRepo.pedidoToText(ped, { pie });
+      return res.json({ pedido: ped, confianza: sug.confianza, text, waUrl: pedidosRepo.waLink(text, contact.phone) });
+    } catch (e) { console.error('[pedido suggest]', e.message); return res.status(500).json({ error: 'error_pedido' }); }
+  });
+  router.post('/overlay/pedido/:id/sent', async (req, res) => {
+    const ped = await pedidosRepo.markSent(db, req.auth.companyId, req.params.id);
+    if (!ped) return res.status(404).json({ error: 'no_existe' });
+    return res.json({ pedido: ped });
+  });
+  router.get('/pedido-pie', async (req, res) => {
+    return res.json({ pie: await pedidosRepo.getCompanyPie(db, req.auth.companyId) });
+  });
+  router.patch('/pedido-pie', async (req, res) => {
+    await pedidosRepo.setCompanyPie(db, req.auth.companyId, (req.body || {}).pie);
+    return res.json({ ok: true });
+  });
+
+  // ── Bandeja "Chat" (CRM omnicanal): captura por notificaciones / compartir ──
+  router.post('/chat/ingest', async (req, res) => {
+    const { channel, contact, text, source } = req.body || {};
+    if (!text || !String(text).trim()) return res.status(400).json({ error: 'sin_texto' });
+    const m = await chatRepo.addMensaje(db, req.auth.companyId, { channel, contact, text, source });
+    return res.status(201).json(m);
+  });
+  router.get('/chat/conversaciones', async (req, res) => {
+    return res.json(await chatRepo.listConversaciones(db, req.auth.companyId));
+  });
+  router.get('/chat/conversacion', async (req, res) => {
+    return res.json(await chatRepo.listMensajes(db, req.auth.companyId, req.query.channel, req.query.contact));
+  });
+
+  router.patch('/agent/prefs', async (req, res) => {
+    const prefs = await setAgentPrefs(db, req.auth.employeeId, req.body || {});
+    return res.json({ agent_prefs: prefs });
+  });
+
+  router.post('/agent/session', async (req, res) => {
+    let tok;
+    if (process.env.KALY_TOKEN_MODE === 'key') {
+      // Modo directo: entrega la API key real SOLO a empleados autenticados (fallback
+      // mientras el WS no acepte tokens efimeros como key).
+      tok = { token: process.env.GEMINI_API_KEY, expireAt: null, model: process.env.GEMINI_LIVE_MODEL || 'gemini-2.5-flash-native-audio-preview-09-2025' };
+    } else {
+      try { tok = await _liveToken(); }
+      catch (e) { return res.status(503).json({ error: 'live_no_disponible', detalle: e.message }); }
+    }
+    const context = await buildAgentContext(db, { companyId: req.auth.companyId, employeeId: req.auth.employeeId });
+    console.log('[kaly] token live emitido para empleado', req.auth.employeeId);
+    return res.json({ ...tok, context });
+  });
+
+  router.post('/agent/resumen-whatsapp', async (req, res) => {
+    const wa = await getCompanyWa(db, req.auth.companyId);
+    if (!wa || !wa.wa_phone_number_id || !wa.wa_token || !wa.owner_whatsapp) {
+      return res.status(400).json({ error: 'whatsapp_no_configurado' });
+    }
+    const d = new Date();
+    const meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+    const s = await cashflowSummary(db, req.auth.companyId, { year: d.getFullYear(), month: d.getMonth() + 1 });
+    const body = formatCashflowSummary({ ...s, periodo: `${meses[d.getMonth()]} ${d.getFullYear()}` });
+    try { await _sendText({ to: wa.owner_whatsapp, body, token: wa.wa_token, phoneNumberId: wa.wa_phone_number_id }); }
+    catch (e) { return res.status(502).json({ error: 'envio_whatsapp', detalle: e.message }); }
+    return res.json({ ok: true, to: wa.owner_whatsapp });
+  });
+
+  async function ownedExpense(req, res) {
+    const exp = await getExpense(db, req.params.id);
+    if (!exp || exp.company_id !== req.auth.companyId) { res.status(404).json({ error: 'no_existe' }); return null; }
+    return exp;
+  }
+
+  router.post('/expenses', async (req, res) => {
+    const { imageBase64, mimeType, override } = req.body || {};
+    if (!imageBase64) return res.status(400).json({ error: 'falta_imagen' });
+    const { expense, duplicado, documento } = await intakeFromImage({
+      db, companyId: req.auth.companyId, employeeId: req.auth.employeeId,
+      imageBuffer: Buffer.from(imageBase64, 'base64'), mimeType: mimeType || 'image/jpeg',
+      canal: 'app', extract: _extract, override: !!override,
+    });
+    if (documento) return res.status(202).json({ documento, match: 'pendiente' });
+    if (!expense) return res.status(409).json({ error: 'duplicado', duplicado });
+    return res.status(201).json({ ...expense, duplicado: duplicado || null });
+  });
+
+  router.post('/expenses/manual', async (req, res) => {
+    const { tipo, proveedor, rut_emisor, folio, fecha, neto, iva, total, categoria, estado_pago } = req.body || {};
+    if (!tipo || total === undefined) {
+      return res.status(400).json({ error: 'tipo_y_total_requeridos' });
+    }
+    const { createExpense } = require('../expenses/repo');
+    const { mapCategoryToSii } = require('../domain/categories');
+
+    // Para GASTO con categoría, derivar la cuenta SII desde el mapa de categorías
+    let cuentaSii = {};
+    if (tipo !== 'ingreso' && categoria) {
+      const cuenta = mapCategoryToSii(categoria);
+      cuentaSii = { cuenta_sii_codigo: cuenta.codigo, cuenta_sii_nombre: cuenta.nombre };
+    }
+
+    const expense = await createExpense(db, {
+      company_id: req.auth.companyId,
+      employee_id: req.auth.employeeId,
+      canal: 'app',
+      estado: 'confirmado',
+      tipo,
+      proveedor: proveedor || 'Transacción manual',
+      rut_emisor,
+      folio,
+      fecha: fecha || new Date().toISOString().slice(0, 10),
+      neto: Number(neto) || 0,
+      iva: Number(iva) || 0,
+      total: Number(total) || 0,
+      categoria,
+      estado_pago: estado_pago || 'pendiente',
+      ...cuentaSii,
+    });
+    await aplicarContabilidad(db, req.auth.companyId, expense, 'confirmar');
+    return res.status(201).json(expense);
+  });
+
+  router.post('/expenses/:id/confirm', async (req, res) => {
+    if (!(await ownedExpense(req, res))) return;
+    const confirmed = await confirmExpense(db, req.params.id);
+    const exp = await getExpense(db, req.params.id);
+    await aplicarContabilidad(db, req.auth.companyId, exp, 'confirmar');
+    return res.json(confirmed);
+  });
+
+  router.patch('/expenses/:id/pagar', async (req, res) => {
+    if (!(await ownedExpense(req, res))) return;
+    const paid = await markExpensePaid(db, req.auth.companyId, req.params.id);
+    const exp = await getExpense(db, req.params.id);
+    await aplicarContabilidad(db, req.auth.companyId, exp, 'pagar');
+    return res.json(paid);
+  });
+
+  router.patch('/expenses/:id', async (req, res) => {
+    if (!(await ownedExpense(req, res))) return;
+    const updated = await updateExpense(db, req.params.id, req.body || {});
+    const exp = await getExpense(db, req.params.id);
+    await aplicarContabilidad(db, req.auth.companyId, exp, 'editar');
+    return res.json(updated);
+  });
+
+  router.post('/expenses/:id/reject', async (req, res) => {
+    if (!(await ownedExpense(req, res))) return;
+    return res.json(await rejectExpense(db, req.params.id));
+  });
+
+  router.post('/expenses/:id/anular', async (req, res) => {
+    if (!(await ownedExpense(req, res))) return;
+    const anulado = await annulExpense(db, req.auth.companyId, req.params.id);
+    const exp = await getExpense(db, req.params.id);
+    await aplicarContabilidad(db, req.auth.companyId, exp, 'anular');
+    return res.json(anulado);
+  });
+
+  router.get('/expenses/:id/foto', async (req, res) => {
+    const exp = await ownedExpense(req, res);
+    if (!exp) return;
+    const buf = readImage(exp.foto_path);
+    if (!buf) return res.status(404).json({ error: 'sin_foto' });
+    res.setHeader('Content-Type', contentTypeFor(exp.foto_path));
+    return res.send(buf);
+  });
+
+  router.post('/match/cartola', async (req, res) => {
+    const { imageBase64, mimeType } = req.body || {};
+    if (!imageBase64) return res.status(400).json({ error: 'falta_imagen' });
+    let cartola;
+    try {
+      const ex = await _extractCartola(imageBase64, mimeType || 'image/jpeg');
+      // _extractCartola puede devolver array (líneas) o {lineas, saldo...}
+      cartola = Array.isArray(ex) ? { lineas: ex, saldoInicial: null, saldoFinal: null } : ex;
+    } catch (e) { return res.status(502).json({ error: 'ocr_cartola', detalle: e.message }); }
+
+    const aux = await db.query(
+      `SELECT * FROM expenses WHERE company_id=$1 AND estado <> 'anulado'`, [req.auth.companyId]
+    );
+    // banco contable = saldo de la cuenta Banco en el Mayor (debe - haber)
+    const mayor = await libroMayor(db, req.auth.companyId, {});
+    const banco = mayor.find((c) => c.clave === 'banco');
+    const bancoContable = banco ? Number(banco.saldo) : 0;
+
+    const informe = await construirInforme(
+      { cartola, libroAuxiliar: aux.rows, bancoContable },
+      { componer }
+    );
+    try { await matchRepo.guardarConciliacion(db, req.auth.companyId, 'bancaria', informe); } catch (e) { /* no romper */ }
+    return res.json({ lineas: cartola.lineas, ...informe });
+  });
+
+  router.post('/match/asiento/confirmar', async (req, res) => {
+    const s = req.body || {};
+    const monto = Math.round(Number(s.monto) || 0);
+    if (!s.cuentaClaveDebe || !s.cuentaClaveHaber || monto <= 0) return res.status(400).json({ error: 'asiento_invalido' });
+    if (s.cuentaClaveDebe === s.cuentaClaveHaber) return res.status(400).json({ error: 'cuentas_iguales' });
+    const debeId = await contaCuentas.getCuentaId(db, req.auth.companyId, s.cuentaClaveDebe);
+    const haberId = await contaCuentas.getCuentaId(db, req.auth.companyId, s.cuentaClaveHaber);
+    if (!debeId || !haberId) return res.status(400).json({ error: 'cuenta_no_encontrada' });
+    const { guardarAsiento, buscarAsientoVivo } = require('../contabilidad/repo');
+    const ref = 'concil-' + (s.id || require('crypto').createHash('sha1').update([s.fecha, s.monto, s.cuentaClaveDebe, s.cuentaClaveHaber, s.descripcion].join('|')).digest('hex').slice(0, 12));
+    const previo = await buscarAsientoVivo(db, req.auth.companyId, 'conciliacion', ref, 'ajuste');
+    if (previo) return res.json({ ok: true, asientoId: previo.id, yaExistia: true });
+    const asiento = {
+      origen: 'conciliacion', origen_ref: ref, tipo_asiento: 'ajuste',
+      fecha: s.fecha || null, glosa: s.descripcion || 'Ajuste de conciliación',
+      lineas: [
+        { cuenta_id: debeId, debe: monto, haber: 0, glosa: s.descripcion || null },
+        { cuenta_id: haberId, debe: 0, haber: monto, glosa: s.descripcion || null },
+      ],
+    };
+    const saved = await guardarAsiento(db, req.auth.companyId, asiento);
+    return res.json({ ok: true, asientoId: saved.id });
+  });
+
+  router.post('/match/confirmar', async (req, res) => {
+    const ids = (req.body && Array.isArray(req.body.ids)) ? req.body.ids : [];
+    let n = 0;
+    for (const id of ids) {
+      const exp = await getExpense(db, id);
+      if (exp && exp.company_id === req.auth.companyId) {
+        await markExpenseConciliada(db, req.auth.companyId, id);
+        const expFresh = await getExpense(db, id);
+        await aplicarContabilidad(db, req.auth.companyId, expFresh, 'pagar');
+        n += 1;
+      }
+    }
+    return res.json({ conciliadas: n });
+  });
+
+  router.post('/match/libro-sii', async (req, res) => {
+    const { imageBase64, mimeType } = req.body || {};
+    if (!imageBase64) return res.status(400).json({ error: 'falta_imagen' });
+    let docs;
+    try { docs = await _extractLibroSii(imageBase64, mimeType || 'image/jpeg'); }
+    catch (e) { return res.status(502).json({ error: 'ocr_libro', detalle: e.message }); }
+    const aux = await db.query(`SELECT * FROM expenses WHERE company_id=$1 AND estado <> 'anulado'`, [req.auth.companyId]);
+    const informe = conciliarSii(docs, aux.rows);
+    try { await matchRepo.guardarConciliacion(db, req.auth.companyId, 'sii', { sca: informe.iva.ivaPagarContable, sba: informe.iva.ivaPagarSii, cuadrado: informe.iva.diferenciaCredito === 0 && informe.iva.diferenciaDebito === 0, partidas: informe.faltantes, suggested: [], exceptions: informe.sobrantes }); } catch (e) { /* no romper */ }
+    return res.json({ docs, ...informe });
+  });
+
+  router.post('/match/sii/crear-movimiento', async (req, res) => {
+    const d = req.body || {};
+    const total = Math.round(Number(d.total) || 0);
+    if (!d.folio || total <= 0) return res.status(400).json({ error: 'doc_invalido' });
+    const tipo = d.clase === 'venta' ? 'ingreso' : 'gasto';
+    const cuenta = tipo === 'gasto' ? mapCategoryToSii(d.categoria || 'Otros gastos') : null;
+    const expense = await createExpense(db, {
+      company_id: req.auth.companyId, employee_id: req.auth.employeeId, canal: 'app', estado: 'confirmado',
+      tipo, tipo_documento: d.tipo_doc || 'factura', rut_emisor: d.rut || null, folio: String(d.folio),
+      fecha: d.fecha || null, neto: Math.round(Number(d.neto) || 0), iva: Math.round(Number(d.iva) || 0), total,
+      categoria: tipo === 'gasto' ? (d.categoria || 'Otros gastos') : null,
+      cuenta_sii_codigo: cuenta ? cuenta.codigo : null, cuenta_sii_nombre: cuenta ? cuenta.nombre : null,
+      glosa: 'Registrado desde libro SII',
+    });
+    await aplicarContabilidad(db, req.auth.companyId, expense, 'confirmar');
+    return res.json({ ok: true, expenseId: expense.id });
+  });
+
+  router.get('/expenses', async (req, res) => {
+    const r = await db.query(
+      `SELECT * FROM expenses WHERE company_id=$1 AND employee_id=$2 AND estado <> 'anulado' ORDER BY created_at DESC LIMIT 50`,
+      [req.auth.companyId, req.auth.employeeId]
+    );
+    return res.json(r.rows);
+  });
+
+  return router;
+}
+
+module.exports = { createAppRouter };

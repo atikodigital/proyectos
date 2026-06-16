@@ -1,0 +1,207 @@
+/* KaTeX CSS for Math Rendering */
+@import 'katex/dist/katex.min.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    overflow-x: hidden;
+    width: 100%;
+  }
+  body {
+    @apply bg-[#F8FAFC] min-h-screen;
+    overflow-x: hidden;
+    width: 100%;
+    /* Scroll nativo en Android WebView */
+    -webkit-overflow-scrolling: touch;
+  }
+  #root {
+    overflow-x: hidden;
+    width: 100%;
+    min-height: 100vh;
+    margin: 0;
+    padding: 0;
+    text-align: initial;
+  }
+
+  /* Todos los contenedores con scroll deben funcionar en Android */
+  .overflow-y-auto,
+  .overflow-y-scroll {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+}
+
+@layer utilities {
+  .animate-blob {
+    animation: blob 7s infinite;
+  }
+
+  .animate-blob-reverse {
+    animation: blob-reverse 10s infinite;
+  }
+
+  .animation-delay-2000 {
+    animation-delay: 2s;
+  }
+
+  .animation-delay-4000 {
+    animation-delay: 4s;
+  }
+
+  @keyframes blob {
+    0% {
+      transform: translate(0px, 0px) scale(1);
+    }
+
+    33% {
+      transform: translate(30px, -50px) scale(1.1);
+    }
+
+    66% {
+      transform: translate(-20px, 20px) scale(0.9);
+    }
+
+    100% {
+      transform: translate(0px, 0px) scale(1);
+    }
+  }
+
+  @keyframes blob-reverse {
+    0% {
+      transform: translate(0px, 0px) scale(1);
+    }
+
+    33% {
+      transform: translate(-30px, 50px) scale(1.1);
+    }
+
+    66% {
+      transform: translate(20px, -20px) scale(0.9);
+    }
+
+    100% {
+      transform: translate(0px, 0px) scale(1);
+    }
+  }
+
+  /* MORE AGGRESSIVE BLOB ANIMATIONS */
+  .animate-blob-giant {
+    animation: blob-giant 15s infinite alternate ease-in-out;
+  }
+
+  .animate-blob-drift {
+    animation: blob-drift 12s infinite linear;
+  }
+
+  @keyframes blob-giant {
+    0% {
+      transform: translate(-20%, -20%) scale(1) rotate(0deg);
+    }
+
+    50% {
+      transform: translate(25%, 20%) scale(1.4) rotate(120deg);
+    }
+
+    100% {
+      transform: translate(-10%, -10%) scale(0.8) rotate(240deg);
+    }
+  }
+
+  @keyframes blob-drift {
+    0% {
+      transform: rotate(0deg) translateX(150px) rotate(0deg);
+    }
+
+    100% {
+      transform: rotate(360deg) translateX(150px) rotate(-360deg);
+    }
+  }
+
+  .animate-pulse-subtle {
+    animation: pulse-subtle 4s ease-in-out infinite;
+  }
+
+  @keyframes pulse-subtle {
+
+    0%,
+    100% {
+      opacity: 0.6;
+      transform: scale(1);
+    }
+
+    50% {
+      opacity: 1;
+      transform: scale(1.02);
+    }
+  }
+
+  .glass-card {
+    @apply bg-white/70 backdrop-blur-xl border border-white/40 shadow-xl;
+  }
+
+  .clay-card-indigo {
+    @apply bg-white rounded-[40px] border-2 border-indigo-100 shadow-[0_20px_50px_rgba(79, 70, 229, 0.1), 0_0_0_1px_rgba(79, 70, 229, 0.05)];
+  }
+
+  .glow-indigo {
+    box-shadow: 0 0 20px rgba(79, 70, 229, 0.4);
+  }
+
+  .animate-shine {
+    animation: shine 3s infinite linear;
+  }
+
+  @keyframes shine {
+    from {
+      transform: translateX(-100%);
+    }
+
+    to {
+      transform: translateX(100%);
+    }
+  }
+
+  .animate-float {
+    animation: float 3s ease-in-out infinite;
+  }
+
+  @keyframes float {
+
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+
+    50% {
+      transform: translateY(-10px);
+    }
+  }
+
+  .animate-infinite-scroll {
+    animation: infinite-scroll 5s linear infinite;
+  }
+
+  @keyframes infinite-scroll {
+    from {
+      transform: translateY(-100%);
+    }
+
+    to {
+      transform: translateY(100%);
+    }
+  }
+
+  .animate-spin-slow {
+    animation: spin 8s linear infinite;
+  }
+
+  .bg-mesh {
+    background-image:
+      radial-gradient(at 0% 0%, hsla(253, 16%, 7%, 1) 0, transparent 50%),
+      radial-gradient(at 50% 0%, hsla(225, 39%, 30%, 1) 0, transparent 50%),
+      radial-gradient(at 100% 0%, hsla(339, 49%, 30%, 1) 0, transparent 50%);
+  }
+}

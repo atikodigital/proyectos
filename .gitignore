@@ -1,0 +1,29 @@
+# Dependencias / build (regenerables)
+node_modules/
+**/node_modules/
+dist/
+**/dist/
+**/android/build/
+**/android/.gradle/
+**/android/app/build/
+**/android/captures/
+**/.gradle/
+
+# Secretos / credenciales (NO commitear)
+.env
+.env.*
+!.env.example
+**/.env
+**/android/local.properties
+**/android/key.properties
+**/keystore.properties
+*.jks
+*.keystore
+
+# Subidas / datos locales
+gastos/uploads/
+*.apk
+
+# OS / editor
+.DS_Store
+Thumbs.db

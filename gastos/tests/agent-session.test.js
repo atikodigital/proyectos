@@ -1,0 +1,60 @@
+const express = require('express');
+const request = require('supertest');
+const { newDb } = require('pg-mem');
+const { migrate } = require('../src/db/migrate');
+const { createAppRouter } = require('../src/app/router');
+const { createEmployee } = require('../src/companies/repo');
+const { hashPassword } = require('../src/auth/password');
+
+async function makeDb() {
+  const mem = newDb();
+  mem.public.registerFunction({ name: 'gen_random_uuid', returns: 'uuid', impure: true, implementation: () => require('crypto').randomUUID() });
+  const pg = mem.adapters.createPg();
+  const db = new pg.Pool();
+  await migrate(db);
+  return db;
+}
+
+async function setup() {
+  const db = await makeDb();
+  const c = await db.query("INSERT INTO companies(nombre) VALUES('X') RETURNING id");
+  const cid = c.rows[0].id;
+  const emp = await createEmployee(db, { company_id: cid, nombre: 'Jose', usuario: 'jose', password_hash: await hashPassword('p'), activo: true });
+  const createLiveToken = jest.fn(async () => ({ token: 'auth_tokens/abc', expireAt: '2026-06-12T13:00:00Z' }));
+  const app = express(); app.use(express.json());
+  app.use('/api/app', createAppRouter({ db, createLiveToken }));
+  const login = await request(app).post('/api/app/login').send({ usuario: 'jose', password: 'p' });
+  return { app, db, cid, empId: emp.id, token: login.body.token, createLiveToken };
+}
+
+test('POST /agent/session devuelve token efímero + contexto', async () => {
+  const { app, db, cid, token, createLiveToken } = await setup();
+  // un movimiento confirmado para el resumen
+  const { createExpense, confirmExpense } = require('../src/expenses/repo');
+  const g = await createExpense(db, { company_id: cid, tipo: 'gasto', categoria: 'Arriendos', fecha: '2026-06-05', total: 30000 });
+  await confirmExpense(db, g.id);
+  const res = await request(app).post('/api/app/agent/session').set('Authorization', 'Bearer ' + token).send({});
+  expect(res.status).toBe(200);
+  expect(res.body.token).toBe('auth_tokens/abc');
+  expect(createLiveToken).toHaveBeenCalled();
+  expect(res.body.context.onboarded).toBe(false);
+  expect(['dia', 'tarde', 'noche']).toContain(res.body.context.saludoHora);
+  expect(res.body.context.resumen.gastos).toBe(30000);
+  expect(res.body.context.empresaNombre).toBe('X');
+});
+
+test('POST /agent/session con prefs guardadas trae nombre/trato y onboarded true', async () => {
+  const { app, token } = await setup();
+  await request(app).patch('/api/app/agent/prefs').set('Authorization', 'Bearer ' + token).send({ nombre: 'José', trato: 'señor', onboarded: true });
+  const res = await request(app).post('/api/app/agent/session').set('Authorization', 'Bearer ' + token).send({});
+  expect(res.body.context.nombre).toBe('José');
+  expect(res.body.context.onboarded).toBe(true);
+});
+
+test('503 si el emisor de tokens falla', async () => {
+  const { app, token, createLiveToken } = await setup();
+  createLiveToken.mockRejectedValueOnce(new Error('no soportado'));
+  const res = await request(app).post('/api/app/agent/session').set('Authorization', 'Bearer ' + token).send({});
+  expect(res.status).toBe(503);
+  expect(res.body.error).toBe('live_no_disponible');
+});

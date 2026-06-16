@@ -1,0 +1,8 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Hash IA</string>
+    <string name="title_activity_main">Hash IA</string>
+    <string name="package_name">app.matico.dashboard</string>
+    <string name="custom_url_scheme">app.matico.dashboard</string>
+    <string name="pedido_a11y_desc">Permite a Atiko leer la conversación del chat para armar el pedido con IA y escribir la respuesta por ti.</string>
+</resources>

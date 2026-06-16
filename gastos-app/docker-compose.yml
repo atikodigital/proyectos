@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  server:
+    build: ./server
+    restart: always
+    ports:
+      - "3001:3001"
+    env_file:
+      - ./server/.env
+    environment:
+      - PORT=3001
+    volumes:
+      - ./server/data:/app/data
+      - ./server/uploads:/app/uploads
+
+  frontend:
+    build: .
+    restart: always
+    ports:
+      - "8080:80"
+    depends_on:
+      - server

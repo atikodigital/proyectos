@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Atiko CRM</title>
+  <style>
+    :root { --gold: #C9A24B; --bg: #0b0b0c; --card: #161616; }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body { margin: 0; background: var(--bg); color: #fff; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+    .wrap { max-width: 460px; margin: 0 auto; padding: 24px 18px 40px; }
+    h1 { color: var(--gold); font-size: 22px; margin: 8px 0 2px; }
+    p.sub { opacity: .7; font-size: 14px; margin: 0 0 18px; line-height: 1.4; }
+    .card { background: var(--card); border: 1px solid #2a2a2a; border-radius: 16px; padding: 16px; margin: 14px 0; }
+    .row { display: flex; align-items: center; gap: 10px; font-size: 14px; padding: 6px 0; }
+    .ok { color: #22c55e; font-weight: 900; } .no { color: #ef4444; font-weight: 900; }
+    button { width: 100%; border: 0; border-radius: 14px; padding: 14px; font-size: 15px; font-weight: 800;
+      margin-top: 10px; cursor: pointer; }
+    .primary { background: var(--gold); color: #000; }
+    .ghost { background: #222; color: #fff; border: 1px solid #333; }
+    .hint { font-size: 12px; opacity: .65; text-align: center; margin-top: 12px; }
+    .steps { font-size: 13px; opacity: .85; line-height: 1.6; padding-left: 18px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Atiko CRM · Crear pedido</h1>
+    <p class="sub">Activa estos permisos una vez. Después, en cualquier chat de WhatsApp te aparece una burbuja:
+      la tocas y armo el pedido leyendo la conversación.</p>
+
+    <div class="card" id="status">
+      <div class="row"><span id="i-acc" class="no">✗</span><span>Accesibilidad activada</span></div>
+      <div class="row"><span id="i-ovl" class="no">✗</span><span>Permiso para aparecer encima</span></div>
+      <div class="row"><span id="i-tok" class="no">✗</span><span>Sesión Atiko (se pide en la burbuja)</span></div>
+    </div>
+
+    <button id="b-acc" class="primary">Activar accesibilidad</button>
+    <button id="b-ovl" class="ghost">Permitir aparecer encima</button>
+    <button id="b-bubble" class="primary" style="display:none">Mostrar burbuja</button>
+    <button id="b-refresh" class="ghost">Volver a chequear estado</button>
+
+    <p class="hint" id="msg"></p>
+
+    <div class="card">
+      <b style="color:var(--gold)">Cómo se usa</b>
+      <ol class="steps">
+        <li>Activa Accesibilidad y "Aparecer encima".</li>
+        <li>Abre un chat de WhatsApp con el pedido del cliente.</li>
+        <li>Toca la burbuja dorada "Crear pedido".</li>
+        <li>Entra con tu cuenta del portal (1ra vez).</li>
+        <li>Revisa el pedido y toca Enviar.</li>
+      </ol>
+    </div>
+  </div>
+
+  <script>
+    const P = () => (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.AtikoPedido) || null;
+    const native = () => !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+    const $ = (id) => document.getElementById(id);
+    function mark(el, ok) { el.textContent = ok ? '✓' : '✗'; el.className = ok ? 'ok' : 'no'; }
+
+    async function refresh() {
+      const p = P(); if (!p) return;
+      try {
+        const s = await p.status();
+        mark($('i-acc'), s.accessibilityEnabled);
+        mark($('i-ovl'), s.overlayGranted);
+        mark($('i-tok'), s.hasToken);
+        $('b-acc').style.display = s.accessibilityEnabled ? 'none' : 'block';
+        $('b-ovl').style.display = s.overlayGranted ? 'none' : 'block';
+        $('b-bubble').style.display = (s.accessibilityEnabled && s.overlayGranted) ? 'block' : 'none';
+      } catch (e) { /* no-op */ }
+    }
+    function setMsg(t) { $('msg').textContent = t || ''; }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      if (!native() || !P()) { setMsg('Abre esta app en el teléfono (APK) para configurar.'); return; }
+      refresh();
+      $('b-acc').onclick = async () => { setMsg('Busca "Atiko CRM" en la lista y actívalo.'); try { await P().openAccessibilitySettings(); } catch (e) {} };
+      $('b-ovl').onclick = async () => { setMsg('Activa "Permitir mostrar sobre otras apps".'); try { await P().openOverlaySettings(); } catch (e) {} };
+      $('b-bubble').onclick = async () => { try { await P().refreshOverlay(); setMsg('Listo: abre WhatsApp y verás la burbuja "Crear pedido".'); } catch (e) {} };
+      $('b-refresh').onclick = refresh;
+      window.addEventListener('focus', refresh);
+      document.addEventListener('visibilitychange', refresh);
+    });
+  </script>
+</body>
+</html>
