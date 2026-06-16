@@ -62,7 +62,7 @@ export default function MatchView() {
   }
 
   return (
-    <div className="h-full flex flex-col p-4 gap-2 overflow-y-auto">
+    <div className="flex flex-col p-4 gap-2 pb-28">
       <h2 className="text-xl font-black shrink-0" style={{ color: '#b91c1c' }}>Conciliación</h2>
       <p className="text-xs opacity-70 shrink-0">Elige un modo y sube el archivo: VARAS cuadra tu banco contable y te propone los ajustes que faltan.</p>
 
