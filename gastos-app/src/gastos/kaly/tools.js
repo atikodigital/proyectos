@@ -26,12 +26,21 @@ export const TOOL_DECLARATIONS = [
       },
       required: ['tipo', 'total']
     }
-  }
+  },
+  { name: 'agregar_producto', description: 'Crea un producto nuevo en el catálogo de ventas. Confirma DESPUÉS de crearlo.', parameters: { type: 'OBJECT', properties: { nombre: { type: 'STRING', description: 'Nombre del producto' }, precio: { type: 'NUMBER', description: 'Precio en pesos chilenos enteros' }, tipo: { type: 'STRING', enum: ['producto', 'servicio'], description: 'por defecto producto' } }, required: ['nombre', 'precio'] } },
+  { name: 'editar_precio', description: 'Cambia el precio de un producto que YA existe en el catálogo.', parameters: { type: 'OBJECT', properties: { nombre: { type: 'STRING', description: 'nombre o parte del nombre del producto' }, nuevo_precio: { type: 'NUMBER', description: 'nuevo precio en CLP entero' } }, required: ['nombre', 'nuevo_precio'] } },
+  { name: 'editar_stock', description: 'Fija el stock disponible de un producto que YA existe.', parameters: { type: 'OBJECT', properties: { nombre: { type: 'STRING', description: 'nombre o parte del nombre del producto' }, stock: { type: 'NUMBER', description: 'unidades disponibles' } }, required: ['nombre', 'stock'] } },
+  { name: 'listar_productos', description: 'Lista los productos del catálogo con su precio y stock.', parameters: { type: 'OBJECT', properties: { limite: { type: 'NUMBER' } } } }
 ];
 
 function buscarMovimiento(rows, proveedor) {
   const q = String(proveedor || '').toLowerCase();
   return rows.find((r) => String(r.proveedor || '').toLowerCase().includes(q)) || null;
+}
+
+function buscarProducto(rows, nombre) {
+  const q = String(nombre || '').toLowerCase();
+  return rows.find((r) => String(r.nombre || '').toLowerCase().includes(q)) || null;
 }
 
 export async function executeTool(name, args = {}, { onPrefsSaved } = {}) {
@@ -60,6 +69,25 @@ export async function executeTool(name, args = {}, { onPrefsSaved } = {}) {
     if (name === 'crear_movimiento_manual') {
       const r = await api.createManualExpense(args);
       return { ok: true, id: r.id, proveedor: r.proveedor, total: r.total };
+    }
+    if (name === 'agregar_producto') {
+      const r = await api.createProduct({ nombre: args.nombre, precio_base: Math.max(0, Math.round(Number(args.precio) || 0)), tipo: args.tipo === 'servicio' ? 'servicio' : 'producto' });
+      return { ok: true, nombre: r.nombre, precio: r.precio_base };
+    }
+    if (name === 'editar_precio' || name === 'editar_stock') {
+      const rows = await api.listProducts(true);
+      const prod = buscarProducto(rows, args.nombre);
+      if (!prod) return { error: 'no_encontrado', detalle: 'No encontré ese producto en el catálogo.' };
+      if (name === 'editar_precio') {
+        const r = await api.updateProduct(prod.id, { precio_base: Math.max(0, Math.round(Number(args.nuevo_precio) || 0)) });
+        return { ok: true, nombre: prod.nombre, precio: r.precio_base };
+      }
+      const r = await api.updateProduct(prod.id, { stock: Math.max(0, Math.round(Number(args.stock) || 0)) });
+      return { ok: true, nombre: prod.nombre, stock: r.stock };
+    }
+    if (name === 'listar_productos') {
+      const rows = await api.listProducts(true);
+      return { productos: rows.slice(0, args.limite || 10).map((p) => ({ nombre: p.nombre, precio: p.precio_base, stock: p.stock, activo: p.activo })) };
     }
     return { error: 'tool_desconocida' };
   } catch (e) {

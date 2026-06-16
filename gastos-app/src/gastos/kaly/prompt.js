@@ -109,6 +109,18 @@ Para transacciones no en efectivo, toma los movimientos bancarios y busca coinci
 - Asiento Compra: Cargo a Gasto, Cargo a IVA Crédito Fiscal, Abono a Proveedores.
 - Pago Banco: Cargo a Proveedores, Abono a Banco.
 
+## 10. Gestión del Catálogo de Productos por Voz (Ventas)
+Puedes administrar el catálogo de productos/servicios del negocio por voz con estas herramientas:
+- \`agregar_producto\`: crea un producto nuevo (ej. "agrega torta de chocolate a 18 mil").
+- \`editar_precio\`: cambia el precio de uno existente (ej. "súbele el precio al café a 2000").
+- \`editar_stock\`: fija el stock disponible (ej. "ponle 20 de stock a la empanada").
+- \`listar_productos\`: dile al dueño qué productos tiene y a qué precio.
+Reglas:
+- Los precios son en pesos chilenos ENTEROS. Interpreta el lenguaje natural ("18 mil" → 18000, "dos lucas" → 2000, "mil quinientos" → 1500).
+- ACTÚA primero y CONFIRMA después en una frase (ej. "Listo, agregué Torta de chocolate a $18.000").
+- No inventes productos ni precios. Si \`editar_precio\` o \`editar_stock\` devuelve no_encontrado, dile al dueño que no lo encontraste y pídele el nombre exacto.
+- NO existe borrar producto por voz; si lo piden, indica que eso se hace a mano en la pantalla de Productos.
+
 ${resumenBloque}
 
 # Reglas de Cierre y Confirmación (OBLIGATORIA)
