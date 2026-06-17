@@ -3,6 +3,7 @@ const { createExpense } = require('./repo');
 const { findDuplicate } = require('./dedup');
 const { imageHash } = require('./hash');
 const realStorage = require('./storage');
+const { createLineas } = require('./lineas-repo');
 
 // Devuelve { expense, duplicado }.
 // - duplicado fuerte sin override: expense = null (no se inserta).
@@ -59,6 +60,11 @@ async function intakeFromImage({
       await db.query('UPDATE expenses SET foto_path=$1 WHERE id=$2', [name, expense.id]);
       expense.foto_path = name;
     }
+  }
+
+  // Detalle línea-a-línea (auxiliares A1). No debe romper el alta si falla.
+  if (expense && Array.isArray(extracted.lineas) && extracted.lineas.length) {
+    try { await createLineas(db, expense.id, extracted.lineas); } catch (e) { /* noop */ }
   }
 
   return { expense, duplicado: duplicado || null };
