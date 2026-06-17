@@ -5,7 +5,8 @@ const { signToken } = require('../auth/jwt');
 const { requireAuth, requireKind } = require('../auth/middleware');
 const { intakeFromImage } = require('../expenses/intake');
 const { getExpense, confirmExpense, updateExpense, rejectExpense, annulExpense, markExpensePaid, markExpenseConciliada, createExpense } = require('../expenses/repo');
-const { getLineas } = require('../expenses/lineas-repo');
+const { getLineas, getLineaConCompany, setLineaAuxiliar } = require('../expenses/lineas-repo');
+const { listAuxiliares } = require('../auxiliares/repo');
 const realExtract = require('../ocr/extract');
 const { conciliarCartola } = require('../match/service');
 const { construirInforme } = require('../match/conciliacion');
@@ -322,6 +323,18 @@ function createAppRouter({ db, extractExpense, createLiveToken, sendText, extrac
     if (!buf) return res.status(404).json({ error: 'sin_foto' });
     res.setHeader('Content-Type', contentTypeFor(exp.foto_path));
     return res.send(buf);
+  });
+
+  router.get('/auxiliares', async (req, res) => {
+    res.json({ auxiliares: await listAuxiliares(db, req.auth.companyId) });
+  });
+
+  router.patch('/lineas/:id', async (req, res) => {
+    const lc = await getLineaConCompany(db, req.params.id);
+    if (!lc || lc.company_id !== req.auth.companyId) return res.status(404).json({ error: 'no_existe' });
+    const b = req.body || {};
+    const linea = await setLineaAuxiliar(db, req.params.id, b.auxiliar_id !== undefined ? b.auxiliar_id : lc.auxiliar_id, { cantidad: b.cantidad, unidad: b.unidad });
+    res.json({ linea });
   });
 
   router.get('/expenses/:id/lineas', async (req, res) => {
