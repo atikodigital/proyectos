@@ -61,6 +61,11 @@ export const api = {
   contabilidadBalance(periodo) { return req('/api/app/contabilidad/balance?periodo=' + encodeURIComponent(periodo || '')); },
   contabilidadFlujo(periodo) { return req('/api/app/contabilidad/flujo?periodo=' + encodeURIComponent(periodo || '')); },
 
+  // VARAS — asientos manuales
+  listCuentasApp() { return req('/api/app/cuentas'); },
+  crearAsientoManual(body) { return req('/api/app/asientos/manual', { method: 'POST', body }); },
+  anularAsiento(id) { return req(`/api/app/asientos/${id}/anular`, { method: 'POST' }); },
+
   // Chat (bandeja CRM omnicanal)
   chatConversaciones() { return req('/api/app/chat/conversaciones'); },
   chatMensajes(channel, contact) { return req(`/api/app/chat/conversacion?channel=${encodeURIComponent(channel || '')}&contact=${encodeURIComponent(contact || '')}`); },
