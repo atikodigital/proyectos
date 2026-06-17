@@ -536,21 +536,21 @@ const EvidenceIntake = ({
                 className="hidden"
                 onChange={handleNativeCameraCapture}
             />
-            <div className={`grid gap-3 ${nativeQueueOnly ? 'md:grid-cols-3' : 'md:grid-cols-4'}`}>
+            <div className={`grid grid-cols-3 gap-2 ${nativeQueueOnly ? 'md:grid-cols-3' : 'md:grid-cols-4'}`}>
                 {/* Tomar foto: abre camara. En APK abre camara nativa, en web usa getUserMedia. */}
-                <button type="button" onClick={openCamera} className="rounded-2xl border-2 border-gray-200 bg-white px-3 py-3 text-sm font-black text-[#2B2E4A] hover:border-[#7C3AED]/50 flex items-center justify-center gap-2">
-                    <Camera className="w-4 h-4" /> Tomar foto
+                <button type="button" onClick={openCamera} className="rounded-2xl border-2 border-gray-200 bg-white px-2 py-2.5 text-[11px] leading-tight font-black text-[#2B2E4A] hover:border-[#7C3AED]/50 flex flex-col items-center justify-center gap-1 text-center">
+                    <Camera className="w-5 h-5" /> Tomar foto
                 </button>
                 {/* Subir archivo: permite MULTIPLES imagenes/documentos desde la seleccion. */}
-                <label className="rounded-2xl border-2 border-[#4D96FF] bg-[#EEF4FF] px-3 py-3 text-sm font-black text-[#1D4ED8] hover:border-[#1D4ED8] flex items-center justify-center gap-2 cursor-pointer">
-                    <UploadCloud className="w-4 h-4" /> Subir archivo
+                <label className="rounded-2xl border-2 border-[#4D96FF] bg-[#EEF4FF] px-2 py-2.5 text-[11px] leading-tight font-black text-[#1D4ED8] hover:border-[#1D4ED8] flex flex-col items-center justify-center gap-1 text-center cursor-pointer">
+                    <UploadCloud className="w-5 h-5" /> Subir archivo
                     <input type="file" accept="image/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" multiple className="hidden" onChange={handleFileUpload} />
                 </label>
                 {/* Capturar pantalla (web getDisplayMedia): solo en web/desktop y modo completo.
                     En APK el dialogo nativo es confuso y para eso esta "Captura de pantalla celular". */}
                 {!isNativePlatform && !nativeQueueOnly && (
-                    <button type="button" onClick={captureScreen} className="rounded-2xl border-2 border-gray-200 bg-white px-3 py-3 text-sm font-black text-[#2B2E4A] hover:border-[#7C3AED]/50 flex items-center justify-center gap-2">
-                        <Monitor className="w-4 h-4" /> Capturar pantalla
+                    <button type="button" onClick={captureScreen} className="rounded-2xl border-2 border-gray-200 bg-white px-2 py-2.5 text-[11px] leading-tight font-black text-[#2B2E4A] hover:border-[#7C3AED]/50 flex flex-col items-center justify-center gap-1 text-center">
+                        <Monitor className="w-5 h-5" /> Captura pantalla
                     </button>
                 )}
                 {/* Captura de pantalla celular: siempre visible cuando showNativeCapture=true.
@@ -569,13 +569,13 @@ const EvidenceIntake = ({
                         }
                         className={
                             nativeCaptureSupported
-                                ? 'rounded-2xl border-2 border-[#16A34A] bg-[#ECFDF3] px-3 py-3 text-sm font-black text-[#166534] hover:border-[#15803D] flex items-center justify-center gap-2'
-                                : 'rounded-2xl border-2 border-dashed border-gray-300 bg-gray-50 px-3 py-3 text-sm font-black text-gray-500 hover:border-gray-400 flex items-center justify-center gap-2'
+                                ? 'rounded-2xl border-2 border-[#16A34A] bg-[#ECFDF3] px-2 py-2.5 text-[11px] leading-tight font-black text-[#166534] hover:border-[#15803D] flex flex-col items-center justify-center gap-1 text-center'
+                                : 'rounded-2xl border-2 border-dashed border-gray-300 bg-gray-50 px-2 py-2.5 text-[11px] leading-tight font-black text-gray-500 hover:border-gray-400 flex flex-col items-center justify-center gap-1 text-center'
                         }
                         title={nativeCaptureSupported ? 'Iniciar captura nativa en Android' : 'Disponible en la app Matico (APK)'}
                     >
-                        <Smartphone className="w-4 h-4" />
-                        {nativeCaptureSupported ? 'Captura de pantalla celular' : 'Captura celular (app Matico)'}
+                        <Smartphone className="w-5 h-5" />
+                        {nativeCaptureSupported ? 'Captura pantalla' : 'Captura (app)'}
                     </button>
                 )}
                 {/* Remote capture: visible on desktop when userId is provided */}
