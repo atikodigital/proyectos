@@ -95,8 +95,18 @@ async function setAgentPrefs(db, employeeId, patch) {
   return r.rows[0] ? r.rows[0].agent_prefs : null;
 }
 
+async function getGiro(db, companyId) {
+  const r = await db.query('SELECT giro FROM companies WHERE id=$1', [companyId]);
+  return r.rows[0] ? (r.rows[0].giro || '') : '';
+}
+
+async function setGiro(db, companyId, giro) {
+  await db.query('UPDATE companies SET giro=$2 WHERE id=$1', [companyId, String(giro || '').trim()]);
+  return true;
+}
+
 module.exports = {
   createCompany, createEmployee, getCompanyByPhoneNumberId, getEmployeeByPhone, getEmployeeByUsuario,
   listEmployees, updateEmployee, deactivateEmployee, getCompany, updateCompany, getCompanyWa,
-  getAgentPrefs, setAgentPrefs,
+  getAgentPrefs, setAgentPrefs, getGiro, setGiro,
 };
