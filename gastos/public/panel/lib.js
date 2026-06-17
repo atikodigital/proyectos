@@ -239,7 +239,7 @@
 
   function auxiliaresTableHtml(auxiliares) {
     var rows = (auxiliares || []).map(function (a) {
-      return '<tr data-aux="' + escapeHtml(a.id) + '">'
+      return '<tr data-aux="' + escapeHtml(a.id) + '" data-nombre="' + escapeHtml(a.nombre) + '">'
         + '<td>' + escapeHtml(a.nombre) + '</td>'
         + '<td>' + escapeHtml(a.naturaleza || '') + '</td>'
         + '<td>' + escapeHtml(a.unidad_principal || '') + '</td>'
@@ -251,5 +251,22 @@
       + (rows || '<tr><td colspan="5">Sin auxiliares. Setea el giro y pulsa "Sembrar".</td></tr>') + '</tbody></table>';
   }
 
-  return { fmtClp, escapeHtml, buildQuery, totalsFromRows, cashflowFromRows, expensesTableHtml, expensesCarouselHtml, detalleRows, detalleHtml, desdePriceLib: desdePriceLib, productosListHtml: productosListHtml, diarioTableHtml: diarioTableHtml, mayorTableHtml: mayorTableHtml, balanceTableHtml: balanceTableHtml, flujoTableHtml: flujoTableHtml, conciliacionHtml: conciliacionHtml, ivaResumenHtml: ivaResumenHtml, auxiliaresTableHtml: auxiliaresTableHtml };
+  function consumoHtml(c, nombre) {
+    c = c || {};
+    var unidades = Object.keys(c.cantidadPorUnidad || {});
+    if (!unidades.length && !(c.serie || []).length) {
+      return '<p class="muted" style="padding:8px">Sin consumo registrado para ' + escapeHtml(nombre || '') + '.</p>';
+    }
+    var cant = unidades.map(function (u) {
+      return '<b>' + escapeHtml(String(c.cantidadPorUnidad[u])) + ' ' + escapeHtml(u) + '</b>';
+    }).join(' + ') || '—';
+    var filas = (c.serie || []).map(function (s) {
+      return '<tr><td>' + escapeHtml(s.ym) + '</td><td class="num">' + escapeHtml(String(s.cantidad)) + '</td><td class="num">' + fmtClp(s.monto) + '</td></tr>';
+    }).join('');
+    return '<div class="flujo-tot">' + escapeHtml(nombre || 'Insumo') + ': ' + cant + ' · total <b>' + fmtClp(c.monto) + '</b></div>'
+      + '<table class="tbl"><thead><tr><th>Mes</th><th class="num">Cantidad</th><th class="num">Monto</th></tr></thead><tbody>'
+      + (filas || '<tr><td colspan="3">Sin evolución.</td></tr>') + '</tbody></table>';
+  }
+
+  return { fmtClp, escapeHtml, buildQuery, totalsFromRows, cashflowFromRows, expensesTableHtml, expensesCarouselHtml, detalleRows, detalleHtml, desdePriceLib: desdePriceLib, productosListHtml: productosListHtml, diarioTableHtml: diarioTableHtml, mayorTableHtml: mayorTableHtml, balanceTableHtml: balanceTableHtml, flujoTableHtml: flujoTableHtml, conciliacionHtml: conciliacionHtml, ivaResumenHtml: ivaResumenHtml, auxiliaresTableHtml: auxiliaresTableHtml, consumoHtml: consumoHtml };
 });

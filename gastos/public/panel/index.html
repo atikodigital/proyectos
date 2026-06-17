@@ -226,6 +226,7 @@
         </div>
         <p id="auxFormMsg" class="muted" style="margin:6px 2px 0"></p>
       </div>
+      <div id="auxConsumo" class="card hidden" style="margin-top:10px"></div>
       <div id="auxContenido" class="scroll" style="padding:12px"><p class="muted">Cargando…</p></div>
     </section>
 
@@ -686,6 +687,8 @@
     try {
       var res = await apiFetch('/auxiliares');
       var data = await res.json();
+      $('auxConsumo').classList.add('hidden');
+      $('auxConsumo').innerHTML = '';
       $('auxContenido').innerHTML = PanelLib.auxiliaresTableHtml(data.auxiliares);
       $('auxContenido').querySelectorAll('.aux-del').forEach(function (b) {
         b.onclick = async function () {
@@ -694,6 +697,23 @@
             await apiFetch('/auxiliares/' + b.getAttribute('data-aux') + '/desactivar', { method: 'POST', body: JSON.stringify({}) });
             loadAuxiliares();
           } catch (e) { b.disabled = false; }
+        };
+      });
+      $('auxContenido').querySelectorAll('tr[data-aux]').forEach(function (tr) {
+        tr.style.cursor = 'pointer';
+        tr.onclick = async function (ev) {
+          if (ev.target.closest && ev.target.closest('.aux-del')) return;
+          var id = tr.getAttribute('data-aux');
+          var nombre = tr.getAttribute('data-nombre') || '';
+          $('auxConsumo').innerHTML = '<p class="muted" style="padding:8px">Cargando consumo…</p>';
+          $('auxConsumo').classList.remove('hidden');
+          try {
+            var res = await apiFetch('/auxiliares/' + id + '/consumo');
+            var consumo = await res.json();
+            $('auxConsumo').innerHTML = PanelLib.consumoHtml(consumo, nombre);
+          } catch (e) {
+            if (e.message !== '401') $('auxConsumo').innerHTML = '<p class="err" style="padding:8px">No se pudo cargar el consumo.</p>';
+          }
         };
       });
     } catch (e) {
