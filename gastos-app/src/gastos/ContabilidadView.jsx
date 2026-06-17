@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { api } from './api';
 import MatchView from './MatchView.jsx';
+import AsientoManual from './AsientoManual.jsx';
 
 const ORO = '#C9A24B';
 function clp(n) { return '$' + (Math.round(Number(n) || 0)).toLocaleString('es-CL'); }
@@ -12,6 +13,7 @@ const TABS = [
   { id: 'mayor', label: 'Mayor' },
   { id: 'balance', label: 'Balance' },
   { id: 'flujo', label: 'Flujo' },
+  { id: 'manual', label: 'Manual' },
 ];
 
 export default function ContabilidadView() {
@@ -19,9 +21,12 @@ export default function ContabilidadView() {
   const [periodo, setPeriodo] = useState(ymActual());
   const [data, setData] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [refreshCount, setRefreshCount] = useState(0);
+
+  function recargar() { setRefreshCount((n) => n + 1); }
 
   useEffect(() => {
-    if (tab === 'concil') { setData(null); return; }
+    if (tab === 'concil' || tab === 'manual') { setData(null); return; }
     let vivo = true;
     setBusy(true); setData(null);
     const fn = tab === 'diario' ? api.contabilidadDiario
@@ -30,7 +35,7 @@ export default function ContabilidadView() {
       : api.contabilidadFlujo;
     Promise.resolve(fn(periodo)).then((r) => { if (vivo) setData(r); }).catch(() => { if (vivo) setData({ error: true }); }).finally(() => { if (vivo) setBusy(false); });
     return () => { vivo = false; };
-  }, [tab, periodo]);
+  }, [tab, periodo, refreshCount]);
 
   return (
     <div className="h-full flex flex-col">
@@ -53,9 +58,10 @@ export default function ContabilidadView() {
       </div>
       <div className="flex-1 min-h-0 overflow-y-auto">
         {tab === 'concil' ? <MatchView />
+          : tab === 'manual' ? <AsientoManual onSaved={() => setTab('diario')} />
           : busy ? <div className="p-4 text-sm opacity-70">Cargando…</div>
           : !data || data.error ? <div className="p-4 text-sm opacity-70">No se pudo cargar el período.</div>
-          : tab === 'diario' ? <Diario data={data} />
+          : tab === 'diario' ? <Diario data={data} onAnular={recargar} />
           : tab === 'mayor' ? <Mayor data={data} />
           : tab === 'balance' ? <Balance data={data} />
           : <Flujo data={data} />}
@@ -64,7 +70,7 @@ export default function ContabilidadView() {
   );
 }
 
-function Diario({ data }) {
+function Diario({ data, onAnular }) {
   const asientos = (data && data.asientos) || [];
   if (!asientos.length) return <div className="p-4 text-sm opacity-60">Sin asientos en el período.</div>;
   return (
@@ -79,6 +85,7 @@ function Diario({ data }) {
               <span className="font-bold">{Number(l.debe) ? clp(l.debe) : '(' + clp(l.haber) + ')'}</span>
             </div>
           ))}
+          {a.id ? <button onClick={async () => { try { await api.anularAsiento(a.id); onAnular && onAnular(); } catch (_) {} }} className="mt-1 text-[11px] font-bold text-red-600">Anular</button> : null}
         </div>
       ))}
     </div>
