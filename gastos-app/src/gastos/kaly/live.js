@@ -83,8 +83,13 @@ export function openLiveSession(opts) {
 
 export async function startMic(send, onLevel) {
   try {
+    // OJO Android/Bluetooth: pedir echoCancellation/noiseSuppression/AGC hace que el
+    // WebView entre en "modo comunicación" (como una llamada) y enrute el audio al
+    // parlante o a Bluetooth SCO en vez de A2DP (audífonos), y manda el volumen al
+    // stream de llamada. Los dejamos en false para quedarnos en modo multimedia normal:
+    // así el audio sale por los audífonos Bluetooth (A2DP) y el control de volumen es el de media.
     const stream = await navigator.mediaDevices.getUserMedia({
-      audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true },
+      audio: { channelCount: 1, echoCancellation: false, noiseSuppression: false, autoGainControl: false },
     });
     const ctx = new AudioContext({ sampleRate: 16000 });
     const source = ctx.createMediaStreamSource(stream);
