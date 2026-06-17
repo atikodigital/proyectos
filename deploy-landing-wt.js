@@ -5,7 +5,7 @@ const fs = require('fs');
 const path = require('path');
 
 const LOCAL = path.join(__dirname, 'landing', 'dist');
-const REMOTE = '/var/www/hash';
+const REMOTE = '/var/www/atikodigital/hash';
 
 function walk(dir, base = '') {
   const out = [];

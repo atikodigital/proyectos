@@ -8,6 +8,7 @@ const { createAppRouter } = require('./app/router');
 const { createPanelRouter } = require('./panel/router');
 const { createAdminRouter } = require('./admin/router');
 const { getPool } = require('./db/pool');
+const { createEphemeralToken } = require('./agent/token');
 
 const app = express();
 app.use(cors());
@@ -15,6 +16,21 @@ app.use(express.json({ limit: '15mb' }));
 
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok', service: 'atiko-gastos' });
+});
+
+// Token efímero PÚBLICO para la landing hash.atikodigital.cl (KALY por voz).
+// El navegador nunca ve GEMINI_API_KEY; el token es corto (uses:1). Rate-limit por IP.
+const _kalyHits = new Map();
+app.get('/api/public/kaly-token', async (req, res) => {
+  const ip = (req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0].trim();
+  const now = Date.now(); const win = 10 * 60 * 1000; const max = 20;
+  const arr = (_kalyHits.get(ip) || []).filter((t) => now - t < win);
+  arr.push(now); _kalyHits.set(ip, arr);
+  if (arr.length > max) return res.status(429).json({ error: 'rate_limited' });
+  try {
+    const tok = await createEphemeralToken({ apiKey: process.env.GEMINI_API_KEY });
+    return res.json(tok);
+  } catch (e) { console.error('[kaly-token]', e.message); return res.status(502).json({ error: 'token_falla' }); }
 });
 
 app.use('/api/whatsapp/webhook', createWebhookRouter({ db: getPool() }));
