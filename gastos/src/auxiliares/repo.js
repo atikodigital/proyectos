@@ -64,4 +64,33 @@ async function addSinonimo(db, id, sinonimo) {
   return r.rows[0] || null;
 }
 
-module.exports = { ensureAuxiliaresTable, createAuxiliar, listAuxiliares, getById, findMatch, addSinonimo };
+async function updateAuxiliar(db, companyId, id, patch = {}) {
+  await ensureAuxiliaresTable(db);
+  const exists = (await db.query('SELECT id FROM auxiliares WHERE id=$1 AND company_id=$2', [id, companyId])).rows[0];
+  if (!exists) return null;
+  const campos = ['nombre', 'naturaleza', 'unidad_principal', 'cuenta_id', 'estado'];
+  const sets = []; const vals = [id, companyId];
+  for (const c of campos) { if (patch[c] !== undefined) { vals.push(patch[c]); sets.push(`${c}=$${vals.length}`); } }
+  if (!sets.length) return getById(db, id);
+  const r = await db.query(`UPDATE auxiliares SET ${sets.join(', ')} WHERE id=$1 AND company_id=$2 RETURNING ${COLS}`, vals);
+  return r.rows[0] || null;
+}
+async function setActivo(db, companyId, id, activo) {
+  await ensureAuxiliaresTable(db);
+  const r = await db.query(`UPDATE auxiliares SET activo=$3 WHERE id=$1 AND company_id=$2 RETURNING ${COLS}`, [id, companyId, !!activo]);
+  return r.rows[0] || null;
+}
+async function mergeAuxiliar(db, companyId, fromId, toId) {
+  await ensureAuxiliaresTable(db);
+  const from = await getById(db, fromId); const to = await getById(db, toId);
+  if (!from || !to || from.company_id !== companyId || to.company_id !== companyId) return null;
+  // reapunta las líneas del from al to
+  await db.query('UPDATE expense_lineas SET auxiliar_id=$1 WHERE auxiliar_id=$2', [toId, fromId]);
+  // hereda sinónimos (nombre + sinónimos del from)
+  const merged = new Set([...(to.sinonimos || []), from.nombre, ...((from.sinonimos) || [])].filter(Boolean));
+  await db.query('UPDATE auxiliares SET sinonimos=$2::jsonb WHERE id=$1', [toId, JSON.stringify([...merged])]);
+  await db.query('UPDATE auxiliares SET activo=false WHERE id=$1', [fromId]);
+  return getById(db, toId);
+}
+
+module.exports = { ensureAuxiliaresTable, createAuxiliar, listAuxiliares, getById, findMatch, addSinonimo, updateAuxiliar, setActivo, mergeAuxiliar };
