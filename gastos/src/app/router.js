@@ -7,6 +7,7 @@ const { intakeFromImage } = require('../expenses/intake');
 const { getExpense, confirmExpense, updateExpense, rejectExpense, annulExpense, markExpensePaid, markExpenseConciliada, createExpense } = require('../expenses/repo');
 const { getLineas, getLineaConCompany, setLineaAuxiliar } = require('../expenses/lineas-repo');
 const { listAuxiliares } = require('../auxiliares/repo');
+const auxReportes = require('../auxiliares/reportes');
 const realExtract = require('../ocr/extract');
 const { conciliarCartola } = require('../match/service');
 const { construirInforme } = require('../match/conciliacion');
@@ -327,6 +328,15 @@ function createAppRouter({ db, extractExpense, createLiveToken, sendText, extrac
 
   router.get('/auxiliares', async (req, res) => {
     res.json({ auxiliares: await listAuxiliares(db, req.auth.companyId) });
+  });
+
+  // IMPORTANT: literal route BEFORE /:id/consumo so "consumo" is not captured as :id
+  router.get('/auxiliares/consumo', async (req, res) => {
+    const c = await auxReportes.consumoPorNombre(db, req.auth.companyId, req.query.nombre || '', req.query);
+    res.json({ ...c, frase: auxReportes.frasearConsumo(c, req.query.nombre || '') });
+  });
+  router.get('/auxiliares/:id/consumo', async (req, res) => {
+    res.json(await auxReportes.consumoAuxiliar(db, req.auth.companyId, req.params.id, req.query));
   });
 
   router.patch('/lineas/:id', async (req, res) => {

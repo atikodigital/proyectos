@@ -20,6 +20,7 @@ const contaReportes = require('../contabilidad/reportes');
 const { REGIONES_COMUNAS } = require('../pedidos/comunas-chile');
 const matchRepo = require('../match/repo');
 const auxRepo = require('../auxiliares/repo');
+const auxReportes = require('../auxiliares/reportes');
 const { sembrarPorRubro } = require('../auxiliares/semilla');
 const { getGiro, setGiro } = require('../companies/repo');
 
@@ -216,6 +217,9 @@ function createPanelRouter({ db, sendText } = {}) {
     const a = await auxRepo.mergeAuxiliar(db, req.auth.companyId, req.params.id, (req.body || {}).hacia);
     if (!a) return res.status(400).json({ error: 'merge_invalido' });
     res.json({ auxiliar: a });
+  });
+  router.get('/auxiliares/:id/consumo', async (req, res) => {
+    res.json(await auxReportes.consumoAuxiliar(db, req.auth.companyId, req.params.id, req.query));
   });
   router.get('/giro', async (req, res) => res.json({ giro: await getGiro(db, req.auth.companyId) }));
   router.patch('/giro', async (req, res) => { await setGiro(db, req.auth.companyId, (req.body || {}).giro); res.json({ ok: true }); });
