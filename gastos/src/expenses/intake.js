@@ -4,6 +4,8 @@ const { findDuplicate } = require('./dedup');
 const { imageHash } = require('./hash');
 const realStorage = require('./storage');
 const { createLineas } = require('./lineas-repo');
+const { mapearLineas } = require('../auxiliares/mapear');
+const { getGiro } = require('../companies/repo');
 
 // Devuelve { expense, duplicado }.
 // - duplicado fuerte sin override: expense = null (no se inserta).
@@ -12,7 +14,7 @@ const { createLineas } = require('./lineas-repo');
 async function intakeFromImage({
   db, companyId, employeeId, imageBuffer, mimeType = 'image/jpeg', canal = 'whatsapp',
   waMessageId, fotoPath, extract, override = false, waSenderName, waSenderPhone,
-  storeImage,
+  storeImage, mapearAux,
 }) {
   const run = extract || extractExpense;
   const _store = storeImage || realStorage.storeImage;
@@ -62,9 +64,18 @@ async function intakeFromImage({
     }
   }
 
-  // Detalle línea-a-línea (auxiliares A1). No debe romper el alta si falla.
+  // Detalle línea-a-línea (auxiliares A2). Mapea a auxiliares antes de persistir.
+  // Si el mapeo falla, las líneas se guardan igual (sin auxiliar_id). No rompe el alta.
   if (expense && Array.isArray(extracted.lineas) && extracted.lineas.length) {
-    try { await createLineas(db, expense.id, extracted.lineas); } catch (e) { /* noop */ }
+    let lineas = extracted.lineas;
+    try {
+      const _map = mapearAux || (async (ls) => {
+        let giro = ''; try { giro = await getGiro(db, companyId); } catch (e) { giro = ''; }
+        return mapearLineas(db, companyId, ls, { giro });
+      });
+      lineas = await _map(lineas);
+    } catch (e) { lineas = extracted.lineas; }
+    try { await createLineas(db, expense.id, lineas); } catch (e) { /* noop */ }
   }
 
   return { expense, duplicado: duplicado || null };
