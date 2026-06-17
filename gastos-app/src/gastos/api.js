@@ -73,6 +73,10 @@ export const api = {
     return req('/api/app/overlay/pedido/suggest', { method: 'POST', body: { channel, contact: { name: contact }, conversation } });
   },
 
+  // Onboarding / empresa
+  getCompany() { return req('/api/app/company'); },
+  updateCompany(patch) { return req('/api/app/company', { method: 'PATCH', body: patch }); },
+
   // Catálogo de productos
   listProducts(incluirPausados = false) { return req('/api/app/products' + (incluirPausados ? '?incluirPausados=1' : '')); },
   getProduct(id) { return req(`/api/app/products/${id}`); },
