@@ -23,6 +23,8 @@ const auxRepo = require('../auxiliares/repo');
 const auxReportes = require('../auxiliares/reportes');
 const { sembrarPorRubro } = require('../auxiliares/semilla');
 const { getGiro, setGiro } = require('../companies/repo');
+const contaCuentas = require('../contabilidad/cuentas');
+const { crearAsientoManual, anularAsientoManual } = require('../contabilidad/manual');
 
 function parseFiltros(q = {}) {
   return {
@@ -223,6 +225,18 @@ function createPanelRouter({ db, sendText } = {}) {
   });
   router.get('/giro', async (req, res) => res.json({ giro: await getGiro(db, req.auth.companyId) }));
   router.patch('/giro', async (req, res) => { await setGiro(db, req.auth.companyId, (req.body || {}).giro); res.json({ ok: true }); });
+
+  // ── Asientos manuales VARAS ──
+  router.get('/cuentas', async (req, res) => res.json({ cuentas: await contaCuentas.listCuentas(db, req.auth.companyId) }));
+  router.post('/asientos/manual', async (req, res) => {
+    try { res.status(201).json({ asiento: await crearAsientoManual(db, req.auth.companyId, req.body || {}) }); }
+    catch (e) { res.status(400).json({ error: e.code || 'invalido' }); }
+  });
+  router.post('/asientos/:id/anular', async (req, res) => {
+    const a = await anularAsientoManual(db, req.auth.companyId, req.params.id);
+    if (!a) return res.status(404).json({ error: 'no_existe' });
+    res.json({ ok: true });
+  });
 
   return router;
 }
