@@ -30,6 +30,7 @@ const { aplicarContabilidad } = require('../contabilidad/contabilizar');
 const contaReportes = require('../contabilidad/reportes');
 const { REGIONES_COMUNAS } = require('../pedidos/comunas-chile');
 const { mapCategoryToSii } = require('../domain/categories');
+const { crearAsientoManual, anularAsientoManual } = require('../contabilidad/manual');
 
 function createAppRouter({ db, extractExpense, createLiveToken, sendText, extractCartola, componer, extraerProductos, extractLibroSii } = {}) {
   const _extract = extractExpense || realExtract.extractExpense;
@@ -68,6 +69,22 @@ function createAppRouter({ db, extractExpense, createLiveToken, sendText, extrac
   });
   router.get('/contabilidad/flujo', async (req, res) => {
     return res.json(await contaReportes.flujoCaja(db, req.auth.companyId, req.query));
+  });
+
+  // ── Asientos manuales VARAS ──
+  router.get('/cuentas', async (req, res) => {
+    res.json({ cuentas: await contaCuentas.listCuentas(db, req.auth.companyId) });
+  });
+  router.post('/asientos/manual', async (req, res) => {
+    try {
+      const a = await crearAsientoManual(db, req.auth.companyId, req.body || {});
+      res.status(201).json({ asiento: a });
+    } catch (e) { res.status(400).json({ error: e.code || 'invalido' }); }
+  });
+  router.post('/asientos/:id/anular', async (req, res) => {
+    const a = await anularAsientoManual(db, req.auth.companyId, req.params.id);
+    if (!a) return res.status(404).json({ error: 'no_existe' });
+    res.json({ ok: true });
   });
 
   registerCatalogRoutes(router, { db });
