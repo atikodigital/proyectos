@@ -105,8 +105,32 @@ async function setGiro(db, companyId, giro) {
   return true;
 }
 
+// ── Onboarding company ──────────────────────────────────────────────────────
+const _ocReady = new WeakMap();
+async function ensureCompanyOnboarding(db) {
+  if (_ocReady.get(db)) return;
+  try { await db.query('ALTER TABLE companies ADD COLUMN IF NOT EXISTS onboarded_at timestamptz'); } catch (e) { /* ya existe */ }
+  _ocReady.set(db, true);
+}
+
+async function getCompanyProfile(db, companyId) {
+  await ensureCompanyOnboarding(db);
+  const r = await db.query(
+    'SELECT id, nombre, rut, giro, owner_nombre, owner_whatsapp, onboarded_at, created_at FROM companies WHERE id=$1',
+    [companyId]
+  );
+  return r.rows[0] || null;
+}
+
+async function setOnboarded(db, companyId) {
+  await ensureCompanyOnboarding(db);
+  await db.query('UPDATE companies SET onboarded_at=now() WHERE id=$1 AND onboarded_at IS NULL', [companyId]);
+  return getCompanyProfile(db, companyId);
+}
+
 module.exports = {
   createCompany, createEmployee, getCompanyByPhoneNumberId, getEmployeeByPhone, getEmployeeByUsuario,
   listEmployees, updateEmployee, deactivateEmployee, getCompany, updateCompany, getCompanyWa,
   getAgentPrefs, setAgentPrefs, getGiro, setGiro,
+  getCompanyProfile, setOnboarded, ensureCompanyOnboarding,
 };

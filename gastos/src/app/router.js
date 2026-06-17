@@ -1,5 +1,5 @@
 const express = require('express');
-const { getEmployeeByUsuario, getAgentPrefs, setAgentPrefs, getCompanyWa } = require('../companies/repo');
+const { getEmployeeByUsuario, getAgentPrefs, setAgentPrefs, getCompanyWa, getCompanyProfile, setOnboarded, updateCompany, setGiro } = require('../companies/repo');
 const { verifyPassword } = require('../auth/password');
 const { signToken } = require('../auth/jwt');
 const { requireAuth, requireKind } = require('../auth/middleware');
@@ -154,6 +154,19 @@ function createAppRouter({ db, extractExpense, createLiveToken, sendText, extrac
       if (e.message && e.message.includes('uuid')) return res.status(404).json({ error: 'no_existe' });
       console.error('[pedido pdf]', e.message); return res.status(500).json({ error: 'error_pdf' });
     }
+  });
+
+  router.get('/company', async (req, res) => {
+    return res.json(await getCompanyProfile(db, req.auth.companyId));
+  });
+  router.patch('/company', async (req, res) => {
+    const b = req.body || {};
+    if (b.nombre !== undefined || b.owner_whatsapp !== undefined) {
+      await updateCompany(db, req.auth.companyId, { nombre: b.nombre, owner_whatsapp: b.owner_whatsapp });
+    }
+    if (b.giro !== undefined) await setGiro(db, req.auth.companyId, b.giro);
+    if (b.onboarded) await setOnboarded(db, req.auth.companyId);
+    return res.json(await getCompanyProfile(db, req.auth.companyId));
   });
 
   router.get('/pedido-config', async (req, res) => {
