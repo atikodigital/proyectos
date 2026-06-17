@@ -53,4 +53,15 @@ async function consumoPorNombre(db, companyId, nombre, filtros = {}) {
   return { auxiliar: { id: aux.id, nombre: aux.nombre }, ...c };
 }
 
-module.exports = { consumoAuxiliar, consumoPorNombre };
+function _clp(n) { return '$' + (Math.round(Number(n) || 0)).toLocaleString('es-CL'); }
+
+function frasearConsumo(consumo, nombrePedido) {
+  const c = consumo || {};
+  const nombre = (c.auxiliar && c.auxiliar.nombre) || nombrePedido || 'eso';
+  if (!c.auxiliar) return `No encontré el insumo "${nombrePedido || nombre}" en tus registros.`;
+  const partes = Object.entries(c.cantidadPorUnidad || {}).map(([u, q]) => `${(Math.round((Number(q) || 0) * 100) / 100)} ${u}`);
+  const cant = partes.length ? partes.join(' + ') : 'sin cantidad registrada';
+  return `${nombre}: consumiste ${cant} por ${_clp(c.monto)}.`;
+}
+
+module.exports = { consumoAuxiliar, consumoPorNombre, frasearConsumo };
