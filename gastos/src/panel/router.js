@@ -19,6 +19,9 @@ const pedidosRepo = require('../pedidos/repo');
 const contaReportes = require('../contabilidad/reportes');
 const { REGIONES_COMUNAS } = require('../pedidos/comunas-chile');
 const matchRepo = require('../match/repo');
+const auxRepo = require('../auxiliares/repo');
+const { sembrarPorRubro } = require('../auxiliares/semilla');
+const { getGiro, setGiro } = require('../companies/repo');
 
 function parseFiltros(q = {}) {
   return {
@@ -186,6 +189,36 @@ function createPanelRouter({ db, sendText } = {}) {
   router.patch('/company', async (req, res) => {
     return res.json(await updateCompany(db, req.auth.companyId, req.body || {}));
   });
+
+  router.get('/auxiliares', async (req, res) => res.json({ auxiliares: await auxRepo.listAuxiliares(db, req.auth.companyId) }));
+  router.post('/auxiliares/sembrar', async (req, res) => {
+    const giro = (req.body && req.body.giro) || (await getGiro(db, req.auth.companyId));
+    const n = await sembrarPorRubro(db, req.auth.companyId, giro);
+    res.json({ creados: n });
+  });
+  router.post('/auxiliares', async (req, res) => {
+    const b = req.body || {};
+    if (!b.nombre) return res.status(400).json({ error: 'nombre_requerido' });
+    const a = await auxRepo.createAuxiliar(db, req.auth.companyId, { ...b, estado: 'confirmado' });
+    res.status(201).json(a);
+  });
+  router.patch('/auxiliares/:id', async (req, res) => {
+    const a = await auxRepo.updateAuxiliar(db, req.auth.companyId, req.params.id, req.body || {});
+    if (!a) return res.status(404).json({ error: 'no_existe' });
+    res.json({ auxiliar: a });
+  });
+  router.post('/auxiliares/:id/desactivar', async (req, res) => {
+    const a = await auxRepo.setActivo(db, req.auth.companyId, req.params.id, false);
+    if (!a) return res.status(404).json({ error: 'no_existe' });
+    res.json({ ok: true });
+  });
+  router.post('/auxiliares/:id/merge', async (req, res) => {
+    const a = await auxRepo.mergeAuxiliar(db, req.auth.companyId, req.params.id, (req.body || {}).hacia);
+    if (!a) return res.status(400).json({ error: 'merge_invalido' });
+    res.json({ auxiliar: a });
+  });
+  router.get('/giro', async (req, res) => res.json({ giro: await getGiro(db, req.auth.companyId) }));
+  router.patch('/giro', async (req, res) => { await setGiro(db, req.auth.companyId, (req.body || {}).giro); res.json({ ok: true }); });
 
   return router;
 }
