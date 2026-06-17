@@ -6,7 +6,7 @@ import { TOOL_DECLARATIONS, executeTool } from './tools.js';
 import { openLiveSession } from './live.js';
 
 const APK_URL = 'https://gastos.atikodigital.cl/panel/HashIA.apk';
-const WHATSAPP_URL = 'https://wa.me/56900000000';
+const WHATSAPP_URL = 'https://wa.me/56927130792';
 const CHIPS = ['¿Qué es Hash IA?', '¿Cuánto cuesta?', '¿Sirve para mi negocio?', 'Muéstrame las características'];
 const FEATURES = {
   finanzas: [

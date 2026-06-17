@@ -1,7 +1,7 @@
 import React from 'react';
 
 const APK_URL = 'https://gastos.atikodigital.cl/panel/HashIA.apk';
-const WHATSAPP_URL = 'https://wa.me/56900000000';
+const WHATSAPP_URL = 'https://wa.me/56927130792';
 
 export default function CtaFinal() {
   return (

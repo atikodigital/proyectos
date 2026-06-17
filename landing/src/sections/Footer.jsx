@@ -6,7 +6,7 @@ export default function Footer() {
       <div className="text-hud-cyan text-sm">Hash IA</div>
       <div className="mt-1">Un producto de Atiko Digital · Inteligencia artificial para pymes de Chile</div>
       <div className="mt-3 flex gap-4 justify-center">
-        <a href="https://wa.me/56900000000" target="_blank" rel="noreferrer" className="hover:text-hud-cyan">WhatsApp</a>
+        <a href="https://wa.me/56927130792" target="_blank" rel="noreferrer" className="hover:text-hud-cyan">WhatsApp</a>
         <a href="https://gastos.atikodigital.cl/panel/HashIA.apk" target="_blank" rel="noreferrer" className="hover:text-hud-cyan">Descargar app</a>
       </div>
       <div className="mt-4 opacity-60">© 2026 Atiko Digital</div>
