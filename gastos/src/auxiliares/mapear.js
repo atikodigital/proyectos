@@ -73,4 +73,53 @@ async function componerMapeo(payload, { http = axios, apiKey = process.env.GEMIN
   return parseMapeo(content);
 }
 
-module.exports = { normalizarDescripcion, matchExistente, buildPromptMapeo, parseMapeo, componerMapeo };
+// Devuelve las líneas con `auxiliar_id` asignado. Crea auxiliares 'sugerido' cuando hace falta.
+// `componer` inyectable (default componerMapeo). Si la IA falla, las no matcheadas quedan null.
+// Lazy-require de repo y cuentas para evitar el ciclo circular (repo.js → mapear.js → repo.js).
+async function mapearLineas(db, companyId, lineas, { giro = '', componer } = {}) {
+  // eslint-disable-next-line global-require
+  const auxRepo = require('./repo');
+  // eslint-disable-next-line global-require
+  const { getCuentaId } = require('../contabilidad/cuentas');
+
+  const _componer = componer || ((payload) => componerMapeo(payload, {}));
+  const out = (lineas || []).map((l) => ({ ...l, auxiliar_id: null }));
+
+  // 1) Match determinístico contra el catálogo existente.
+  const pendientes = [];
+  for (let i = 0; i < out.length; i++) {
+    const hit = await auxRepo.findMatch(db, companyId, out[i].descripcion);
+    if (hit) { out[i].auxiliar_id = hit.id; }
+    else { pendientes.push({ idx: i, descripcion: out[i].descripcion }); }
+  }
+  if (!pendientes.length) return out;
+
+  // 2) IA para lo no reconocido (una llamada). Si falla, quedan null.
+  let mapeos = [];
+  try {
+    const auxiliares = await auxRepo.listAuxiliares(db, companyId);
+    mapeos = await _componer({ lineas: pendientes, auxiliares, giro });
+  } catch (e) { return out; }
+
+  for (const m of mapeos) {
+    const i = m.idx;
+    if (i == null || !out[i]) continue;
+    // ¿existe ya por nombre? (la IA puede decir "existe" o proponer uno que ya está)
+    let aux = await auxRepo.findMatch(db, companyId, m.auxiliar);
+    if (!aux) {
+      let cuenta_id = null;
+      if (m.cuentaClave) { try { cuenta_id = await getCuentaId(db, companyId, m.cuentaClave); } catch (e) { cuenta_id = null; } }
+      aux = await auxRepo.createAuxiliar(db, companyId, {
+        nombre: m.auxiliar, naturaleza: m.naturaleza, unidad_principal: m.unidad, cuenta_id, estado: 'sugerido',
+        sinonimos: [out[i].descripcion],
+      });
+    } else {
+      // agrega la descripción cruda como sinónimo para futuros matches deterministas
+      try { await auxRepo.addSinonimo(db, aux.id, out[i].descripcion); } catch (e) { /* noop */ }
+    }
+    out[i].auxiliar_id = aux.id;
+  }
+  return out;
+}
+
+module.exports = { normalizarDescripcion, matchExistente, buildPromptMapeo, parseMapeo, componerMapeo, mapearLineas };
