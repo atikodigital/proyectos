@@ -25,3 +25,15 @@ test('createAuxiliar y listAuxiliares scoped por empresa', async () => {
   // otra empresa no la ve
   expect((await repo.listAuxiliares(db, '22222222-2222-2222-2222-222222222222')).length).toBe(0);
 });
+
+test('findMatch encuentra por nombre/sinónimo; addSinonimo agrega y persiste', async () => {
+  const db = await makeDb();
+  const a = await repo.createAuxiliar(db, COMPANY, { nombre: 'Harina', sinonimos: ['harina 0000'] });
+  // match por nombre
+  expect((await repo.findMatch(db, COMPANY, 'Harina de trigo 25kg')).id).toBe(a.id);
+  // agrega sinónimo nuevo y vuelve a matchear por él
+  await repo.addSinonimo(db, a.id, 'harina selecta');
+  const got = await repo.getById(db, a.id);
+  expect(got.sinonimos).toContain('harina selecta');
+  expect((await repo.findMatch(db, COMPANY, 'HARINA SELECTA premium')).id).toBe(a.id);
+});

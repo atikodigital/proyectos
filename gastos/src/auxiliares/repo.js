@@ -1,5 +1,6 @@
 // gastos/src/auxiliares/repo.js
 // Catálogo de auxiliares (insumos) por empresa. CRUD mínimo (mapeo/fusión = A2).
+const { matchExistente } = require('./mapear');
 const _ready = new WeakMap();
 async function ensureAuxiliaresTable(db) {
   if (!_ready.has(db)) {
@@ -42,4 +43,25 @@ async function listAuxiliares(db, companyId) {
   return r.rows;
 }
 
-module.exports = { ensureAuxiliaresTable, createAuxiliar, listAuxiliares };
+async function getById(db, id) {
+  await ensureAuxiliaresTable(db);
+  const r = await db.query(`SELECT ${COLS} FROM auxiliares WHERE id=$1`, [id]);
+  return r.rows[0] || null;
+}
+
+async function findMatch(db, companyId, descripcion) {
+  const lista = await listAuxiliares(db, companyId);
+  return matchExistente(descripcion, lista);
+}
+
+async function addSinonimo(db, id, sinonimo) {
+  const a = await getById(db, id);
+  if (!a) return null;
+  const s = String(sinonimo || '').trim();
+  const set = new Set([...(Array.isArray(a.sinonimos) ? a.sinonimos : []), s].filter(Boolean));
+  const arr = [...set];
+  const r = await db.query(`UPDATE auxiliares SET sinonimos=$2::jsonb WHERE id=$1 RETURNING ${COLS}`, [id, JSON.stringify(arr)]);
+  return r.rows[0] || null;
+}
+
+module.exports = { ensureAuxiliaresTable, createAuxiliar, listAuxiliares, getById, findMatch, addSinonimo };
