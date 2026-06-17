@@ -4,6 +4,7 @@ const { preprocessForOcr } = require('./preprocess');
 const { computeTotals } = require('../domain/money');
 const { normalizeRut, parseFecha } = require('../domain/normalize');
 const { isValidCategory, mapCategoryToSii } = require('../domain/categories');
+const { normalizeLineas } = require('../domain/lineas');
 
 function pick(...vals) {
   for (const v of vals) {
@@ -80,6 +81,7 @@ async function extractExpense({ imageBuffer, mimeType = 'image/jpeg' }) {
     cuenta_sii_nombre: sii.nombre,
     glosa: String(gem.glosa || '').trim(),
     confianza,
+    lineas: normalizeLineas(gem.lineas),
     raw_ocr: { docai, gemini: gem },
   };
 }

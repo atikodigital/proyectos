@@ -31,6 +31,7 @@ function buildPrompt() {
     'direccion_emisor, proveedor (para ingreso: nombre de quien paga/origen),',
     'fecha (dd/mm/aaaa), neto, iva, total (en pesos CLP enteros),',
     `categoria (una de: ${CATEGORIES.join(', ')}; solo para gasto), glosa (descripción corta).`,
+    'lineas (arreglo del detalle del documento; SOLO para gasto/factura con ítems): cada elemento { descripcion, cantidad, unidad (kg|g|L|ml|kWh|m3|m2|un|hora), neto, iva, total } en CLP entero. Si no hay detalle de ítems, usa [].',
     'Si un campo no aparece, usa "" o 0. No inventes montos.',
   ].join(' ');
 }
