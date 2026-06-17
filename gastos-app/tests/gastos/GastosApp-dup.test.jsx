@@ -11,11 +11,13 @@ jest.mock('../../src/gastos/api', () => ({ api: {
   listExpenses: jest.fn(),
   getExpenseLineas: jest.fn().mockResolvedValue({ lineas: [] }),
   listAuxiliaresApp: jest.fn().mockResolvedValue({ auxiliares: [] }),
+  getCompany: jest.fn().mockResolvedValue({ onboarded_at: '2026-01-01' }),
 } }));
 jest.mock('../../src/components/EvidenceIntake.jsx', () => ({ __esModule: true, default: ({ onChange }) => (
   <button onClick={() => onChange([{ imageBase64: 'B64', imageMimeType: 'image/jpeg' }])}>fake-capture</button>
 ) }));
 jest.mock('../../src/gastos/kaly/KalyAgent.jsx', () => ({ __esModule: true, default: () => <div>kaly-mock</div> }));
+jest.mock('../../src/gastos/onboarding/OnboardingWizard.jsx', () => ({ __esModule: true, default: ({ onSkip }) => <button onClick={onSkip}>wizard-mock-skip</button> }));
 
 beforeEach(() => { setToken('TK'); api.listExpenses.mockResolvedValue([]); });
 

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { getToken, clearToken } from './session';
 import { api } from './api';
 import LoginScreen from './LoginScreen.jsx';
@@ -9,6 +9,7 @@ import ContabilidadView from './ContabilidadView.jsx';
 import KalyAgent from './kaly/KalyAgent.jsx';
 import { APP_VERSION } from './version';
 import ChatView from './ChatView.jsx';
+import OnboardingWizard from './onboarding/OnboardingWizard.jsx';
 
 function clp(n) { return '$' + (Math.round(Number(n) || 0)).toLocaleString('es-CL'); }
 function fechaCorta(v) { if (!v) return ''; const s = String(v); return s.length >= 10 ? s.slice(0, 10) : s; }
@@ -27,6 +28,18 @@ export default function GastosApp() {
   const [dup, setDup] = useState(null);
   const [busy, setBusy] = useState(false);
   const [matchDoc, setMatchDoc] = useState(null);
+  const [mostrarOnboarding, setMostrarOnboarding] = useState(false);
+  const [saltado, setSaltado] = useState(false);
+
+  useEffect(() => {
+    if (!authed) return;
+    (async () => {
+      try {
+        const resp = await api.getCompany();
+        if (!resp.onboarded_at && !saltado) setMostrarOnboarding(true);
+      } catch { /* no romper el render */ }
+    })();
+  }, [authed]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!authed) return <LoginScreen onLoggedIn={() => setAuthed(true)} />;
 
@@ -54,9 +67,22 @@ export default function GastosApp() {
 
   return (
     <div className="h-screen flex flex-col overflow-hidden">
+      {mostrarOnboarding && (
+        <OnboardingWizard
+          onDone={() => setMostrarOnboarding(false)}
+          onSkip={() => { setSaltado(true); setMostrarOnboarding(false); }}
+          onIrAlChat={() => { setMostrarOnboarding(false); setTab('chat'); }}
+          onCrearPedido={() => { setMostrarOnboarding(false); setTab('chat'); }}
+        />
+      )}
       <header className="flex justify-between items-center p-4 border-b shrink-0">
         <span className="font-black" style={{ color: '#C9A24B' }}>Hash IA <span className="text-xs font-normal opacity-50">{APP_VERSION}</span></span>
-        <button className="text-xs opacity-60" onClick={() => { clearToken(); setAuthed(false); }}>Salir</button>
+        <div className="flex items-center gap-2">
+          {!mostrarOnboarding && (
+            <button className="text-xs opacity-60 border border-current rounded px-2 py-0.5" onClick={() => setMostrarOnboarding(true)}>Configurar mi negocio</button>
+          )}
+          <button className="text-xs opacity-60" onClick={() => { clearToken(); setAuthed(false); }}>Salir</button>
+        </div>
       </header>
       <main className="flex-1 min-h-0 flex flex-col overflow-hidden">
         {!pending && !dup && (
