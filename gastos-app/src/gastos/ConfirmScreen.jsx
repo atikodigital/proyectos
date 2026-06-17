@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { api } from './api';
 
 const CATEGORIES = [
@@ -13,7 +13,21 @@ function clp(n) { return '$' + (Math.round(Number(n) || 0)).toLocaleString('es-C
 export default function ConfirmScreen({ expense, onDone, photo }) {
   const [busy, setBusy] = useState(false);
   const [e, setE] = useState(expense);
+  const [lineas, setLineas] = useState([]);
+  const [auxes, setAuxes] = useState([]);
   const esIngreso = e.tipo === 'ingreso';
+  // carga inicial (solo gasto)
+  useEffect(() => {
+    let vivo = true;
+    if (e.tipo === 'ingreso') return undefined;
+    Promise.all([api.getExpenseLineas(e.id).catch(() => ({ lineas: [] })), api.listAuxiliaresApp().catch(() => ({ auxiliares: [] }))])
+      .then(([l, a]) => { if (!vivo) return; setLineas((l && l.lineas) || []); setAuxes((a && a.auxiliares) || []); });
+    return () => { vivo = false; };
+  }, [e.id, e.tipo]);
+  async function reasignar(lineaId, auxiliarId) {
+    setLineas((prev) => prev.map((x) => x.id === lineaId ? { ...x, auxiliar_id: auxiliarId } : x));
+    try { await api.setLineaAuxiliar(lineaId, auxiliarId); } catch (_) { /* noop */ }
+  }
   async function run(fn) { setBusy(true); try { await fn(); onDone(); } finally { setBusy(false); } }
   async function toggleTipo() {
     const nuevo = esIngreso ? 'gasto' : 'ingreso';
@@ -48,6 +62,22 @@ export default function ConfirmScreen({ expense, onDone, photo }) {
           <select className="w-full rounded-lg border px-3 py-2 bg-black/5" value={e.categoria || 'Otros gastos'} onChange={(ev) => setCategoria(ev.target.value)}>
             {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
           </select>
+        </div>
+      ) : null}
+      {!esIngreso && lineas.length ? (
+        <div className="grid gap-2">
+          <div className="text-xs font-black opacity-70">Insumos detectados — corrige el auxiliar si hace falta:</div>
+          {lineas.map((l) => (
+            <div key={l.id} className="rounded-xl border p-2 text-sm grid gap-1">
+              <div className="flex justify-between gap-2"><span className="truncate">{l.descripcion}</span><span className="font-bold">{clp(l.total)}</span></div>
+              <div className="text-[11px] opacity-60">{l.cantidad != null ? l.cantidad + ' ' + (l.unidad || '') : ''}</div>
+              <select aria-label={`insumo-${l.id}`} className="w-full rounded-lg border px-2 py-1 bg-black/5 text-sm"
+                value={l.auxiliar_id || ''} onChange={(ev) => reasignar(l.id, ev.target.value || null)}>
+                <option value="">— sin insumo —</option>
+                {auxes.map((a) => <option key={a.id} value={a.id}>{a.nombre}</option>)}
+              </select>
+            </div>
+          ))}
         </div>
       ) : null}
       <button disabled={busy} onClick={toggleTipo} className="rounded-xl font-black py-2 bg-black/10 border disabled:opacity-50 text-sm">Es un {esIngreso ? 'gasto' : 'ingreso'}</button>

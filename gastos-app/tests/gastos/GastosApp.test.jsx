@@ -3,7 +3,12 @@ import GastosApp from '../../src/gastos/GastosApp.jsx';
 import { api } from '../../src/gastos/api';
 import { setToken, clearToken } from '../../src/gastos/session';
 
-jest.mock('../../src/gastos/api', () => ({ api: { createExpense: jest.fn(), listExpenses: jest.fn().mockResolvedValue([]) } }));
+jest.mock('../../src/gastos/api', () => ({ api: {
+  createExpense: jest.fn(),
+  listExpenses: jest.fn().mockResolvedValue([]),
+  getExpenseLineas: jest.fn().mockResolvedValue({ lineas: [] }),
+  listAuxiliaresApp: jest.fn().mockResolvedValue({ auxiliares: [] }),
+} }));
 jest.mock('../../src/components/EvidenceIntake.jsx', () => ({
   __esModule: true,
   default: ({ onChange }) => (

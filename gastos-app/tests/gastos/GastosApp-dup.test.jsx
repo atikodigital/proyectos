@@ -3,7 +3,15 @@ import GastosApp from '../../src/gastos/GastosApp.jsx';
 import { api } from '../../src/gastos/api';
 import { setToken } from '../../src/gastos/session';
 
-jest.mock('../../src/gastos/api', () => ({ api: { createExpense: jest.fn(), confirmExpense: jest.fn(), rejectExpense: jest.fn(), updateExpense: jest.fn(), listExpenses: jest.fn() } }));
+jest.mock('../../src/gastos/api', () => ({ api: {
+  createExpense: jest.fn(),
+  confirmExpense: jest.fn(),
+  rejectExpense: jest.fn(),
+  updateExpense: jest.fn(),
+  listExpenses: jest.fn(),
+  getExpenseLineas: jest.fn().mockResolvedValue({ lineas: [] }),
+  listAuxiliaresApp: jest.fn().mockResolvedValue({ auxiliares: [] }),
+} }));
 jest.mock('../../src/components/EvidenceIntake.jsx', () => ({ __esModule: true, default: ({ onChange }) => (
   <button onClick={() => onChange([{ imageBase64: 'B64', imageMimeType: 'image/jpeg' }])}>fake-capture</button>
 ) }));

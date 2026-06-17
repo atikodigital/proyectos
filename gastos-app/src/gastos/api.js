@@ -79,6 +79,11 @@ export const api = {
   catalogExtraer(imageBase64, mimeType = 'image/jpeg') { return req('/api/app/catalog/extraer', { method: 'POST', body: { imageBase64, mimeType } }); },
   crearProductosBulk(productos) { return req('/api/app/products/bulk', { method: 'POST', body: { productos } }); },
 
+  // VARAS — Auxiliares (insumos) por línea
+  getExpenseLineas(id) { return req(`/api/app/expenses/${id}/lineas`); },
+  listAuxiliaresApp() { return req('/api/app/auxiliares'); },
+  setLineaAuxiliar(lineaId, auxiliar_id) { return req(`/api/app/lineas/${lineaId}`, { method: 'PATCH', body: { auxiliar_id } }); },
+
   // Pedido desde catálogo
   pedidoFromCatalog(payload) { return req('/api/app/pedido/from-catalog', { method: 'POST', body: payload }); },
   getPedidoConfig() { return req('/api/app/pedido-config'); },

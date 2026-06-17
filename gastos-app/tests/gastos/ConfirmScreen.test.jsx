@@ -1,7 +1,13 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import ConfirmScreen from '../../src/gastos/ConfirmScreen.jsx';
 import { api } from '../../src/gastos/api';
-jest.mock('../../src/gastos/api', () => ({ api: { confirmExpense: jest.fn(), rejectExpense: jest.fn(), updateExpense: jest.fn() } }));
+jest.mock('../../src/gastos/api', () => ({ api: {
+  confirmExpense: jest.fn(),
+  rejectExpense: jest.fn(),
+  updateExpense: jest.fn(),
+  getExpenseLineas: jest.fn().mockResolvedValue({ lineas: [] }),
+  listAuxiliaresApp: jest.fn().mockResolvedValue({ auxiliares: [] }),
+} }));
 const exp = { id: 'x1', tipo: 'gasto', proveedor: 'Copec', total: 25000, categoria: 'Combustible y transporte', fecha: '2026-06-12', iva: 3992, tipo_documento: 'boleta' };
 
 test('confirma', async () => {
