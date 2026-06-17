@@ -197,6 +197,7 @@
             <button class="tab csub" data-libro="flujo">Flujo de Caja</button>
             <button class="tab csub" data-libro="conciliacion">Conciliación</button>
             <button class="tab csub" data-libro="iva">IVA (SII)</button>
+            <button class="tab csub" data-libro="manual">Manual</button>
           </div>
           <button id="cExcelBtn" class="btn-ghost">Descargar Excel</button>
         </div>
@@ -618,17 +619,142 @@
 
   // ── CONTABILIDAD ─────────────────────────────────────────────────────────
   var libroActual = 'diario';
+  var _cuentasCache = null;
   function cPeriodoVal() { return $('cPeriodo').value || ymActual(); }
+
+  async function getCuentas() {
+    if (_cuentasCache) return _cuentasCache;
+    try {
+      var res = await apiFetch('/cuentas');
+      var d = await res.json();
+      _cuentasCache = d.cuentas || [];
+    } catch (e) { _cuentasCache = []; }
+    return _cuentasCache;
+  }
+
+  function renderManualForm() {
+    var hoy = new Date();
+    var fechaHoy = hoy.getFullYear() + '-' + String(hoy.getMonth() + 1).padStart(2, '0') + '-' + String(hoy.getDate()).padStart(2, '0');
+    $('cContenido').innerHTML =
+      '<div style="max-width:640px;padding:4px">'
+      + '<h3 style="color:var(--gold);margin-top:0">Nuevo asiento manual</h3>'
+      + '<div class="row" style="margin-bottom:8px">'
+      + '<div><label>Fecha</label><input id="mFecha" type="date" value="' + fechaHoy + '" /></div>'
+      + '<div style="flex:1"><label>Glosa</label><input id="mGlosa" style="width:100%" placeholder="Descripción del asiento" /></div>'
+      + '</div>'
+      + '<div id="mFilas"></div>'
+      + '<button id="mAddFila" class="btn-ghost" style="margin:6px 0;font-size:12px">+ línea</button>'
+      + '<div id="mCuadreIndicator" style="text-align:center;font-weight:900;border-radius:8px;padding:6px;margin:8px 0;font-size:13px"></div>'
+      + '<button id="mGuardar" class="btn-gold" style="width:100%" disabled>Guardar asiento</button>'
+      + '<p id="mMsg" class="muted" style="text-align:center;margin:6px 0"></p>'
+      + '</div>';
+
+    var filas = [{ cuenta_id: '', debe: '', haber: '' }, { cuenta_id: '', debe: '', haber: '' }];
+
+    getCuentas().then(function (cuentas) {
+      function cuentaOpts(sel) {
+        return '<option value="">cuenta…</option>'
+          + cuentas.map(function (c) {
+              return '<option value="' + PanelLib.escapeHtml(c.id) + '"' + (c.id === sel ? ' selected' : '') + '>'
+                + PanelLib.escapeHtml(c.codigo + ' ' + c.nombre) + '</option>';
+            }).join('');
+      }
+
+      function actualizarCuadre() {
+        var lineas = filas.map(function (f) { return { debe: Number(f.debe) || 0, haber: Number(f.haber) || 0 }; });
+        var c = PanelLib.cuadreManual(lineas);
+        var ind = $('mCuadreIndicator');
+        var btn = $('mGuardar');
+        if (!ind || !btn) return;
+        ind.textContent = 'Debe $' + c.sumD.toLocaleString('es-CL') + ' · Haber $' + c.sumH.toLocaleString('es-CL') + (c.cuadrado ? ' ✓ cuadra' : ' ⚠ no cuadra');
+        ind.style.background = c.cuadrado ? '#1a3a1a' : '#3a1a1a';
+        ind.style.color = c.cuadrado ? '#7CFC9B' : '#ff8a8a';
+        btn.disabled = !c.cuadrado;
+      }
+
+      function renderFilas() {
+        var cont = $('mFilas');
+        if (!cont) return;
+        cont.innerHTML = filas.map(function (f, i) {
+          return '<div class="row" style="margin-bottom:4px" data-fila="' + i + '">'
+            + '<select data-fc="' + i + '" style="flex:2;min-width:160px">' + cuentaOpts(f.cuenta_id) + '</select>'
+            + '<input data-fd="' + i + '" type="number" placeholder="Debe" value="' + PanelLib.escapeHtml(f.debe) + '" style="flex:1;min-width:80px" />'
+            + '<input data-fh="' + i + '" type="number" placeholder="Haber" value="' + PanelLib.escapeHtml(f.haber) + '" style="flex:1;min-width:80px" />'
+            + '</div>';
+        }).join('');
+        cont.querySelectorAll('[data-fc]').forEach(function (el) {
+          el.onchange = function () { filas[Number(el.dataset.fc)].cuenta_id = el.value; };
+        });
+        cont.querySelectorAll('[data-fd]').forEach(function (el) {
+          el.oninput = function () { filas[Number(el.dataset.fd)].debe = el.value; filas[Number(el.dataset.fd)].haber = ''; actualizarCuadre(); };
+        });
+        cont.querySelectorAll('[data-fh]').forEach(function (el) {
+          el.oninput = function () { filas[Number(el.dataset.fh)].haber = el.value; filas[Number(el.dataset.fh)].debe = ''; actualizarCuadre(); };
+        });
+        actualizarCuadre();
+      }
+
+      renderFilas();
+
+      var addFilaBtn = $('mAddFila');
+      if (addFilaBtn) {
+        addFilaBtn.onclick = function () {
+          filas.push({ cuenta_id: '', debe: '', haber: '' });
+          renderFilas();
+        };
+      }
+
+      var guardarBtn = $('mGuardar');
+      if (guardarBtn) {
+        guardarBtn.onclick = async function () {
+          guardarBtn.disabled = true;
+          $('mMsg').textContent = 'Guardando…';
+          var lineas = filas
+            .filter(function (f) { return f.cuenta_id && (Number(f.debe) > 0 || Number(f.haber) > 0); })
+            .map(function (f) { return { cuenta_id: f.cuenta_id, debe: Math.round(Number(f.debe) || 0), haber: Math.round(Number(f.haber) || 0) }; });
+          try {
+            var res = await apiFetch('/asientos/manual', { method: 'POST', body: JSON.stringify({ fecha: $('mFecha').value, glosa: $('mGlosa').value, lineas: lineas }) });
+            if (!res.ok) throw new Error('fail');
+            $('mMsg').textContent = '✓ Asiento guardado';
+            filas = [{ cuenta_id: '', debe: '', haber: '' }, { cuenta_id: '', debe: '', haber: '' }];
+            // Switch back to diario to show the newly created entry
+            document.querySelectorAll('.csub').forEach(function (x) { x.classList.remove('active'); });
+            document.querySelector('.csub[data-libro="diario"]').classList.add('active');
+            libroActual = 'diario';
+            loadContabilidad();
+          } catch (e) {
+            $('mMsg').textContent = 'No se pudo guardar. Verifica que el asiento cuadre.';
+            actualizarCuadre();
+          }
+        };
+      }
+    });
+  }
+
   async function loadContabilidad() {
     $('cContenido').innerHTML = '<p class="muted" style="padding:8px">Cargando…</p>';
-    $('cExcelBtn').classList.toggle('hidden', libroActual === 'conciliacion' || libroActual === 'iva');
+    $('cExcelBtn').classList.toggle('hidden', libroActual === 'conciliacion' || libroActual === 'iva' || libroActual === 'manual');
     var p = '?periodo=' + encodeURIComponent(cPeriodoVal());
     try {
       var res, data;
-      if (libroActual === 'diario') {
+      if (libroActual === 'manual') {
+        renderManualForm();
+        return;
+      } else if (libroActual === 'diario') {
         res = await apiFetch('/contabilidad/diario' + p);
         data = await res.json();
         $('cContenido').innerHTML = PanelLib.diarioTableHtml(data.asientos);
+        $('cContenido').querySelectorAll('[data-anular]').forEach(function (btn) {
+          btn.onclick = async function () {
+            if (!confirm('¿Anular este asiento? (quedará registrado como anulado)')) return;
+            btn.disabled = true;
+            try {
+              var ar = await apiFetch('/asientos/' + btn.getAttribute('data-anular') + '/anular', { method: 'POST', body: JSON.stringify({}) });
+              if (!ar.ok) throw new Error('fail');
+              loadContabilidad();
+            } catch (e) { btn.disabled = false; alert('No se pudo anular.'); }
+          };
+        });
       } else if (libroActual === 'mayor') {
         res = await apiFetch('/contabilidad/mayor' + p);
         data = await res.json();

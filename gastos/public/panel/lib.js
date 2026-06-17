@@ -132,12 +132,18 @@
     }).join('');
   }
 
+  function cuadreManual(lineas) {
+    var sumD = 0, sumH = 0;
+    (lineas || []).forEach(function (l) { sumD += Math.round(Number(l.debe) || 0); sumH += Math.round(Number(l.haber) || 0); });
+    return { sumD: sumD, sumH: sumH, cuadrado: sumD > 0 && sumD === sumH };
+  }
+
   function diarioTableHtml(asientos) {
     const rows = (asientos || []).map(function (a) {
       return (a.lineas || []).map(function (l, i) {
         return '<tr>'
           + '<td>' + (i === 0 ? escapeHtml(a.fecha) : '') + '</td>'
-          + '<td>' + (i === 0 ? escapeHtml(a.glosa) : '') + '</td>'
+          + '<td>' + (i === 0 ? escapeHtml(a.glosa) : '') + (i === 0 && a.id ? ' <button class="btn-ghost aux-del" data-anular="' + escapeHtml(a.id) + '">Anular</button>' : '') + '</td>'
           + '<td>' + escapeHtml(l.cuenta_nombre || l.codigo) + '</td>'
           + '<td class="num">' + (Number(l.debe) ? fmtClp(l.debe) : '') + '</td>'
           + '<td class="num">' + (Number(l.haber) ? fmtClp(l.haber) : '') + '</td>'
@@ -268,5 +274,5 @@
       + (filas || '<tr><td colspan="3">Sin evolución.</td></tr>') + '</tbody></table>';
   }
 
-  return { fmtClp, escapeHtml, buildQuery, totalsFromRows, cashflowFromRows, expensesTableHtml, expensesCarouselHtml, detalleRows, detalleHtml, desdePriceLib: desdePriceLib, productosListHtml: productosListHtml, diarioTableHtml: diarioTableHtml, mayorTableHtml: mayorTableHtml, balanceTableHtml: balanceTableHtml, flujoTableHtml: flujoTableHtml, conciliacionHtml: conciliacionHtml, ivaResumenHtml: ivaResumenHtml, auxiliaresTableHtml: auxiliaresTableHtml, consumoHtml: consumoHtml };
+  return { fmtClp, escapeHtml, buildQuery, totalsFromRows, cashflowFromRows, expensesTableHtml, expensesCarouselHtml, detalleRows, detalleHtml, desdePriceLib: desdePriceLib, productosListHtml: productosListHtml, cuadreManual: cuadreManual, diarioTableHtml: diarioTableHtml, mayorTableHtml: mayorTableHtml, balanceTableHtml: balanceTableHtml, flujoTableHtml: flujoTableHtml, conciliacionHtml: conciliacionHtml, ivaResumenHtml: ivaResumenHtml, auxiliaresTableHtml: auxiliaresTableHtml, consumoHtml: consumoHtml };
 });
