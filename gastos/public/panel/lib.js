@@ -237,5 +237,19 @@
     }).join('');
   }
 
-  return { fmtClp, escapeHtml, buildQuery, totalsFromRows, cashflowFromRows, expensesTableHtml, expensesCarouselHtml, detalleRows, detalleHtml, desdePriceLib: desdePriceLib, productosListHtml: productosListHtml, diarioTableHtml: diarioTableHtml, mayorTableHtml: mayorTableHtml, balanceTableHtml: balanceTableHtml, flujoTableHtml: flujoTableHtml, conciliacionHtml: conciliacionHtml, ivaResumenHtml: ivaResumenHtml };
+  function auxiliaresTableHtml(auxiliares) {
+    var rows = (auxiliares || []).map(function (a) {
+      return '<tr data-aux="' + escapeHtml(a.id) + '">'
+        + '<td>' + escapeHtml(a.nombre) + '</td>'
+        + '<td>' + escapeHtml(a.naturaleza || '') + '</td>'
+        + '<td>' + escapeHtml(a.unidad_principal || '') + '</td>'
+        + '<td>' + escapeHtml(a.estado || '') + '</td>'
+        + '<td><button class="btn-ghost aux-del" data-aux="' + escapeHtml(a.id) + '">Borrar</button></td>'
+        + '</tr>';
+    }).join('');
+    return '<table class="tbl"><thead><tr><th>Insumo</th><th>Tipo</th><th>Unidad</th><th>Estado</th><th></th></tr></thead><tbody>'
+      + (rows || '<tr><td colspan="5">Sin auxiliares. Setea el giro y pulsa "Sembrar".</td></tr>') + '</tbody></table>';
+  }
+
+  return { fmtClp, escapeHtml, buildQuery, totalsFromRows, cashflowFromRows, expensesTableHtml, expensesCarouselHtml, detalleRows, detalleHtml, desdePriceLib: desdePriceLib, productosListHtml: productosListHtml, diarioTableHtml: diarioTableHtml, mayorTableHtml: mayorTableHtml, balanceTableHtml: balanceTableHtml, flujoTableHtml: flujoTableHtml, conciliacionHtml: conciliacionHtml, ivaResumenHtml: ivaResumenHtml, auxiliaresTableHtml: auxiliaresTableHtml };
 });

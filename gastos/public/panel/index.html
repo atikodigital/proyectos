@@ -86,6 +86,7 @@
       <button class="tab" data-tab="productos">Productos</button>
       <button class="tab" data-tab="ajustes">Ajustes</button>
       <button class="tab" data-tab="contabilidad">Contabilidad</button>
+      <button class="tab" data-tab="auxiliares">Auxiliares</button>
     </div>
 
     <!-- GASTOS -->
@@ -203,6 +204,31 @@
       <div id="cContenido" class="scroll" style="padding:12px"><p class="muted">Cargando…</p></div>
     </section>
 
+    <!-- AUXILIARES -->
+    <section id="auxiliaresSection" class="hidden">
+      <div class="card">
+        <div class="row" style="align-items:end; gap:10px; flex-wrap:wrap">
+          <div style="flex:1; min-width:180px">
+            <label for="auxGiroInput">Giro de la empresa</label>
+            <input id="auxGiroInput" style="width:100%" placeholder="ej. pizzería, ferretería…" />
+          </div>
+          <button id="auxGuardarGiroBtn" class="btn-gold">Guardar giro</button>
+          <button id="auxSembrarBtn" class="btn-ghost">🌱 Sembrar por rubro</button>
+        </div>
+        <p id="auxGiroMsg" class="muted" style="margin:6px 2px 0"></p>
+      </div>
+      <div class="card">
+        <h3 style="margin-top:0">Agregar insumo</h3>
+        <div class="row">
+          <div><label>Nombre</label><input id="auxNombre" placeholder="ej. Harina" /></div>
+          <div><label>Unidad</label><input id="auxUnidad" placeholder="ej. kg" /></div>
+          <button id="auxAgregarBtn" class="btn-gold">Agregar</button>
+        </div>
+        <p id="auxFormMsg" class="muted" style="margin:6px 2px 0"></p>
+      </div>
+      <div id="auxContenido" class="scroll" style="padding:12px"><p class="muted">Cargando…</p></div>
+    </section>
+
     <!-- AJUSTES -->
     <section id="settingsSection" class="hidden">
       <div class="card">
@@ -310,10 +336,12 @@
       $('productosSection').classList.toggle('hidden', tab !== 'productos');
       $('settingsSection').classList.toggle('hidden', tab !== 'ajustes');
       $('contabilidadSection').classList.toggle('hidden', tab !== 'contabilidad');
+      $('auxiliaresSection').classList.toggle('hidden', tab !== 'auxiliares');
       if (tab === 'empleados') loadEmpleados();
       if (tab === 'ajustes') loadCompany();
       if (tab === 'productos') cargarProductos();
       if (tab === 'contabilidad') { if (!$('cPeriodo').value) $('cPeriodo').value = ymActual(); loadContabilidad(); }
+      if (tab === 'auxiliares') loadAuxiliares();
     };
   });
 
@@ -645,6 +673,65 @@
       var a = document.createElement('a'); a.href = url; a.download = libroActual + '.xlsx';
       document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
     } catch (e) {}
+  };
+
+  // ── AUXILIARES ────────────────────────────────────────────────────────────
+  async function loadAuxiliares() {
+    $('auxContenido').innerHTML = '<p class="muted" style="padding:8px">Cargando…</p>';
+    try {
+      var gr = await apiFetch('/giro');
+      var gd = await gr.json();
+      $('auxGiroInput').value = gd.giro || '';
+    } catch (e) {}
+    try {
+      var res = await apiFetch('/auxiliares');
+      var data = await res.json();
+      $('auxContenido').innerHTML = PanelLib.auxiliaresTableHtml(data.auxiliares);
+      $('auxContenido').querySelectorAll('.aux-del').forEach(function (b) {
+        b.onclick = async function () {
+          b.disabled = true;
+          try {
+            await apiFetch('/auxiliares/' + b.getAttribute('data-aux') + '/desactivar', { method: 'POST', body: JSON.stringify({}) });
+            loadAuxiliares();
+          } catch (e) { b.disabled = false; }
+        };
+      });
+    } catch (e) {
+      if (e.message !== '401') $('auxContenido').innerHTML = '<p class="err" style="padding:8px">Error al cargar.</p>';
+    }
+  }
+
+  $('auxGuardarGiroBtn').onclick = async function () {
+    $('auxGiroMsg').textContent = '';
+    try {
+      await apiFetch('/giro', { method: 'PATCH', body: JSON.stringify({ giro: $('auxGiroInput').value.trim() }) });
+      $('auxGiroMsg').textContent = 'Giro guardado ✓';
+    } catch (e) { $('auxGiroMsg').textContent = 'No se pudo guardar.'; }
+  };
+
+  $('auxSembrarBtn').onclick = async function () {
+    $('auxGiroMsg').textContent = 'Sembrando…';
+    $('auxSembrarBtn').disabled = true;
+    try {
+      var res = await apiFetch('/auxiliares/sembrar', { method: 'POST', body: JSON.stringify({ giro: $('auxGiroInput').value.trim() || undefined }) });
+      var d = await res.json();
+      $('auxGiroMsg').textContent = 'Sembrados ' + (d.creados || 0) + ' insumos ✓';
+      loadAuxiliares();
+    } catch (e) { $('auxGiroMsg').textContent = 'Error al sembrar.'; }
+    $('auxSembrarBtn').disabled = false;
+  };
+
+  $('auxAgregarBtn').onclick = async function () {
+    $('auxFormMsg').textContent = '';
+    var nombre = $('auxNombre').value.trim();
+    if (!nombre) { $('auxFormMsg').textContent = 'Falta el nombre.'; return; }
+    try {
+      var res = await apiFetch('/auxiliares', { method: 'POST', body: JSON.stringify({ nombre: nombre, unidad_principal: $('auxUnidad').value.trim() || undefined }) });
+      if (!res.ok) throw new Error('bad');
+      $('auxNombre').value = ''; $('auxUnidad').value = '';
+      $('auxFormMsg').textContent = 'Insumo agregado ✓';
+      loadAuxiliares();
+    } catch (e) { $('auxFormMsg').textContent = 'Error al agregar.'; }
   };
 
   if (token()) showApp(); else showLogin();
