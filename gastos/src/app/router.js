@@ -5,6 +5,7 @@ const { signToken } = require('../auth/jwt');
 const { requireAuth, requireKind } = require('../auth/middleware');
 const { intakeFromImage } = require('../expenses/intake');
 const { getExpense, confirmExpense, updateExpense, rejectExpense, annulExpense, markExpensePaid, markExpenseConciliada, createExpense } = require('../expenses/repo');
+const { getLineas } = require('../expenses/lineas-repo');
 const realExtract = require('../ocr/extract');
 const { conciliarCartola } = require('../match/service');
 const { construirInforme } = require('../match/conciliacion');
@@ -321,6 +322,11 @@ function createAppRouter({ db, extractExpense, createLiveToken, sendText, extrac
     if (!buf) return res.status(404).json({ error: 'sin_foto' });
     res.setHeader('Content-Type', contentTypeFor(exp.foto_path));
     return res.send(buf);
+  });
+
+  router.get('/expenses/:id/lineas', async (req, res) => {
+    if (!(await ownedExpense(req, res))) return;
+    res.json({ lineas: await getLineas(db, req.params.id) });
   });
 
   router.post('/match/cartola', async (req, res) => {
