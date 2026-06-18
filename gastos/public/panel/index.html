@@ -376,6 +376,419 @@
     0%, 80%, 100% { transform: scale(0); }
     40% { transform: scale(1.0); }
   }
+
+  /* Layout del Panel con Sidebar */
+  .app-layout {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    height: 100vh;
+    overflow: hidden;
+  }
+  .sidebar {
+    background: #0c0c0e;
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+  }
+  .sidebar-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+  }
+  .sidebar-nav {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .sidebar-footer {
+    padding: 16px;
+    border-top: 1px solid var(--border);
+  }
+  
+  /* Botones del Sidebar */
+  .side-tab {
+    background: transparent;
+    color: var(--text-muted);
+    border: 1px solid transparent;
+    border-radius: 10px;
+    padding: 10px 14px;
+    width: 100%;
+    font-size: 13.5px;
+    text-align: left;
+    justify-content: flex-start;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .side-tab:hover {
+    color: var(--text);
+    background: var(--surface-hover);
+  }
+  .side-tab.active {
+    background: rgba(201, 162, 75, 0.1);
+    color: var(--gold);
+    border-color: rgba(201, 162, 75, 0.25);
+    font-weight: 700;
+  }
+  .side-tab.active .tab-icon {
+    filter: drop-shadow(0 0 4px var(--gold));
+  }
+  
+  .tab-icon {
+    font-size: 16px;
+    display: inline-block;
+    width: 20px;
+    text-align: center;
+  }
+  
+  /* Subgrupos de Navegación */
+  .side-nav-group {
+    display: flex;
+    flex-direction: column;
+  }
+  .group-arrow {
+    margin-left: auto;
+    font-size: 10px;
+    transition: transform 0.2s ease;
+  }
+  .side-nav-group.expanded .group-arrow {
+    transform: rotate(180deg);
+  }
+  .side-nav-subgroup {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding-left: 12px;
+    margin-top: 2px;
+    border-left: 1px solid var(--border);
+    margin-left: 22px;
+  }
+  .sub-tab {
+    background: transparent;
+    color: var(--text-muted);
+    border: 1px solid transparent;
+    border-radius: 8px;
+    padding: 8px 12px;
+    width: 100%;
+    font-size: 12.5px;
+    text-align: left;
+    justify-content: flex-start;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .sub-tab:hover {
+    color: var(--text);
+    background: var(--surface-hover);
+  }
+  .sub-tab.active {
+    color: var(--gold);
+    font-weight: 700;
+  }
+  
+  /* Main Content Area */
+  .main-content {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+  }
+  .main-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 32px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(9, 9, 11, 0.8);
+    backdrop-filter: blur(12px);
+    z-index: 40;
+  }
+  .main-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px 32px 48px;
+  }
+</style>
+<!-- Fonts & Icons from Stitch -->
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<!-- Tailwind CSS CDN -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        "colors": {
+          "secondary-container": "#474746",
+          "secondary": "#c8c6c5",
+          "surface-container-highest": "#343535",
+          "on-secondary": "#313030",
+          "surface-bright": "#383939",
+          "inverse-surface": "#e3e2e2",
+          "on-primary": "#3a3000",
+          "on-surface": "#e3e2e2",
+          "outline": "#999077",
+          "on-tertiary-container": "#5f5f5f",
+          "outline-variant": "#4d4732",
+          "on-secondary-fixed-variant": "#474746",
+          "on-surface-variant": "#d0c6ab",
+          "on-secondary-fixed": "#1c1b1b",
+          "on-secondary-container": "#b7b5b4",
+          "tertiary-container": "#dcd9d9",
+          "surface-variant": "#343535",
+          "surface": "#121414",
+          "on-tertiary-fixed-variant": "#474747",
+          "on-error": "#690005",
+          "secondary-fixed-dim": "#c8c6c5",
+          "primary-fixed": "#ffe16d",
+          "primary": "#fff6df",
+          "surface-container-lowest": "#0d0e0f",
+          "on-tertiary": "#303030",
+          "tertiary-fixed": "#e4e2e1",
+          "primary-fixed-dim": "#e9c400",
+          "inverse-primary": "#705d00",
+          "primary-container": "#ffd700",
+          "secondary-fixed": "#e5e2e1",
+          "surface-container-high": "#292a2a",
+          "background": "#121414",
+          "surface-dim": "#121414",
+          "surface-container": "#1e2020",
+          "on-error-container": "#ffdad6",
+          "surface-tint": "#e9c400",
+          "on-primary-fixed": "#221b00",
+          "on-primary-container": "#705e00",
+          "error-container": "#93000a",
+          "on-background": "#e3e2e2",
+          "error": "#ffb4ab",
+          "tertiary-fixed-dim": "#c8c6c6",
+          "on-primary-fixed-variant": "#544600",
+          "tertiary": "#f8f6f5",
+          "inverse-on-surface": "#2f3131",
+          "on-tertiary-fixed": "#1b1c1c",
+          "surface-container-low": "#1a1c1c"
+        },
+        "borderRadius": {
+          "DEFAULT": "0.125rem",
+          "lg": "0.25rem",
+          "xl": "0.5rem",
+          "full": "0.75rem",
+          "2xl": "1rem",
+          "3xl": "1.5rem"
+        },
+        "spacing": {
+          "container-margin": "24px",
+          "xl": "32px",
+          "base": "4px",
+          "sm": "12px",
+          "md": "16px",
+          "lg": "24px",
+          "gutter": "16px",
+          "xs": "8px"
+        }
+      }
+    }
+  }
+</script>
+<style>
+  :root {
+    --gold: #ffd700;
+    --gold-hover: #ffe16d;
+    --gold-glow: rgba(255, 215, 0, 0.15);
+    --bg: #121414;
+    --bg-panel: #1e2020;
+    --surface: rgba(41, 42, 42, 0.4);
+    --surface-card: rgba(41, 42, 42, 0.5);
+    --surface-hover: rgba(52, 53, 53, 0.4);
+    --border: rgba(153, 144, 119, 0.2);
+    --text: #e3e2e2;
+    --text-muted: #d0c6ab;
+    --green: #4ade80;
+    --green-bg: rgba(74, 222, 128, 0.12);
+    --red: #ffb4ab;
+    --red-bg: rgba(255, 180, 171, 0.12);
+    --font-heading: 'Hanken Grotesk', sans-serif;
+    --font-body: 'Hanken Grotesk', sans-serif;
+  }
+  
+  body {
+    background: var(--bg);
+    background-image: radial-gradient(ellipse at top right, #1a1a1a 0%, #0a0a0a 100%) !important;
+    color: var(--text);
+    font-family: var(--font-body);
+  }
+
+  .glass-panel {
+    background: rgba(30, 32, 32, 0.6);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(153, 144, 119, 0.15);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  }
+  .glass-card {
+    background: linear-gradient(135deg, rgba(41, 42, 42, 0.8) 0%, rgba(26, 28, 28, 0.8) 100%);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 215, 0, 0.1);
+    box-shadow: 0 4px 24px -1px rgba(0, 0, 0, 0.4);
+  }
+
+  .btn-gold {
+    background: var(--gold) !important;
+    color: #3a3000 !important;
+  }
+  .btn-gold:hover {
+    background: var(--gold-hover) !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px var(--gold-glow);
+  }
+  .btn-ghost {
+    background: var(--surface) !important;
+    color: var(--text) !important;
+    border-color: var(--border) !important;
+  }
+  .btn-ghost:hover {
+    background: var(--surface-hover) !important;
+    border-color: rgba(255, 255, 255, 0.15) !important;
+  }
+  
+  input, select, textarea {
+    background: rgba(41, 42, 42, 0.4) !important;
+    color: var(--text) !important;
+    border: 1px solid rgba(153, 144, 119, 0.2) !important;
+    border-radius: 12px !important;
+  }
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--gold) !important;
+    box-shadow: 0 0 0 3px var(--gold-glow) !important;
+    background: rgba(41, 42, 42, 0.6) !important;
+  }
+  
+  label {
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    color: var(--text-muted) !important;
+    letter-spacing: 0.08em !important;
+  }
+  
+  .card {
+    background: linear-gradient(135deg, rgba(41, 42, 42, 0.8) 0%, rgba(26, 28, 28, 0.8) 100%) !important;
+    backdrop-filter: blur(10px) !important;
+    border: 1px solid rgba(255, 215, 0, 0.1) !important;
+    box-shadow: 0 4px 24px -1px rgba(0, 0, 0, 0.4) !important;
+    border-radius: 16px !important;
+    transition: all 0.2s ease;
+  }
+  .card:hover {
+    border-color: rgba(255, 215, 0, 0.2) !important;
+  }
+  
+  table.exp, table.tbl {
+    font-size: 13px !important;
+    font-family: 'JetBrains Mono', monospace !important;
+  }
+  table.exp th, table.tbl th {
+    color: #d0c6ab !important;
+    font-family: 'Hanken Grotesk', sans-serif !important;
+    font-weight: 700 !important;
+    font-size: 11px !important;
+    letter-spacing: 0.1em !important;
+    background: #1e2020 !important;
+    border-bottom: 1px solid rgba(153, 144, 119, 0.15) !important;
+  }
+  table.exp td, table.tbl td {
+    border-bottom: 1px solid rgba(52, 53, 53, 0.3) !important;
+    color: #e3e2e2 !important;
+  }
+  table.exp tr:hover td, table.tbl tbody tr:hover td {
+    background: rgba(52, 53, 53, 0.4) !important;
+  }
+  tfoot tr td {
+    background: #1e2020 !important;
+    border-top: 2px solid rgba(153, 144, 119, 0.15) !important;
+    color: #ffd700 !important;
+  }
+
+  .scroll {
+    background: #121414 !important;
+  }
+  
+  .modal .box {
+    background: #121414 !important;
+    border: 1px solid rgba(255, 215, 0, 0.15) !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 215, 0, 0.15) !important;
+  }
+  .detrow {
+    border-bottom: 1px solid rgba(52, 53, 53, 0.3) !important;
+  }
+  
+  .badge-ok {
+    background: var(--green-bg) !important;
+    color: var(--green) !important;
+    border: 1px solid rgba(74, 222, 128, 0.2) !important;
+  }
+  .badge-no {
+    background: var(--red-bg) !important;
+    color: var(--red) !important;
+    border: 1px solid rgba(255, 180, 171, 0.2) !important;
+  }
+  
+  .varas-bubble-user {
+    border: 1px solid rgba(255, 215, 0, 0.2) !important;
+    background: rgba(255, 215, 0, 0.13) !important;
+    color: #ffd700 !important;
+  }
+  .varas-bubble-varas {
+    border: 1px solid rgba(153, 144, 119, 0.15) !important;
+    background: rgba(255, 255, 255, 0.06) !important;
+    color: #e3e2e2 !important;
+  }
+  #varasScroll {
+    background: #121414 !important;
+  }
+  
+  .pulse-dot {
+    background-color: var(--gold) !important;
+  }
+
+  .app-layout {
+    grid-template-columns: 260px 1fr !important;
+    background: #121414 !important;
+  }
+  .sidebar {
+    background: #121414 !important;
+  }
+
+  /* Waveform Animation (Stitch IA Widget) */
+  @keyframes waveform {
+    0% { transform: scaleY(0.2); }
+    50% { transform: scaleY(1); }
+    100% { transform: scaleY(0.2); }
+  }
+  .wave-bar {
+    width: 3px; height: 20px;
+    background-color: #ffd700;
+    border-radius: 2px;
+    animation: waveform 1.2s ease-in-out infinite;
+  }
+  .wave-bar:nth-child(1) { animation-delay: 0.0s; }
+  .wave-bar:nth-child(2) { animation-delay: 0.1s; }
+  .wave-bar:nth-child(3) { animation-delay: 0.2s; height: 28px; }
+  .wave-bar:nth-child(4) { animation-delay: 0.3s; height: 36px; }
+  .wave-bar:nth-child(5) { animation-delay: 0.4s; height: 28px; }
+  .wave-bar:nth-child(6) { animation-delay: 0.5s; }
+  .wave-bar:nth-child(7) { animation-delay: 0.6s; }
 </style>
 <!-- Meta Pixel - Atiko Digital -->
 <script>window.ATIKO_META_PIXEL_ID='1768028951050353';</script>
@@ -383,82 +796,351 @@
 <noscript><img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=1768028951050353&ev=PageView&noscript=1"/></noscript>
 </head>
 <body><!-- LOGIN -->
-<div id="loginView" class="wrap" style="max-width:380px;">
-  <h1 class="brand" style="font-size:24px; margin-top:48px;">Hash IA</h1>
-  <p class="muted">Panel del dueño</p>
-  <div class="card">
-    <label for="email">Correo</label>
-    <input id="email" type="email" style="width:100%" autocapitalize="none" />
-    <label for="password" style="margin-top:10px">Contraseña</label>
-    <div style="position:relative">
-      <input id="password" type="password" style="width:100%; padding-right:44px" />
-      <button type="button" id="togglePass" aria-label="Mostrar contraseña"
-        style="position:absolute; right:6px; top:50%; transform:translateY(-50%); background:transparent; padding:4px 6px; font-size:18px">👁️</button>
+<div id="loginView" class="flex items-center justify-center min-h-screen">
+  <div class="glass-card rounded-2xl p-8 max-w-sm w-full border border-[#ffd700]/10 shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
+    <div class="flex items-center gap-3 mb-6">
+      <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-[#ffd700] to-[#e9c400] flex items-center justify-center shadow-[0_0_15px_rgba(255,215,0,0.3)]">
+        <span class="material-symbols-outlined text-[#3a3000] text-[20px]">hexagon</span>
+      </div>
+      <div>
+        <h1 class="text-xl font-bold text-[#ffd700] tracking-wide font-['Hanken_Grotesk'] leading-tight">Hash IA</h1>
+        <p class="text-[9px] font-bold text-[#d0c6ab] tracking-widest uppercase">Executive Control</p>
+      </div>
     </div>
-    <p id="loginErr" class="err"></p>
-    <button id="loginBtn" class="btn-gold" style="width:100%; margin-top:8px">Entrar</button>
+    <div class="space-y-4">
+      <div>
+        <label for="email" class="text-[10px] font-bold text-[#d0c6ab] uppercase tracking-wider block mb-1">Correo</label>
+        <input id="email" type="email" class="w-full bg-[#292a2a]/50 border border-[#343535] rounded-xl px-3 py-2 text-sm text-on-surface focus:border-[#ffd700] focus:ring-1 focus:ring-[#ffd700]/50 outline-none transition-all" autocapitalize="none" />
+      </div>
+      <div>
+        <label for="password" class="text-[10px] font-bold text-[#d0c6ab] uppercase tracking-wider block mb-1">Contraseña</label>
+        <div class="relative">
+          <input id="password" type="password" class="w-full bg-[#292a2a]/50 border border-[#343535] rounded-xl px-3 py-2 text-sm text-on-surface focus:border-[#ffd700] focus:ring-1 focus:ring-[#ffd700]/50 outline-none transition-all" />
+          <button type="button" id="togglePass" aria-label="Mostrar contraseña" class="absolute right-3 top-1/2 -translate-y-1/2 text-lg text-[#d0c6ab] hover:text-[#ffd700] transition-colors">👁️</button>
+        </div>
+      </div>
+      <p id="loginErr" class="text-xs text-[#ffb4ab] font-semibold mt-1"></p>
+      <button id="loginBtn" class="w-full bg-gradient-to-r from-[#ffd700] to-[#e9c400] text-[#3a3000] hover:shadow-[0_0_20px_rgba(255,215,0,0.4)] transition-all py-2.5 rounded-xl text-sm font-bold mt-2">Entrar</button>
+    </div>
   </div>
 </div>
 
 <!-- APP -->
-<div id="appView" class="hidden">
-  <header class="top">
-    <span class="brand">Hash IA</span>
-    <button id="logoutBtn" class="btn-ghost">Salir</button>
-  </header>
-  <div class="wrap">
-    <div class="tabs">
-      <button class="tab active" data-tab="gastos">Gastos</button>
-      <button class="tab" data-tab="empleados">Empleados</button>
-      <button class="tab" data-tab="productos">Productos</button>
-      <button class="tab" data-tab="ajustes">Ajustes</button>
-      <button class="tab" data-tab="contabilidad">Contabilidad</button>
-      <button class="tab" data-tab="auxiliares">Auxiliares</button>
+<div id="appView" class="hidden app-layout">
+  <!-- SIDEBAR -->
+  <aside class="sidebar bg-[#121414] border-r border-[#343535]/50 flex flex-col h-screen overflow-hidden py-6 shadow-[4px_0_24px_rgba(0,0,0,0.5)]">
+    <div class="px-6 mb-8 flex items-center gap-3">
+      <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-[#ffd700] to-[#e9c400] flex items-center justify-center shadow-[0_0_15px_rgba(255,215,0,0.3)]">
+        <span class="material-symbols-outlined text-[#3a3000] text-[20px]">hexagon</span>
+      </div>
+      <div>
+        <h1 class="text-base font-bold text-[#ffd700] tracking-wide font-['Hanken_Grotesk'] leading-tight">Hash IA</h1>
+        <p class="text-[9px] font-bold text-[#d0c6ab] tracking-widest uppercase">Executive Control</p>
+      </div>
     </div>
+    
+    <nav class="flex-1 flex flex-col gap-1 px-4 overflow-y-auto">
+      <button class="side-tab active relative text-[#ffd700] bg-[#ffd700]/10 border border-[#ffd700]/20 rounded-xl flex items-center gap-3 px-4 py-3 transition-all duration-300 w-full text-left" data-tab="gastos">
+        <span class="material-symbols-outlined text-[20px]">dashboard</span>
+        <span class="text-sm font-semibold">Gastos / Ingresos</span>
+        <div class="tab-bar-highlight absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-[#ffd700] rounded-r-full shadow-[0_0_8px_rgba(255,215,0,0.8)]"></div>
+      </button>
+
+      <button class="side-tab text-[#d0c6ab] hover:text-[#e3e2e2] hover:bg-[#343535]/50 transition-all duration-300 flex items-center gap-3 px-4 py-3 rounded-xl border border-transparent hover:border-[#343535] w-full text-left" data-tab="empleados">
+        <span class="material-symbols-outlined text-[20px]">group</span>
+        <span class="text-sm">Empleados</span>
+      </button>
+
+      <button class="side-tab text-[#d0c6ab] hover:text-[#e3e2e2] hover:bg-[#343535]/50 transition-all duration-300 flex items-center gap-3 px-4 py-3 rounded-xl border border-transparent hover:border-[#343535] w-full text-left" data-tab="productos">
+        <span class="material-symbols-outlined text-[20px]">inventory_2</span>
+        <span class="text-sm">Productos</span>
+      </button>
+
+      <button class="side-tab text-[#d0c6ab] hover:text-[#e3e2e2] hover:bg-[#343535]/50 transition-all duration-300 flex items-center gap-3 px-4 py-3 rounded-xl border border-transparent hover:border-[#343535] w-full text-left" data-tab="auxiliares">
+        <span class="material-symbols-outlined text-[20px]">business_center</span>
+        <span class="text-sm">Auxiliares</span>
+      </button>
+
+      <button class="side-tab text-[#d0c6ab] hover:text-[#e3e2e2] hover:bg-[#343535]/50 transition-all duration-300 flex items-center gap-3 px-4 py-3 rounded-xl border border-transparent hover:border-[#343535] w-full text-left" data-tab="ajustes">
+        <span class="material-symbols-outlined text-[20px]">settings</span>
+        <span class="text-sm">Ajustes</span>
+      </button>
+
+      <!-- COLLAPSIBLE CONTABILIDAD -->
+      <div class="side-nav-group flex flex-col" id="groupContabilidadContainer">
+        <button class="side-tab group-toggle text-[#d0c6ab] hover:text-[#e3e2e2] hover:bg-[#343535]/50 transition-all duration-300 flex items-center gap-3 px-4 py-3 rounded-xl border border-transparent hover:border-[#343535] w-full text-left" id="btnContabilidadGroup" data-tab="contabilidad">
+          <span class="material-symbols-outlined text-[20px]">account_balance</span>
+          <span class="text-sm">Contabilidad</span>
+          <span class="group-arrow ml-auto text-xs transition-transform duration-200">▼</span>
+        </button>
+        <div class="side-nav-subgroup hidden flex flex-col gap-1 pl-4 mt-1 border-l border-[#343535] ml-6" id="subgroupContabilidad">
+          <button class="sub-tab csub active text-xs py-2 px-3 rounded-lg text-[#d0c6ab] hover:text-[#e3e2e2] hover:bg-[#343535]/30 w-full text-left" data-libro="diario">📓 Diario</button>
+          <button class="sub-tab csub text-xs py-2 px-3 rounded-lg text-[#d0c6ab] hover:text-[#e3e2e2] hover:bg-[#343535]/30 w-full text-left" data-libro="mayor">📖 Mayor</button>
+          <button class="sub-tab csub text-xs py-2 px-3 rounded-lg text-[#d0c6ab] hover:text-[#e3e2e2] hover:bg-[#343535]/30 w-full text-left" data-libro="balance">⚖️ Balance</button>
+          <button class="sub-tab csub text-xs py-2 px-3 rounded-lg text-[#d0c6ab] hover:text-[#e3e2e2] hover:bg-[#343535]/30 w-full text-left" data-libro="flujo">💸 Flujo de Caja</button>
+          <button class="sub-tab csub text-xs py-2 px-3 rounded-lg text-[#d0c6ab] hover:text-[#e3e2e2] hover:bg-[#343535]/30 w-full text-left" data-libro="conciliacion">🔄 Conciliación</button>
+          <button class="sub-tab csub text-xs py-2 px-3 rounded-lg text-[#d0c6ab] hover:text-[#e3e2e2] hover:bg-[#343535]/30 w-full text-left" data-libro="iva">🏛️ IVA (SII)</button>
+          <button class="sub-tab csub text-xs py-2 px-3 rounded-lg text-[#d0c6ab] hover:text-[#e3e2e2] hover:bg-[#343535]/30 w-full text-left" data-libro="manual">📝 Asiento Manual</button>
+          <button class="sub-tab csub text-xs py-2 px-3 rounded-lg text-[#d0c6ab] hover:text-[#e3e2e2] hover:bg-[#343535]/30 w-full text-left" data-libro="cuentas">📋 Plan de Cuentas</button>
+          <button class="sub-tab csub text-xs py-2 px-3 rounded-lg text-[#d0c6ab] hover:text-[#e3e2e2] hover:bg-[#343535]/30 w-full text-left" data-libro="varas">💬 Chat VARAS</button>
+        </div>
+      </div>
+
+      <!-- CRM -->
+      <button class="side-tab text-[#d0c6ab] hover:text-[#e3e2e2] hover:bg-[#343535]/50 transition-all duration-300 flex items-center gap-3 px-4 py-3 rounded-xl border border-transparent hover:border-[#343535] w-full text-left" data-tab="crm">
+        <span class="material-symbols-outlined text-[20px]">chat_bubble</span>
+        <span class="text-sm">CRM</span>
+        <span class="ml-auto text-[9px] font-bold bg-green-500/20 text-green-400 border border-green-500/30 rounded-full px-2 py-0.5">3</span>
+      </button>
+
+      <!-- Agente IA -->
+      <button class="side-tab text-[#d0c6ab] hover:text-[#e3e2e2] hover:bg-[#343535]/50 transition-all duration-300 flex items-center gap-3 px-4 py-3 rounded-xl border border-transparent hover:border-[#343535] w-full text-left" data-tab="agente">
+        <span class="material-symbols-outlined text-[20px]">smart_toy</span>
+        <span class="text-sm">Agente IA</span>
+        <span class="ml-auto text-[9px] font-bold bg-[#ffd700]/20 text-[#ffd700] border border-[#ffd700]/30 rounded-full px-2 py-0.5">Beta</span>
+      </button>
+    </nav>
+    
+    <div class="px-4 mt-auto mb-4">
+      <div class="h-[1px] w-full bg-gradient-to-r from-transparent via-[#343535] to-transparent mb-4"></div>
+      <button id="logoutBtn" class="text-[#d0c6ab] hover:text-[#ffd700] hover:bg-[#343535]/30 transition-all duration-300 flex items-center gap-3 px-4 py-3 rounded-xl w-full text-left">
+        <span class="material-symbols-outlined text-[20px]">logout</span>
+        <span class="text-sm">Salir</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT CONTAINER -->
+  <main class="main-content flex flex-col h-screen overflow-hidden bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-[#1a1a1a] via-[#0a0a0a] to-[#0a0a0a]">
+    <header class="glass-panel border-b border-[#343535]/50 flex justify-between items-center w-full px-8 py-3 sticky top-0 z-30 backdrop-blur-md">
+      <div class="flex items-center gap-4">
+        <div class="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#ffd700] to-[#fff6df] font-['Hanken_Grotesk']">Hash IA</div>
+        <div class="h-6 w-[1px] bg-[#343535] mx-1"></div>
+        <span class="text-xs text-[#d0c6ab] font-medium uppercase tracking-widest font-['Hanken_Grotesk']">Panel de Control</span>
+      </div>
+      <div class="flex items-center gap-6">
+        <div class="flex flex-col items-end">
+          <div class="text-[#e3e2e2] font-semibold text-xs leading-none" id="headerWelcomeUser">Dueño</div>
+          <div class="text-[10px] font-mono text-[#d0c6ab] mt-1" id="headerDate"></div>
+        </div>
+        <div class="h-8 w-[1px] bg-[#343535]"></div>
+        <button id="headerNewExpenseBtn" class="bg-gradient-to-r from-[#ffd700] to-[#e9c400] text-[#3a3000] hover:shadow-[0_0_20px_rgba(255,215,0,0.4)] transition-all px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1">
+          <span class="material-symbols-outlined text-[16px]">add</span> Nuevo Movimiento
+        </button>
+      </div>
+    </header>
+
+    <div class="main-body">
 
     <!-- GASTOS -->
     <section id="gastosSection">
-      <div class="card">
-        <div class="row">
-          <div><label>Desde</label><input id="fFrom" type="date" /></div>
-          <div><label>Hasta</label><input id="fTo" type="date" /></div>
-          <div><label>Categoría</label>
-            <select id="fCategoria"><option value="">Todas</option></select>
+      <div class="grid grid-cols-1 xl:grid-cols-4 gap-6 items-start my-6">
+        <!-- Columna Izquierda: Calendario y CRM Chats -->
+        <div class="xl:col-span-1 flex flex-col gap-6 w-full">
+          <!-- Calendario Card -->
+          <div class="glass-card rounded-2xl p-5 border border-[#343535]/50 flex flex-col">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-sm font-bold text-[#ffd700] flex items-center gap-2">
+                <span class="material-symbols-outlined text-[18px]">calendar_month</span>
+                Calendario
+              </h3>
+              <span id="calMonthLabel" class="text-xs font-semibold text-[#d0c6ab] font-mono"></span>
+            </div>
+            <!-- Grid de días de la semana -->
+            <div class="grid grid-cols-7 gap-1 text-center text-[10px] font-bold text-[#d0c6ab] mb-2">
+              <div>Do</div><div>Lu</div><div>Ma</div><div>Mi</div><div>Ju</div><div>Vi</div><div>Sá</div>
+            </div>
+            <div id="calendarGrid" class="grid grid-cols-7 gap-1 text-center text-xs font-mono">
+              <!-- JS dinámico -->
+            </div>
           </div>
-          <div><label>Estado</label>
-            <select id="fEstado">
-              <option value="">Todos</option>
-              <option value="confirmado">Confirmado</option>
-              <option value="pendiente_confirmacion">Pendiente</option>
-              <option value="rechazado">Rechazado</option>
-            </select>
+
+          <!-- CRM Chats Card -->
+          <div class="glass-card rounded-2xl p-5 border border-[#343535]/50 flex flex-col">
+            <h3 class="text-sm font-bold text-[#ffd700] flex items-center gap-2 mb-4">
+              <span class="material-symbols-outlined text-[18px]">chat</span>
+              CRM Chats
+            </h3>
+            <div class="flex flex-col gap-3" id="crmChatsList">
+              <!-- Bella Napoli -->
+              <div class="flex items-center gap-3 p-2 rounded-xl hover:bg-[#343535]/30 cursor-pointer transition-colors border border-transparent hover:border-[#ffd700]/10">
+                <div class="relative flex-shrink-0">
+                  <div class="w-9 h-9 rounded-full bg-gradient-to-tr from-[#ffd700] to-[#e9c400] text-[#3a3000] font-bold flex items-center justify-center text-xs shadow-[0_0_8px_rgba(255,215,0,0.2)]">
+                    BN
+                  </div>
+                  <span class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-[#121414]"></span>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center justify-between">
+                    <h4 class="text-xs font-bold text-[#e3e2e2] truncate leading-tight">Bella Napoli</h4>
+                    <span class="text-[9px] text-[#d0c6ab]/60 font-mono">10:42</span>
+                  </div>
+                  <p class="text-[10px] text-[#d0c6ab] truncate mt-0.5 font-medium">"Buenas, les envié el comprobante..."</p>
+                </div>
+                <span class="w-4 h-4 rounded-full bg-green-500 text-[#000] font-bold text-[9px] flex items-center justify-center">2</span>
+              </div>
+
+              <!-- Lo Miranda -->
+              <div class="flex items-center gap-3 p-2 rounded-xl hover:bg-[#343535]/30 cursor-pointer transition-colors border border-transparent hover:border-[#ffd700]/10">
+                <div class="relative flex-shrink-0">
+                  <div class="w-9 h-9 rounded-full bg-gradient-to-tr from-[#999077] to-[#c8c6c5] text-[#121414] font-bold flex items-center justify-center text-xs">
+                    LM
+                  </div>
+                  <span class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-gray-500 rounded-full border-2 border-[#121414]"></span>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center justify-between">
+                    <h4 class="text-xs font-bold text-[#e3e2e2] truncate leading-tight">Lo Miranda S.A.</h4>
+                    <span class="text-[9px] text-[#d0c6ab]/60 font-mono">Ayer</span>
+                  </div>
+                  <p class="text-[10px] text-[#d0c6ab]/70 truncate mt-0.5">"Pago de factura de insumos..."</p>
+                </div>
+              </div>
+
+              <!-- Rodrigo -->
+              <div class="flex items-center gap-3 p-2 rounded-xl hover:bg-[#343535]/30 cursor-pointer transition-colors border border-transparent hover:border-[#ffd700]/10">
+                <div class="relative flex-shrink-0">
+                  <div class="w-9 h-9 rounded-full bg-gradient-to-tr from-[#ffd700] to-[#999077] text-[#3a3000] font-bold flex items-center justify-center text-xs">
+                    R
+                  </div>
+                  <span class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-gray-500 rounded-full border-2 border-[#121414]"></span>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center justify-between">
+                    <h4 class="text-xs font-bold text-[#e3e2e2] truncate leading-tight">Rodrigo</h4>
+                    <span class="text-[9px] text-[#d0c6ab]/60 font-mono">16 Jun</span>
+                  </div>
+                  <p class="text-[10px] text-[#d0c6ab]/70 truncate mt-0.5">"Consulta sobre los precios..."</p>
+                </div>
+              </div>
+            </div>
           </div>
-          <div><label>Proveedor</label><input id="fProveedor" placeholder="buscar…" /></div>
-          <div><label>Tipo</label>
-            <select id="fTipo">
-              <option value="">Todos</option>
-              <option value="gasto">Gastos</option>
-              <option value="ingreso">Ingresos</option>
-            </select>
-          </div>
-          <div><label>Período</label><input id="fPeriodo" type="month" /></div>
-          <button id="mesBtn" class="btn-ghost">📅 Este mes</button>
-          <button id="anioBtn" class="btn-ghost">🗓️ Este año</button>
-          <button id="applyBtn" class="btn-gold">Aplicar</button>
-          <button id="excelBtn" class="btn-ghost">Descargar Excel</button>
-          <button id="resumenBtn" class="btn-ghost">📲 Enviarme resumen</button>
-          <button id="newExpenseBtn" class="btn-gold" style="margin-left: auto;">➕ Nuevo Gasto/Ingreso</button>
         </div>
-        <p id="resumenMsg" class="muted" style="margin:8px 2px 0"></p>
-      </div>
-      <div id="saldoCard" class="card hidden">
-        <div class="row" style="gap:28px">
-          <div><label>Ingresos</label><div id="sIngresos" style="font-size:20px;font-weight:900;color:#7CFC9B">$0</div></div>
-          <div><label>Gastos</label><div id="sGastos" style="font-size:20px;font-weight:900;color:#ff8a8a">$0</div></div>
-          <div><label>Saldo</label><div id="sSaldo" style="font-size:20px;font-weight:900;color:var(--gold)">$0</div></div>
+
+        <!-- Columna Derecha: Filtros, Saldo y Tabla -->
+        <div class="xl:col-span-3 flex flex-col gap-6 w-full">
+          <div class="glass-panel rounded-2xl p-6 border border-[#343535]/50">
+            <div class="flex flex-wrap items-end gap-4">
+              <div class="flex flex-col gap-1">
+                <label class="text-[10px] font-bold text-[#d0c6ab] tracking-wider uppercase ml-1">Desde</label>
+                <input id="fFrom" type="date" class="bg-[#292a2a]/50 border border-[#343535] rounded-xl px-3 py-2 text-xs text-on-surface focus:border-[#ffd700] focus:ring-1 focus:ring-[#ffd700]/50 outline-none transition-all [color-scheme:dark]" />
+              </div>
+              <div class="flex flex-col gap-1">
+                <label class="text-[10px] font-bold text-[#d0c6ab] tracking-wider uppercase ml-1">Hasta</label>
+                <input id="fTo" type="date" class="bg-[#292a2a]/50 border border-[#343535] rounded-xl px-3 py-2 text-xs text-on-surface focus:border-[#ffd700] focus:ring-1 focus:ring-[#ffd700]/50 outline-none transition-all [color-scheme:dark]" />
+              </div>
+              <div class="flex flex-col gap-1">
+                <label class="text-[10px] font-bold text-[#d0c6ab] tracking-wider uppercase ml-1">Categoría</label>
+                <select id="fCategoria" class="bg-[#292a2a]/50 border border-[#343535] rounded-xl px-3 py-2 text-xs text-on-surface focus:border-[#ffd700] focus:ring-1 focus:ring-[#ffd700]/50 outline-none transition-all w-48 appearance-none"><option value="">Todas</option></select>
+              </div>
+              <div class="flex flex-col gap-1">
+                <label class="text-[10px] font-bold text-[#d0c6ab] tracking-wider uppercase ml-1">Estado</label>
+                <select id="fEstado" class="bg-[#292a2a]/50 border border-[#343535] rounded-xl px-3 py-2 text-xs text-on-surface focus:border-[#ffd700] focus:ring-1 focus:ring-[#ffd700]/50 outline-none transition-all w-36 appearance-none">
+                  <option value="">Todos</option>
+                  <option value="confirmado">Confirmado</option>
+                  <option value="pendiente_confirmacion">Pendiente</option>
+                  <option value="rechazado">Rechazado</option>
+                </select>
+              </div>
+              <div class="flex flex-col gap-1">
+                <label class="text-[10px] font-bold text-[#d0c6ab] tracking-wider uppercase ml-1">Tipo</label>
+                <select id="fTipo" class="bg-[#292a2a]/50 border border-[#343535] rounded-xl px-3 py-2 text-xs text-on-surface focus:border-[#ffd700] focus:ring-1 focus:ring-[#ffd700]/50 outline-none transition-all w-32 appearance-none">
+                  <option value="">Todos</option>
+                  <option value="gasto">Gastos</option>
+                  <option value="ingreso">Ingresos</option>
+                </select>
+              </div>
+              <div class="flex flex-col gap-1">
+                <label class="text-[10px] font-bold text-[#d0c6ab] tracking-wider uppercase ml-1">Proveedor</label>
+                <input id="fProveedor" placeholder="Buscar..." class="bg-[#292a2a]/50 border border-[#343535] rounded-xl px-3 py-2 text-xs text-on-surface focus:border-[#ffd700] focus:ring-1 focus:ring-[#ffd700]/50 outline-none transition-all placeholder:text-[#d0c6ab]/40" />
+              </div>
+              <div class="flex flex-col gap-1">
+                <label class="text-[10px] font-bold text-[#d0c6ab] tracking-wider uppercase ml-1">Período</label>
+                <input id="fPeriodo" type="month" class="bg-[#292a2a]/50 border border-[#343535] rounded-xl px-3 py-2 text-xs text-on-surface focus:border-[#ffd700] focus:ring-1 focus:ring-[#ffd700]/50 outline-none transition-all [color-scheme:dark]" />
+              </div>
+              <button id="applyBtn" class="bg-[#ffd700] text-[#3a3000] hover:bg-[#ffe16d] px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-sm">Aplicar</button>
+              <button id="mesBtn" class="bg-[#292a2a]/50 border border-[#343535] text-[#d0c6ab] hover:text-[#e3e2e2] px-3 py-2 rounded-xl text-xs transition-colors">Mes</button>
+              <button id="anioBtn" class="bg-[#292a2a]/50 border border-[#343535] text-[#d0c6ab] hover:text-[#e3e2e2] px-3 py-2 rounded-xl text-xs transition-colors">Año</button>
+              <button id="excelBtn" class="bg-[#292a2a]/50 border border-[#343535] text-[#d0c6ab] hover:text-[#e3e2e2] px-3 py-2 rounded-xl text-xs transition-colors">Excel</button>
+              <button id="resumenBtn" class="bg-[#292a2a]/50 border border-[#343535] text-[#d0c6ab] hover:text-[#e3e2e2] px-3 py-2 rounded-xl text-xs transition-colors">WhatsApp Resumen</button>
+              <button id="newExpenseBtn" class="bg-gradient-to-r from-[#ffd700] to-[#e9c400] text-[#3a3000] hover:shadow-[0_0_20px_rgba(255,215,0,0.4)] transition-all px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1 ml-auto">
+                <span class="material-symbols-outlined text-[16px]">add</span> Nuevo Movimiento
+              </button>
+            </div>
+            <p id="resumenMsg" class="text-xs text-[#d0c6ab] mt-2"></p>
+          </div>
+
+          <div id="saldoCard" class="grid grid-cols-1 md:grid-cols-3 gap-6 hidden">
+            <!-- Ingresos Card -->
+            <div class="glass-card rounded-2xl p-6 flex flex-col justify-between relative overflow-hidden group">
+              <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                <span class="material-symbols-outlined text-[64px] text-[#4ade80]">trending_up</span>
+              </div>
+              <div class="absolute inset-0 bg-gradient-to-br from-[#4ade80]/5 to-transparent"></div>
+              <div class="relative z-10">
+                <div class="flex items-center gap-2 mb-1">
+                  <div class="w-2 h-2 rounded-full bg-[#4ade80] shadow-[0_0_8px_rgba(74,222,128,0.8)]"></div>
+                  <span class="text-[10px] font-bold text-[#d0c6ab] uppercase tracking-[0.15em]">Ingresos</span>
+                </div>
+                <div class="flex items-baseline gap-2 mt-4">
+                  <span class="text-3xl font-bold text-[#e3e2e2] leading-none" id="sIngresos">$0</span>
+                  <span class="text-xs text-[#d0c6ab] font-mono">CLP</span>
+                </div>
+              </div>
+            </div>
+            <!-- Gastos Card -->
+            <div class="glass-card rounded-2xl p-6 flex flex-col justify-between relative overflow-hidden group">
+              <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                <span class="material-symbols-outlined text-[64px] text-error">trending_down</span>
+              </div>
+              <div class="absolute inset-0 bg-gradient-to-br from-error/5 to-transparent"></div>
+              <div class="relative z-10">
+                <div class="flex items-center gap-2 mb-1">
+                  <div class="w-2 h-2 rounded-full bg-error shadow-[0_0_8px_rgba(255,180,171,0.8)]"></div>
+                  <span class="text-[10px] font-bold text-[#d0c6ab] uppercase tracking-[0.15em]">Gastos</span>
+                </div>
+                <div class="flex items-baseline gap-2 mt-4">
+                  <span class="text-3xl font-bold text-[#e3e2e2] leading-none" id="sGastos">$0</span>
+                  <span class="text-xs text-[#d0c6ab] font-mono">CLP</span>
+                </div>
+              </div>
+            </div>
+            <!-- Saldo Card -->
+            <div class="glass-card rounded-2xl p-6 flex flex-col justify-between relative overflow-hidden group border-[#ffd700]/30 shadow-[0_8px_32px_-4px_rgba(255,215,0,0.1)]">
+              <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                <span class="material-symbols-outlined text-[64px] text-[#ffd700]">account_balance_wallet</span>
+              </div>
+              <div class="absolute inset-0 bg-gradient-to-br from-[#ffd700]/10 via-transparent to-transparent"></div>
+              <div class="relative z-10">
+                <div class="flex items-center gap-2 mb-1">
+                  <div class="w-2 h-2 rounded-full bg-[#ffd700] shadow-[0_0_8px_rgba(255,215,0,0.8)] animate-pulse"></div>
+                  <span class="text-[10px] font-bold text-[#ffd700] uppercase tracking-[0.15em]">Saldo</span>
+                </div>
+                <div class="flex items-baseline gap-2 mt-4">
+                  <span class="text-3xl font-bold text-[#ffd700] leading-none" id="sSaldo">$0</span>
+                  <span class="text-xs text-[#ffd700] font-mono">CLP</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Gráfico de Evolución del Período -->
+          <div id="chartCard" class="glass-card rounded-2xl p-6 border border-[#343535]/50 hidden">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-sm font-bold text-[#ffd700] flex items-center gap-2">
+                <span class="material-symbols-outlined text-[18px]">bar_chart</span>
+                Evolución del Período
+              </h3>
+              <span class="text-[10px] font-semibold text-[#d0c6ab] font-mono" id="chartSubLabel"></span>
+            </div>
+            <div style="position:relative; height:180px;">
+              <canvas id="gastosChart"></canvas>
+            </div>
+          </div>
+
+          <div id="expensesTable" class="scroll"><p class="muted" style="padding:16px">Cargando…</p></div>
         </div>
       </div>
-      <div id="expensesTable" class="scroll"><p class="muted" style="padding:16px">Cargando…</p></div>
       <div id="detalleModal" class="modal hidden">
         <div class="box">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px">
@@ -550,6 +1232,96 @@
       </div>
     </section>
 
+    <!-- CRM -->
+    <section id="crmSection" class="hidden">
+      <div class="glass-card rounded-2xl p-6 border border-[#343535]/50 mb-6">
+        <div class="flex items-center justify-between mb-6">
+          <h2 class="text-base font-bold text-[#ffd700] flex items-center gap-2">
+            <span class="material-symbols-outlined text-[20px]">chat_bubble</span>
+            CRM — Conversaciones
+          </h2>
+          <button class="bg-gradient-to-r from-[#ffd700] to-[#e9c400] text-[#3a3000] px-4 py-2 rounded-xl text-xs font-bold">+ Nueva conversación</button>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="flex items-center gap-3 p-4 rounded-xl bg-[#1e2020]/60 border border-[#343535] hover:border-[#ffd700]/20 cursor-pointer transition-all">
+            <div class="relative flex-shrink-0">
+              <div class="w-12 h-12 rounded-full bg-gradient-to-tr from-[#ffd700] to-[#e9c400] text-[#3a3000] font-bold flex items-center justify-center shadow-[0_0_8px_rgba(255,215,0,0.2)]">BN</div>
+              <span class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-[#121414]"></span>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center justify-between"><h4 class="text-sm font-bold text-[#e3e2e2]">Bella Napoli</h4><span class="text-[10px] text-[#d0c6ab]/60 font-mono">10:42</span></div>
+              <p class="text-xs text-[#d0c6ab] truncate mt-1">"Buenas, les envié el comprobante de pago..."</p>
+              <div class="flex items-center gap-2 mt-1"><span class="text-[9px] bg-[#ffd700]/10 text-[#ffd700] rounded px-1">Cliente frecuente</span></div>
+            </div>
+            <span class="w-5 h-5 rounded-full bg-green-500 text-[#000] font-bold text-[9px] flex items-center justify-center">2</span>
+          </div>
+          <div class="flex items-center gap-3 p-4 rounded-xl bg-[#1e2020]/60 border border-[#343535] hover:border-[#ffd700]/20 cursor-pointer transition-all">
+            <div class="relative flex-shrink-0">
+              <div class="w-12 h-12 rounded-full bg-gradient-to-tr from-[#999077] to-[#c8c6c5] text-[#121414] font-bold flex items-center justify-center">LM</div>
+              <span class="absolute bottom-0 right-0 w-3 h-3 bg-gray-500 rounded-full border-2 border-[#121414]"></span>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center justify-between"><h4 class="text-sm font-bold text-[#e3e2e2]">Lo Miranda S.A.</h4><span class="text-[10px] text-[#d0c6ab]/60 font-mono">Ayer</span></div>
+              <p class="text-xs text-[#d0c6ab] truncate mt-1">"Pago de factura de insumos realizad..."</p>
+              <div class="flex items-center gap-2 mt-1"><span class="text-[9px] bg-[#343535] text-[#d0c6ab] rounded px-1">Proveedor</span></div>
+            </div>
+          </div>
+          <div class="flex items-center gap-3 p-4 rounded-xl bg-[#1e2020]/60 border border-[#343535] hover:border-[#ffd700]/20 cursor-pointer transition-all">
+            <div class="relative flex-shrink-0">
+              <div class="w-12 h-12 rounded-full bg-gradient-to-tr from-[#ffd700] to-[#999077] text-[#3a3000] font-bold flex items-center justify-center">R</div>
+              <span class="absolute bottom-0 right-0 w-3 h-3 bg-gray-500 rounded-full border-2 border-[#121414]"></span>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center justify-between"><h4 class="text-sm font-bold text-[#e3e2e2]">Rodrigo</h4><span class="text-[10px] text-[#d0c6ab]/60 font-mono">16 Jun</span></div>
+              <p class="text-xs text-[#d0c6ab] truncate mt-1">"Consulta sobre los precios del men..."</p>
+              <div class="flex items-center gap-2 mt-1"><span class="text-[9px] bg-[#343535] text-[#d0c6ab] rounded px-1">Prospecto</span></div>
+            </div>
+          </div>
+        </div>
+        <p class="text-xs text-[#d0c6ab]/50 mt-6 text-center">Módulo CRM completo — Próximamente disponible</p>
+      </div>
+    </section>
+
+    <!-- AGENTE IA -->
+    <section id="agenteSection" class="hidden">
+      <div class="glass-card rounded-2xl p-6 border border-[#343535]/50 mb-6">
+        <div class="flex items-center gap-3 mb-6">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-[#ffd700] to-[#e9c400] flex items-center justify-center shadow-[0_0_15px_rgba(255,215,0,0.3)]">
+            <span class="material-symbols-outlined text-[#3a3000] text-[20px]">smart_toy</span>
+          </div>
+          <div>
+            <h2 class="text-base font-bold text-[#ffd700]">Agente IA — Hash</h2>
+            <p class="text-[10px] text-[#d0c6ab] uppercase tracking-widest font-semibold">Asistente ejecutivo inteligente</p>
+          </div>
+          <span class="ml-auto text-[9px] font-bold bg-[#ffd700]/20 text-[#ffd700] border border-[#ffd700]/30 rounded-full px-3 py-1">Beta</span>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div class="p-4 rounded-xl bg-[#1e2020]/60 border border-[#343535] text-center">
+            <span class="material-symbols-outlined text-[32px] text-[#ffd700] mb-2 block">receipt_long</span>
+            <p class="text-xs font-bold text-[#e3e2e2]">Análisis de Gastos</p>
+            <p class="text-[10px] text-[#d0c6ab] mt-1">Detecta patrones y anomalías automáticamente</p>
+          </div>
+          <div class="p-4 rounded-xl bg-[#1e2020]/60 border border-[#343535] text-center">
+            <span class="material-symbols-outlined text-[32px] text-[#ffd700] mb-2 block">trending_up</span>
+            <p class="text-xs font-bold text-[#e3e2e2]">Proyecciones Financieras</p>
+            <p class="text-[10px] text-[#d0c6ab] mt-1">Estima flujo de caja a 30/60/90 días</p>
+          </div>
+          <div class="p-4 rounded-xl bg-[#1e2020]/60 border border-[#343535] text-center">
+            <span class="material-symbols-outlined text-[32px] text-[#ffd700] mb-2 block">notifications_active</span>
+            <p class="text-xs font-bold text-[#e3e2e2]">Alertas Inteligentes</p>
+            <p class="text-[10px] text-[#d0c6ab] mt-1">Notificaciones proactivas por WhatsApp</p>
+          </div>
+        </div>
+        <div class="p-5 rounded-xl bg-[#0d0e0f] border border-[#ffd700]/10">
+          <div class="flex items-center gap-2 mb-3">
+            <div class="w-2 h-2 rounded-full bg-[#ffd700] animate-pulse"></div>
+            <span class="text-xs text-[#d0c6ab] font-semibold">Para acceder al Agente IA completo, usa el módulo VARAS en Contabilidad</span>
+          </div>
+          <button onclick="document.querySelectorAll('.csub[data-libro=varas]')[0].click()" class="bg-gradient-to-r from-[#ffd700] to-[#e9c400] text-[#3a3000] px-6 py-2.5 rounded-xl text-xs font-bold hover:shadow-[0_0_20px_rgba(255,215,0,0.4)] transition-all">Abrir Chat VARAS →</button>
+        </div>
+      </div>
+    </section>
+
     <!-- EMPLEADOS -->
     <section id="employeesSection" class="hidden">
       <div class="card">
@@ -597,7 +1369,7 @@
       <div class="card">
         <div class="row">
           <div><label>Período</label><input id="cPeriodo" type="month" /></div>
-          <div class="tabs" style="margin:0">
+          <div class="tabs hidden" style="margin:0">
             <button class="tab csub" data-libro="varas">VARAS</button>
             <button class="tab csub active" data-libro="diario">Diario</button>
             <button class="tab csub" data-libro="mayor">Mayor</button>
@@ -683,7 +1455,46 @@
       </div>
     </section>
   </div>
+</main>
 </div>
+
+<!-- Widget Flotante Agente IA (estilo Stitch) -->
+<div id="iaWidget" class="fixed bottom-8 right-8 z-50 glass-card rounded-3xl border border-[#ffd700]/20 shadow-[0_16px_40px_-8px_rgba(0,0,0,0.6)] overflow-hidden transition-all duration-500 hover:shadow-[0_16px_40px_-8px_rgba(255,215,0,0.15)] hover:border-[#ffd700]/40 hidden w-[280px]" style="backdrop-filter:blur(16px)">
+  <div class="absolute inset-0 bg-gradient-to-b from-[#ffd700]/5 to-transparent pointer-events-none"></div>
+  <div class="p-4 flex items-center justify-between border-b border-[#343535]/30 relative z-10">
+    <div class="flex items-center gap-3">
+      <div class="relative">
+        <div class="w-9 h-9 rounded-full bg-[#292a2a] border border-[#ffd700]/30 flex items-center justify-center text-[#ffd700] shadow-[0_0_15px_rgba(255,215,0,0.15)]">
+          <span class="material-symbols-outlined text-[18px]">smart_toy</span>
+        </div>
+        <div class="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-400 rounded-full border-2 border-[#1a1c1c] shadow-[0_0_4px_#4ade80]"></div>
+      </div>
+      <div>
+        <h4 class="text-xs font-bold text-[#e3e2e2] leading-tight">Hash IA</h4>
+        <span class="text-[9px] font-semibold text-[#ffd700] tracking-widest uppercase opacity-80">Asistente Ejecutivo</span>
+      </div>
+    </div>
+    <button id="iaWidgetClose" class="w-7 h-7 rounded-full text-[#d0c6ab] hover:text-[#ffd700] hover:bg-[#343535]/50 flex items-center justify-center transition-colors text-sm">✕</button>
+  </div>
+  <div class="p-4 flex flex-col items-center gap-3 relative z-10 bg-[#0d0e0f]/30">
+    <p class="text-xs text-[#d0c6ab] text-center leading-relaxed">¿En qué puedo ayudarte con los datos financieros de hoy?</p>
+    <div class="h-10 w-full flex items-center justify-center gap-1.5">
+      <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+      <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+      <div class="wave-bar"></div>
+    </div>
+    <div class="flex items-center gap-2 bg-[#ffd700]/10 px-3 py-1.5 rounded-full border border-[#ffd700]/20">
+      <div class="w-1.5 h-1.5 rounded-full bg-[#ffd700] animate-pulse"></div>
+      <p class="text-[10px] font-mono text-[#ffd700] tracking-wider uppercase">VARAS activo</p>
+    </div>
+    <button onclick="document.querySelectorAll('.csub[data-libro=varas]')[0].click()" class="w-full bg-gradient-to-r from-[#ffd700] to-[#e9c400] text-[#3a3000] py-2 rounded-xl text-xs font-bold hover:shadow-[0_0_20px_rgba(255,215,0,0.4)] transition-all">Abrir chat →</button>
+  </div>
+</div>
+
+<!-- Botón toggle widget IA -->
+<button id="iaWidgetToggle" class="fixed bottom-8 right-8 z-50 w-14 h-14 rounded-full bg-gradient-to-br from-[#ffd700] to-[#e9c400] text-[#3a3000] shadow-[0_0_20px_rgba(255,215,0,0.4)] flex items-center justify-center transition-all hover:scale-110 hover:shadow-[0_0_30px_rgba(255,215,0,0.6)]">
+  <span class="material-symbols-outlined text-[24px]">smart_toy</span>
+</button>
 
 <script src="lib.js"></script>
 <script>
@@ -713,7 +1524,40 @@
 
   function showLogin() { $('loginView').classList.remove('hidden'); $('appView').classList.add('hidden'); }
   function ymActual() { var d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); }
-  function showApp() { $('loginView').classList.add('hidden'); $('appView').classList.remove('hidden'); if (!$('fPeriodo').value) $('fPeriodo').value = ymActual(); loadGastos(); }
+  function updateSidebarUi(activeTab, activeSubTab) {
+    var sideTabs = document.querySelectorAll('.side-tab[data-tab]');
+    sideTabs.forEach(function (btn) {
+      var tab = btn.getAttribute('data-tab');
+      var isActive = (tab === activeTab);
+      btn.classList.toggle('active', isActive);
+      var bar = btn.querySelector('.tab-bar-highlight');
+      if (bar) bar.remove();
+      if (isActive) {
+        btn.className = "side-tab active relative text-[#ffd700] bg-[#ffd700]/10 border border-[#ffd700]/20 rounded-xl flex items-center gap-3 px-4 py-3 transition-all duration-300 w-full text-left";
+        btn.insertAdjacentHTML('beforeend', '<div class="tab-bar-highlight absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-[#ffd700] rounded-r-full shadow-[0_0_8px_rgba(255,215,0,0.8)]"></div>');
+      } else {
+        btn.className = "side-tab text-[#d0c6ab] hover:text-[#e3e2e2] hover:bg-[#343535]/50 transition-all duration-300 flex items-center gap-3 px-4 py-3 rounded-xl border border-transparent hover:border-[#343535] w-full text-left";
+      }
+    });
+    var subTabs = document.querySelectorAll('.csub');
+    subTabs.forEach(function (btn) {
+      var libro = btn.getAttribute('data-libro');
+      var isActive = (libro === activeSubTab && activeTab === 'contabilidad');
+      btn.classList.toggle('active', isActive);
+      if (isActive) {
+        btn.className = "sub-tab csub active text-xs py-2 px-3 rounded-lg text-[#ffd700] bg-[#ffd700]/10 border border-[#ffd700]/20 w-full text-left font-semibold";
+      } else {
+        btn.className = "sub-tab csub text-xs py-2 px-3 rounded-lg text-[#d0c6ab] hover:text-[#e3e2e2] hover:bg-[#343535]/30 w-full text-left";
+      }
+    });
+  }
+  function showApp() { 
+    $('loginView').classList.add('hidden'); 
+    $('appView').classList.remove('hidden'); 
+    if (!$('fPeriodo').value) $('fPeriodo').value = ymActual(); 
+    updateSidebarUi('gastos', null);
+    loadGastos(); 
+  }
 
   $('loginBtn').onclick = async function () {
     $('loginErr').textContent = '';
@@ -736,12 +1580,27 @@
     $('togglePass').textContent = show ? '🙈' : '👁️';
   };
 
-  var tabs = document.querySelectorAll('.tab[data-tab]');
-  tabs.forEach(function (b) {
+  var sideTabs = document.querySelectorAll('.side-tab[data-tab]');
+  sideTabs.forEach(function (b) {
     b.onclick = function () {
-      tabs.forEach(function (x) { x.classList.remove('active'); });
-      b.classList.add('active');
       var tab = b.getAttribute('data-tab');
+      if (b.id === 'btnContabilidadGroup') {
+        var subgroup = $('subgroupContabilidad');
+        var groupContainer = $('groupContabilidadContainer');
+        var isExpanded = !subgroup.classList.contains('hidden');
+        if (isExpanded) {
+          subgroup.classList.add('hidden');
+          groupContainer.classList.remove('expanded');
+        } else {
+          subgroup.classList.remove('hidden');
+          groupContainer.classList.add('expanded');
+        }
+      } else {
+        $('subgroupContabilidad').classList.add('hidden');
+        $('groupContabilidadContainer').classList.remove('expanded');
+      }
+
+      updateSidebarUi(tab, tab === 'contabilidad' ? libroActual : null);
       $('gastosSection').classList.toggle('hidden', tab !== 'gastos');
       $('employeesSection').classList.toggle('hidden', tab !== 'empleados');
       $('productosSection').classList.toggle('hidden', tab !== 'productos');
@@ -891,6 +1750,9 @@
     $('cgErr').classList.add('hidden');
     $('crearGastoModal').classList.remove('hidden');
   };
+  if ($('headerNewExpenseBtn')) {
+    $('headerNewExpenseBtn').onclick = $('newExpenseBtn').onclick;
+  }
 
   $('crearGastoClose').onclick = $('cgCancel').onclick = function () {
     $('crearGastoModal').classList.add('hidden');
@@ -1210,9 +2072,8 @@
             $('mMsg').textContent = '✓ Asiento guardado';
             filas = [{ cuenta_id: '', debe: '', haber: '' }, { cuenta_id: '', debe: '', haber: '' }];
             // Switch back to diario to show the newly created entry
-            document.querySelectorAll('.csub').forEach(function (x) { x.classList.remove('active'); });
-            document.querySelector('.csub[data-libro="diario"]').classList.add('active');
             libroActual = 'diario';
+            updateSidebarUi('contabilidad', 'diario');
             loadContabilidad();
           } catch (e) {
             $('mMsg').textContent = 'No se pudo guardar. Verifica que el asiento cuadre.';
@@ -1531,9 +2392,21 @@
   }
   document.querySelectorAll('.csub').forEach(function (b) {
     b.onclick = function () {
-      document.querySelectorAll('.csub').forEach(function (x) { x.classList.remove('active'); });
-      b.classList.add('active');
-      libroActual = b.getAttribute('data-libro');
+      $('subgroupContabilidad').classList.remove('hidden');
+      $('groupContabilidadContainer').classList.add('expanded');
+
+      var libro = b.getAttribute('data-libro');
+      libroActual = libro;
+      updateSidebarUi('contabilidad', libro);
+
+      $('gastosSection').classList.add('hidden');
+      $('employeesSection').classList.add('hidden');
+      $('productosSection').classList.add('hidden');
+      $('settingsSection').classList.add('hidden');
+      $('auxiliaresSection').classList.add('hidden');
+      $('contabilidadSection').classList.remove('hidden');
+
+      if (!$('cPeriodo').value) $('cPeriodo').value = ymActual();
       loadContabilidad();
     };
   });
@@ -1628,6 +2501,155 @@
       loadAuxiliares();
     } catch (e) { $('auxFormMsg').textContent = 'Error al agregar.'; }
   };
+
+  if ($('headerDate')) {
+    $('headerDate').textContent = new Date().toLocaleDateString('es-CL', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  }
+
+  // ── WIDGET IA FLOTANTE ────────────────────────────────────────────────────
+  var iaWidget = $('iaWidget');
+  var iaToggle = $('iaWidgetToggle');
+  var iaClose = $('iaWidgetClose');
+  var iaWidgetOpen = false;
+  if (iaToggle) iaToggle.onclick = function() {
+    iaWidgetOpen = !iaWidgetOpen;
+    if (iaWidgetOpen) { iaWidget.classList.remove('hidden'); iaToggle.classList.add('hidden'); }
+    else { iaWidget.classList.add('hidden'); iaToggle.classList.remove('hidden'); }
+  };
+  if (iaClose) iaClose.onclick = function() {
+    iaWidgetOpen = false; iaWidget.classList.add('hidden'); iaToggle.classList.remove('hidden');
+  };
+
+  // ── CRM / AGENTE secciones en sidebar ────────────────────────────────────
+  var sideTabsAll = document.querySelectorAll('.side-tab[data-tab]');
+  function hideAllSections() {
+    ['gastosSection','employeesSection','productosSection','settingsSection',
+     'contabilidadSection','auxiliaresSection','crmSection','agenteSection'].forEach(function(id) {
+      var el = $(id); if (el) el.classList.add('hidden');
+    });
+  }
+  sideTabsAll.forEach(function(b) {
+    var orig = b.onclick;
+    b.onclick = function() {
+      var tab = b.getAttribute('data-tab');
+      if (tab === 'crm') {
+        hideAllSections(); $('crmSection').classList.remove('hidden');
+        updateSidebarUi('crm', null); return;
+      }
+      if (tab === 'agente') {
+        hideAllSections(); $('agenteSection').classList.remove('hidden');
+        updateSidebarUi('agente', null); return;
+      }
+      if (orig) orig.call(b);
+    };
+  });
+
+  // ── CALENDARIO DINÁMICO ───────────────────────────────────────────────────
+  function renderCalendar(rows) {
+    var grid = $('calendarGrid');
+    var monthLabel = $('calMonthLabel');
+    if (!grid) return;
+    var now = new Date();
+    var year = now.getFullYear();
+    var month = now.getMonth();
+    var meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+    if (monthLabel) monthLabel.textContent = meses[month] + ' ' + year;
+
+    var datesWithData = {};
+    if (rows && rows.length) {
+      rows.forEach(function(r) {
+        if (!r.fecha) return;
+        var d = String(r.fecha).slice(0, 10);
+        var parts = d.split('-');
+        if (parseInt(parts[0]) === year && parseInt(parts[1]) - 1 === month) {
+          var dayNum = parseInt(parts[2]);
+          if (!datesWithData[dayNum]) datesWithData[dayNum] = { ingresos: 0, gastos: 0 };
+          if (r.tipo === 'ingreso') datesWithData[dayNum].ingresos += (r.total || 0);
+          else datesWithData[dayNum].gastos += (r.total || 0);
+        }
+      });
+    }
+
+    var firstDay = new Date(year, month, 1).getDay();
+    var daysInMonth = new Date(year, month + 1, 0).getDate();
+    var today = now.getDate();
+    var html = '';
+    for (var i = 0; i < firstDay; i++) html += '<div></div>';
+    for (var d = 1; d <= daysInMonth; d++) {
+      var isToday = d === today;
+      var data = datesWithData[d];
+      var hasMov = !!data;
+      var dotColor = hasMov ? (data.ingresos > data.gastos ? '#4ade80' : '#ffb4ab') : '';
+      html += '<div class="relative flex items-center justify-center" style="aspect-ratio:1">'
+        + '<span style="'
+        + (isToday ? 'background:var(--gold);color:#3a3000;font-weight:900;border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;box-shadow:0 0 8px rgba(255,215,0,0.5);' : 'color:' + (hasMov ? '#e3e2e2' : '#d0c6ab') + ';')
+        + 'font-size:11px;cursor:default;">' + d + '</span>'
+        + (hasMov && !isToday ? '<span style="position:absolute;bottom:1px;left:50%;transform:translateX(-50%);width:4px;height:4px;border-radius:50%;background:' + dotColor + ';"></span>' : '')
+        + '</div>';
+    }
+    grid.innerHTML = html;
+  }
+
+  // ── GRÁFICO DE EVOLUCIÓN ─────────────────────────────────────────────────
+  var _gastosChart = null;
+  function renderChart(rows) {
+    var canvas = $('gastosChart');
+    var card = $('chartCard');
+    var subLabel = $('chartSubLabel');
+    if (!canvas || !rows || !rows.length || typeof Chart === 'undefined') {
+      if (card) card.classList.add('hidden'); return;
+    }
+    card.classList.remove('hidden');
+    var byDay = {};
+    rows.forEach(function(r) {
+      if (!r.fecha || r.estado === 'anulado') return;
+      var d = String(r.fecha).slice(0, 10);
+      if (!byDay[d]) byDay[d] = { ingresos: 0, gastos: 0 };
+      if (r.tipo === 'ingreso') byDay[d].ingresos += (r.total || 0);
+      else byDay[d].gastos += (r.total || 0);
+    });
+    var labels = Object.keys(byDay).sort();
+    if (!labels.length) { card.classList.add('hidden'); return; }
+    var ingData = labels.map(function(k) { return byDay[k].ingresos; });
+    var gasData = labels.map(function(k) { return byDay[k].gastos; });
+    var shortLabels = labels.map(function(k) { return k.slice(5); });
+    if (subLabel) subLabel.textContent = labels[0] + ' → ' + labels[labels.length - 1];
+    if (_gastosChart) { _gastosChart.destroy(); _gastosChart = null; }
+    _gastosChart = new Chart(canvas, {
+      type: 'bar',
+      data: {
+        labels: shortLabels,
+        datasets: [
+          { label: 'Ingresos', data: ingData, backgroundColor: 'rgba(74,222,128,0.5)', borderColor: '#4ade80', borderWidth: 1.5, borderRadius: 4 },
+          { label: 'Gastos', data: gasData, backgroundColor: 'rgba(255,180,171,0.5)', borderColor: '#ffb4ab', borderWidth: 1.5, borderRadius: 4 }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { labels: { color: '#d0c6ab', font: { size: 11 }, boxWidth: 12 }, position: 'top' },
+          tooltip: {
+            backgroundColor: '#1e2020', borderColor: 'rgba(153,144,119,0.2)', borderWidth: 1,
+            titleColor: '#ffd700', bodyColor: '#e3e2e2',
+            callbacks: { label: function(ctx) { return ctx.dataset.label + ': $' + (ctx.raw || 0).toLocaleString('es-CL'); } }
+          }
+        },
+        scales: {
+          x: { ticks: { color: '#d0c6ab', font: { size: 10 }, maxRotation: 45 }, grid: { color: 'rgba(153,144,119,0.08)' } },
+          y: { ticks: { color: '#d0c6ab', font: { size: 10 }, callback: function(v) { return '$' + (v/1000).toFixed(0) + 'K'; } }, grid: { color: 'rgba(153,144,119,0.08)' } }
+        }
+      }
+    });
+  }
+
+  // Hook renderSaldo para llamar calendario y gráfico
+  var _origRenderSaldo = renderSaldo;
+  renderSaldo = function(rows) {
+    _origRenderSaldo(rows);
+    renderCalendar(rows);
+    renderChart(rows);
+  };
+  renderCalendar([]);
 
   if (token()) showApp(); else showLogin();
 })();
