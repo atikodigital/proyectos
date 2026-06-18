@@ -44,6 +44,7 @@ export const api = {
   // K.A.L.Y. agent endpoints
   agentSession() { return req('/api/app/agent/session', { method: 'POST', body: {} }); },
   agentPrefs(patch) { return req('/api/app/agent/prefs', { method: 'PATCH', body: patch }); },
+  getAgentPrefs() { return req('/api/app/agent/prefs'); },
   pagarExpense(id) { return req(`/api/app/expenses/${id}/pagar`, { method: 'PATCH' }); },
   resumenWhatsapp() { return req('/api/app/agent/resumen-whatsapp', { method: 'POST', body: {} }); },
   createManualExpense(data) { return req('/api/app/expenses/manual', { method: 'POST', body: data }); },

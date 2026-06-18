@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { api } from './api';
+import ProactividadToggle from './kaly/ProactividadToggle.jsx';
 
 const GOLD = '#C9A24B';
 const DARK_BORDER = 'rgba(255, 255, 255, 0.08)';
@@ -81,6 +82,9 @@ export default function MemoriaKalyView() {
         <p style={{ fontSize: '14px', color: '#a1a1aa', margin: 0 }}>
           La base de conocimiento de tu asistente de ventas. Lo que KALY recuerde guiará sus respuestas con los clientes.
         </p>
+        <div style={{ marginTop: 12 }}>
+          <ProactividadToggle />
+        </div>
       </div>
 
       {/* Formulario de Adición */}

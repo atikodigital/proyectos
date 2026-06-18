@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-jest.mock('../../src/gastos/api', () => ({ api: { kalyMemorias: jest.fn(), kalyRecordar: jest.fn(), kalyBorrarMemoria: jest.fn() } }));
+jest.mock('../../src/gastos/api', () => ({ api: { kalyMemorias: jest.fn(), kalyRecordar: jest.fn(), kalyBorrarMemoria: jest.fn(), getAgentPrefs: jest.fn().mockResolvedValue({}), agentPrefs: jest.fn().mockResolvedValue({}) } }));
 import { api } from '../../src/gastos/api';
 import MemoriaKalyView from '../../src/gastos/MemoriaKalyView.jsx';
 

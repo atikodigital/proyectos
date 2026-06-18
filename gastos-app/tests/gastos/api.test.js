@@ -104,3 +104,12 @@ test('kalyAprender hace POST a /api/app/kaly/aprender con la transcripción', as
   expect(opts.method).toBe('POST');
   expect(JSON.parse(opts.body)).toEqual(payload);
 });
+
+test('getAgentPrefs hace GET a /api/app/agent/prefs', async () => {
+  global.fetch = jest.fn().mockResolvedValue({ ok: true, json: async () => ({ proactividad: false }) });
+  const out = await api.getAgentPrefs();
+  expect(out).toEqual({ proactividad: false });
+  const [url, opts] = global.fetch.mock.calls[0];
+  expect(url).toContain('/api/app/agent/prefs');
+  expect(opts.method === undefined || opts.method === 'GET').toBe(true);
+});
