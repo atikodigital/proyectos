@@ -61,6 +61,10 @@ export const api = {
   contabilidadBalance(periodo) { return req('/api/app/contabilidad/balance?periodo=' + encodeURIComponent(periodo || '')); },
   contabilidadFlujo(periodo) { return req('/api/app/contabilidad/flujo?periodo=' + encodeURIComponent(periodo || '')); },
 
+  // VARAS — chat conversacional
+  varasChat(messages) { return req('/api/app/varas/chat', { method: 'POST', body: { messages } }); },
+  varasAccion(tipo, args) { return req('/api/app/varas/accion', { method: 'POST', body: { tipo, args } }); },
+
   // VARAS — asientos manuales
   listCuentasApp() { return req('/api/app/cuentas'); },
   crearAsientoManual(body) { return req('/api/app/asientos/manual', { method: 'POST', body }); },
