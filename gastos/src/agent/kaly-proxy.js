@@ -32,8 +32,11 @@ function createLimiter({ perIp = 2, global = 20, perWindow = 40, windowMs = 10 *
 }
 
 // Pipea dos sockets ws en ambos sentidos; al cerrar/erros uno, cierra el otro y llama onClose una vez.
+// CRÍTICO: el cliente manda el `setup` apenas abre, pero el upstream a Gemini puede estar todavía
+// conectando → se ENCOLAN los mensajes del cliente hasta que el upstream abre, y ahí se vacían.
 function pipe(client, upstream, { onClose } = {}) {
   let closed = false;
+  const queue = [];
   const end = () => {
     if (closed) return;
     closed = true;
@@ -41,7 +44,11 @@ function pipe(client, upstream, { onClose } = {}) {
     try { upstream.close(); } catch (e) { /* noop */ }
     if (onClose) onClose();
   };
-  client.on('message', (d) => { try { if (upstream.readyState === 1) upstream.send(d); } catch (e) { /* noop */ } });
+  client.on('message', (d) => {
+    if (upstream.readyState === 1) { try { upstream.send(d); } catch (e) { /* noop */ } }
+    else { queue.push(d); }
+  });
+  upstream.on('open', () => { while (queue.length) { try { upstream.send(queue.shift()); } catch (e) { /* noop */ } } });
   upstream.on('message', (d) => { try { if (client.readyState === 1) client.send(d); } catch (e) { /* noop */ } });
   client.on('close', end); client.on('error', end);
   upstream.on('close', end); upstream.on('error', end);

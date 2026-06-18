@@ -38,6 +38,17 @@ test('pipe reenvía mensajes en ambos sentidos', () => {
   expect(c.sent).toEqual(['audio']);
 });
 
+test('pipe encola mensajes del cliente hasta que el upstream abre (evita perder el setup)', () => {
+  const c = fakeWs(), u = fakeWs();
+  u.readyState = 0; // upstream CONNECTING
+  pipe(c, u);
+  c.emit('message', 'setup'); // upstream aún no abre → se encola
+  expect(u.sent).toEqual([]);
+  u.readyState = 1;
+  u.emit('open'); // ahora sí → flush de la cola
+  expect(u.sent).toEqual(['setup']);
+});
+
 test('pipe: cerrar uno cierra el otro y llama onClose una vez', () => {
   const c = fakeWs(), u = fakeWs();
   const onClose = jest.fn();
