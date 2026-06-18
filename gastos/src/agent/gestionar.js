@@ -64,4 +64,33 @@ async function juzgarHecho({ hechoNuevo, existentes, http } = {}) {
   return normalizeVeredicto(parseJsonLoose(content), lista.length);
 }
 
-module.exports = { juzgarHecho, normalizeVeredicto, parseJsonLoose };
+async function reconciliar(db, companyId, hechoNuevo, { http, juzgar } = {}) {
+  const n = normalizeMemoria(hechoNuevo);
+  if (!n) return null;
+  const origen = hechoNuevo && hechoNuevo.origen;
+  const existentes = await listMemorias(db, companyId);
+  if (existentes.length === 0) {
+    const memoria = await crearMemoria(db, companyId, { ...n, origen });
+    return { accion: 'insertar', memoria };
+  }
+  const juzgarFn = juzgar || juzgarHecho;
+  let veredicto;
+  try {
+    veredicto = await juzgarFn({ hechoNuevo: n, existentes, http });
+  } catch (_e) {
+    veredicto = { accion: 'insertar', indice: null };
+  }
+  const objetivo = veredicto && veredicto.indice ? existentes[veredicto.indice - 1] : null;
+  if (veredicto && veredicto.accion === 'duplicado' && objetivo) {
+    return { accion: 'duplicado', memoria: objetivo };
+  }
+  if (veredicto && veredicto.accion === 'reemplaza' && objetivo) {
+    await borrarMemoria(db, companyId, objetivo.id);
+    const memoria = await crearMemoria(db, companyId, { ...n, origen });
+    return { accion: 'reemplaza', memoria, reemplazoId: objetivo.id };
+  }
+  const memoria = await crearMemoria(db, companyId, { ...n, origen });
+  return { accion: 'insertar', memoria };
+}
+
+module.exports = { juzgarHecho, reconciliar, normalizeVeredicto, parseJsonLoose };
