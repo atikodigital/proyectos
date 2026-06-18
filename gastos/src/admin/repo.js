@@ -85,6 +85,9 @@ async function crearCliente(db, d) {
     owner_nombre: d.nombreContacto || undefined,
   });
   if (d.plan) await setCompanyPlan(db, empresa.id, d.plan);
+  if (d.productos !== undefined || d.canales !== undefined || d.burbuja_activa !== undefined || d.burbuja_apps !== undefined) {
+    await setProductos(db, empresa.id, { productos: d.productos, canales: d.canales, burbuja_activa: d.burbuja_activa, burbuja_apps: d.burbuja_apps });
+  }
   let employee = null;
   if (d.usuario && d.password) {
     const ph = await hashPassword(String(d.password));
@@ -126,7 +129,8 @@ async function movimientosDelMes(db, companyId, year, month) {
 
 async function listClientesConStats(db, year, month) {
   await ensurePlan(db);
-  const cs = await db.query('SELECT id, nombre, rut, plan, owner_nombre, created_at FROM companies ORDER BY created_at ASC');
+  await ensureProductos(db);
+  const cs = await db.query('SELECT id, nombre, rut, plan, productos, canales, burbuja_activa, owner_nombre, created_at FROM companies ORDER BY created_at ASC');
   const out = [];
   for (const c of cs.rows) {
     const emp = await db.query('SELECT count(*)::int AS n FROM employees WHERE company_id=$1', [c.id]);
@@ -134,6 +138,7 @@ async function listClientesConStats(db, year, month) {
     out.push({
       id: c.id, nombre: c.nombre, rut: c.rut, plan: c.plan || 'free',
       contacto: c.owner_nombre || null, empleados: emp.rows[0].n, movimientos,
+      productos: c.productos || [], canales: c.canales || [], burbuja_activa: !!c.burbuja_activa,
     });
   }
   return out;

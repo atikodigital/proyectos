@@ -38,3 +38,14 @@ test('getProductos devuelve null si la empresa no existe', async () => {
   const r = await repo.getProductos(db, '00000000-0000-0000-0000-000000000000');
   expect(r).toBeNull();
 });
+
+test('crearCliente persiste productos y listClientesConStats los devuelve', async () => {
+  const { db } = await setup();
+  await repo.crearCliente(db, { nombreEmpresa: 'Pizza X', productos: ['hashia', 'pedidos'], canales: ['whatsapp'], burbuja_activa: true, burbuja_apps: ['rappi'] });
+  const now = new Date();
+  const lista = await repo.listClientesConStats(db, now.getFullYear(), now.getMonth() + 1);
+  const fila = lista.find((c) => c.nombre === 'Pizza X');
+  expect(fila.productos.sort()).toEqual(['hashia', 'pedidos']);
+  expect(fila.canales).toEqual(['whatsapp']);
+  expect(fila.burbuja_activa).toBe(true);
+});
