@@ -37,3 +37,10 @@ test('crearMemoria ignora contenido vacío', async () => {
   expect(r).toBeNull();
   expect((await listMemorias(db, A)).length).toBe(0);
 });
+
+test('crearMemoria acepta origen "auto"', async () => {
+  const db = await freshDb();
+  const companyId = '00000000-0000-0000-0000-0000000000aa';
+  const m = await crearMemoria(db, companyId, { tipo: 'negocio', contenido: 'Atiende sábados', origen: 'auto' });
+  expect(m.origen).toBe('auto');
+});

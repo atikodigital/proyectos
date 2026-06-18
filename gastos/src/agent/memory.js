@@ -26,7 +26,8 @@ function formatMemoriaBlock(memorias) {
 async function crearMemoria(db, companyId, input) {
   const n = normalizeMemoria(input);
   if (!n) return null;
-  const origen = input && input.origen === 'dueño' ? 'dueño' : 'kaly';
+  const ORIGENES = ['kaly', 'dueño', 'auto'];
+  const origen = input && ORIGENES.includes(input.origen) ? input.origen : 'kaly';
   const r = await db.query(
     "INSERT INTO kaly_memory(company_id, tipo, contenido, origen) VALUES($1,$2,$3,$4) RETURNING id, tipo, contenido, origen, created_at",
     [companyId, n.tipo, n.contenido, origen]
