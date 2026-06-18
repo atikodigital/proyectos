@@ -4,7 +4,7 @@ const { verifyPassword, hashPassword } = require('../auth/password');
 const { signToken } = require('../auth/jwt');
 const { requireAuth, requireKind } = require('../auth/middleware');
 const { listExpenses } = require('../expenses/query');
-const { markExpensePaid, getExpense, updateExpense, annulExpense } = require('../expenses/repo');
+const { markExpensePaid, getExpense, updateExpense, annulExpense, createExpense } = require('../expenses/repo');
 const { readImage, contentTypeFor } = require('../expenses/storage');
 const { buildExpensesWorkbook } = require('./excel');
 const xc = require('./excel-contabilidad');
@@ -23,6 +23,7 @@ const auxRepo = require('../auxiliares/repo');
 const auxReportes = require('../auxiliares/reportes');
 const { sembrarPorRubro } = require('../auxiliares/semilla');
 const { getGiro, setGiro } = require('../companies/repo');
+const { aplicarContabilidad } = require('../contabilidad/contabilizar');
 const contaCuentas = require('../contabilidad/cuentas');
 const { crearAsientoManual, anularAsientoManual } = require('../contabilidad/manual');
 const { responder } = require('../varas/chat');
@@ -233,6 +234,32 @@ function createPanelRouter({ db, sendText, varasGemini } = {}) {
 
   // ── Asientos manuales VARAS ──
   router.get('/cuentas', async (req, res) => res.json({ cuentas: await contaCuentas.listCuentas(db, req.auth.companyId) }));
+  
+  router.post('/cuentas', async (req, res) => {
+    try {
+      const c = await contaCuentas.createCuenta(db, req.auth.companyId, req.body || {});
+      res.status(201).json(c);
+    } catch (e) {
+      res.status(400).json({ error: e.message || 'invalido' });
+    }
+  });
+
+  router.patch('/cuentas/:id', async (req, res) => {
+    try {
+      const c = await contaCuentas.updateCuenta(db, req.auth.companyId, req.params.id, req.body || {});
+      if (!c) return res.status(404).json({ error: 'no_existe' });
+      res.json(c);
+    } catch (e) {
+      res.status(400).json({ error: e.message || 'invalido' });
+    }
+  });
+
+  router.delete('/cuentas/:id', async (req, res) => {
+    const c = await contaCuentas.deactivateCuenta(db, req.auth.companyId, req.params.id);
+    if (!c) return res.status(404).json({ error: 'no_existe' });
+    res.json({ ok: true });
+  });
+
   router.post('/asientos/manual', async (req, res) => {
     try { res.status(201).json({ asiento: await crearAsientoManual(db, req.auth.companyId, req.body || {}) }); }
     catch (e) { res.status(400).json({ error: e.code || 'invalido' }); }
@@ -241,6 +268,42 @@ function createPanelRouter({ db, sendText, varasGemini } = {}) {
     const a = await anularAsientoManual(db, req.auth.companyId, req.params.id);
     if (!a) return res.status(404).json({ error: 'no_existe' });
     res.json({ ok: true });
+  });
+
+  router.post('/expenses/manual', async (req, res) => {
+    const { tipo, proveedor, rut_emisor, folio, fecha, neto, iva, total, categoria, estado_pago } = req.body || {};
+    if (!tipo || total === undefined) {
+      return res.status(400).json({ error: 'tipo_y_total_requeridos' });
+    }
+    const { mapCategoryToSii } = require('../domain/categories');
+    
+    let cuentaSii = {};
+    if (tipo !== 'ingreso' && categoria) {
+      const cuenta = mapCategoryToSii(categoria);
+      if (cuenta) {
+        cuentaSii = { cuenta_sii_codigo: cuenta.codigo, cuenta_sii_nombre: cuenta.nombre };
+      }
+    }
+
+    const expense = await createExpense(db, {
+      company_id: req.auth.companyId,
+      employee_id: null,
+      canal: 'app',
+      estado: 'confirmado',
+      tipo,
+      proveedor: proveedor || 'Transacción manual',
+      rut_emisor,
+      folio,
+      fecha: fecha || new Date().toISOString().slice(0, 10),
+      neto: Number(neto) || 0,
+      iva: Number(iva) || 0,
+      total: Number(total) || 0,
+      categoria,
+      estado_pago: estado_pago || 'pendiente',
+      ...cuentaSii,
+    });
+    await aplicarContabilidad(db, req.auth.companyId, expense, 'confirmar');
+    return res.status(201).json(expense);
   });
 
   // ── VARAS chat IA ──

@@ -227,6 +227,24 @@
     }
     return base;
   }
+  function cuentasTableHtml(cuentas) {
+    const rows = (cuentas || []).map(function (c) {
+      return '<tr data-cta-id="' + escapeHtml(c.id) + '">'
+        + '<td>' + escapeHtml(c.codigo) + '</td>'
+        + '<td>' + escapeHtml(c.nombre) + '</td>'
+        + '<td>' + escapeHtml(c.tipo) + '</td>'
+        + '<td>' + (c.imputable ? 'Sí' : 'No') + '</td>'
+        + '<td>' + (c.activo ? '<span class="badge-ok">Activo</span>' : '<span class="badge-no">Inactivo</span>') + '</td>'
+        + '<td>'
+        + '  <button class="btn-ghost btn-sm cta-edit" data-id="' + escapeHtml(c.id) + '" style="font-size:11px;padding:4px 8px">Editar</button>'
+        + '  ' + (c.activo ? '<button class="btn-ghost btn-sm cta-del" data-id="' + escapeHtml(c.id) + '" style="font-size:11px;padding:4px 8px;color:#ff8a8a">Desactivar</button>' : '')
+        + '</td>'
+        + '</tr>';
+    }).join('');
+    return '<table class="tbl"><thead><tr><th>Código</th><th>Nombre</th><th>Tipo</th><th>Imputable</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>'
+      + (rows || '<tr><td colspan="6">Sin cuentas contables.</td></tr>') + '</tbody></table>';
+  }
+
   function productosListHtml(products, fmt) {
     return (products || []).map(function (p) {
       var nombre = escapeHtml(p.nombre);
@@ -282,21 +300,35 @@
       var align = esUser ? 'flex-end' : 'flex-start';
       var bg = esUser ? 'rgba(201,162,75,0.13)' : 'rgba(255,255,255,0.06)';
       var col = esUser ? '#f0e2bf' : '#e8e8ee';
+
+      if (m.loading) {
+        return '<div style="display:flex;justify-content:flex-start;margin:4px 0">'
+          + '<div class="' + cls + '" style="max-width:80%;border-radius:14px;padding:8px 12px;font-size:13px;background:rgba(201,162,75,0.05);color:' + oro + ';display:inline-flex;align-items:center;gap:8px;border:1px solid rgba(201,162,75,0.15)">'
+          + '<span class="pulse-dot"></span><span>VARAS está analizando...</span></div></div>';
+      }
+
+      var formatted = escapeHtml(m.text)
+        .replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>')
+        .replace(/\n\*\s/g, '<br>• ')
+        .replace(/\n/g, '<br>');
+
       return '<div style="display:flex;justify-content:' + align + ';margin:4px 0">'
-        + '<div class="' + cls + '" style="max-width:80%;border-radius:14px;padding:8px 12px;font-size:13px;white-space:pre-wrap;background:' + bg + ';color:' + col + '">'
-        + escapeHtml(m.text) + '</div></div>';
+        + '<div class="' + cls + '" style="max-width:80%;border-radius:14px;padding:8px 12px;font-size:13px;background:' + bg + ';color:' + col + '">'
+        + formatted + '</div></div>';
     }).join('');
     var tarjeta = '';
     if (accion) {
-      tarjeta = '<div id="varasAccionCard" style="border:1px solid ' + oro + ';border-radius:14px;padding:12px;margin:8px 0;font-size:13px">'
-        + '<div style="font-weight:900;color:' + oro + ';margin-bottom:8px">' + escapeHtml(accion.descripcion) + '</div>'
+      tarjeta = '<div id="varasAccionCard" style="background:rgba(201,162,75,0.06);border:1px solid rgba(201,162,75,0.3);box-shadow:0 8px 32px 0 rgba(0,0,0,0.37);border-radius:14px;padding:14px;margin:12px 0;font-size:13px;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);animation:scaleIn 0.2s cubic-bezier(0.16,1,0.3,1)">'
+        + '<div style="font-family:var(--font-heading);font-weight:700;font-size:14px;color:' + oro + ';margin-bottom:10px;display:flex;align-items:center;gap:6px">'
+        + '✨ Acción sugerida</div>'
+        + '<div style="margin-bottom:12px;color:#e8e8ee">' + escapeHtml(accion.descripcion) + '</div>'
         + '<div style="display:flex;gap:8px">'
-        + '<button id="varas-confirmar" class="btn-gold" style="font-size:12px;padding:5px 14px">Confirmar</button>'
-        + '<button id="varas-cancelar" class="btn-ghost" style="font-size:12px;padding:5px 14px">Cancelar</button>'
+        + '<button id="varas-confirmar" class="btn-gold" style="font-size:12px;padding:6px 14px;border-radius:8px">Confirmar</button>'
+        + '<button id="varas-cancelar" class="btn-ghost" style="font-size:12px;padding:6px 14px;border-radius:8px;background:rgba(255,255,255,0.02)">Cancelar</button>'
         + '</div></div>';
     }
     return '<div id="varasMensajes" style="display:flex;flex-direction:column">' + burbujas + tarjeta + '</div>';
   }
 
-  return { fmtClp, escapeHtml, buildQuery, totalsFromRows, cashflowFromRows, expensesTableHtml, expensesCarouselHtml, detalleRows, detalleHtml, desdePriceLib: desdePriceLib, productosListHtml: productosListHtml, cuadreManual: cuadreManual, diarioTableHtml: diarioTableHtml, mayorTableHtml: mayorTableHtml, balanceTableHtml: balanceTableHtml, flujoTableHtml: flujoTableHtml, conciliacionHtml: conciliacionHtml, ivaResumenHtml: ivaResumenHtml, auxiliaresTableHtml: auxiliaresTableHtml, consumoHtml: consumoHtml, varasChatHtml: varasChatHtml };
+  return { fmtClp, escapeHtml, buildQuery, totalsFromRows, cashflowFromRows, expensesTableHtml, expensesCarouselHtml, detalleRows, detalleHtml, desdePriceLib: desdePriceLib, productosListHtml: productosListHtml, cuadreManual: cuadreManual, diarioTableHtml: diarioTableHtml, mayorTableHtml: mayorTableHtml, balanceTableHtml: balanceTableHtml, flujoTableHtml: flujoTableHtml, conciliacionHtml: conciliacionHtml, ivaResumenHtml: ivaResumenHtml, auxiliaresTableHtml: auxiliaresTableHtml, consumoHtml: consumoHtml, varasChatHtml: varasChatHtml, cuentasTableHtml: cuentasTableHtml };
 });

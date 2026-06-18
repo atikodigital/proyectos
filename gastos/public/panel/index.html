@@ -4,58 +4,385 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Hash IA — Panel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;600;800;900&display=swap" rel="stylesheet">
 <style>
-  :root { --gold:#C9A24B; --bg:#0E0E0E; }
-  * { box-sizing: border-box; }
-  body { margin:0; background:var(--bg); color:#fff; font-family:system-ui,Segoe UI,sans-serif; }
-  a { color:var(--gold); }
-  .wrap { max-width:1100px; margin:0 auto; padding:16px; }
-  header.top { display:flex; justify-content:space-between; align-items:center; padding:14px 16px; border-bottom:1px solid #ffffff1a; }
-  .brand { color:var(--gold); font-weight:900; font-size:18px; }
-  button { cursor:pointer; border:0; border-radius:10px; padding:10px 14px; font-weight:800; }
-  .btn-gold { background:var(--gold); color:#000; }
-  .btn-ghost { background:#ffffff14; color:#fff; }
-  input, select { background:#ffffff10; color:#fff; border:1px solid #ffffff26; border-radius:10px; padding:9px 11px; }
-  label { font-size:12px; opacity:.8; display:block; margin-bottom:3px; }
-  .row { display:flex; gap:10px; flex-wrap:wrap; align-items:end; }
-  .card { background:#ffffff08; border:1px solid #ffffff14; border-radius:14px; padding:14px; margin:12px 0; }
-  table.exp { width:100%; border-collapse:collapse; font-size:13px; }
-  table.exp th, table.exp td { text-align:left; padding:8px 10px; border-bottom:1px solid #ffffff12; white-space:nowrap; }
-  table.exp th { color:var(--gold); position:sticky; top:0; background:#161616; }
-  table.exp td.num, table.exp th.num { text-align:right; }
-  .tabs { display:flex; gap:8px; margin:12px 0; }
-  .tab { background:#ffffff10; }
-  .tab.active { background:var(--gold); color:#000; }
-  .hidden { display:none; }
-  .err { color:#ff6b6b; font-size:13px; }
-  .muted { opacity:.6; }
-  .scroll { overflow:auto; max-height:62vh; border:1px solid #ffffff12; border-radius:12px; }
-  .emp { display:flex; justify-content:space-between; align-items:center; padding:8px 10px; border-bottom:1px solid #ffffff12; }
-  table.exp tr.exp-row { cursor:pointer; }
-  table.exp tr.exp-row:hover td { background:#ffffff0a; }
-  .modal { position:fixed; inset:0; background:#000000cc; display:flex; align-items:center; justify-content:center; padding:16px; z-index:50; }
-  .modal.hidden { display:none; }
-  .modal .box { background:#161616; border:1px solid #ffffff22; border-radius:14px; max-width:480px; width:100%; max-height:85vh; overflow:auto; padding:16px; }
-  .detrow { display:flex; justify-content:space-between; gap:12px; padding:8px 4px; border-bottom:1px solid #ffffff12; font-size:14px; }
-  .detrow .detk { opacity:.6; } .detrow .detv { font-weight:700; text-align:right; }
-  .carousel { display:flex; gap:12px; overflow-x:auto; padding:6px 2px 16px; scroll-snap-type:x proximity; -webkit-overflow-scrolling:touch; }
-  .carousel::-webkit-scrollbar { height:9px; } .carousel::-webkit-scrollbar-thumb { background:#ffffff26; border-radius:5px; } .carousel::-webkit-scrollbar-track { background:#ffffff0a; }
-  .movcard { scroll-snap-align:start; flex:0 0 230px; background:#ffffff08; border:1px solid #ffffff1a; border-radius:16px; padding:14px; cursor:pointer; display:flex; flex-direction:column; gap:6px; transition:border-color .15s, transform .15s; }
-  .movcard:hover { border-color:var(--gold); transform:translateY(-2px); }
-  .movtipo { font-size:11px; font-weight:900; letter-spacing:.08em; }
-  .movprov { font-weight:800; font-size:15px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .movtotal { font-size:23px; font-weight:900; color:var(--gold); }
-  .movmeta { font-size:12px; opacity:.7; }
-  .movpago { margin-top:6px; }
+  :root {
+    --gold: #C9A24B;
+    --gold-hover: #e2b655;
+    --gold-glow: rgba(201, 162, 75, 0.15);
+    --bg: #09090b;
+    --bg-panel: #121214;
+    --surface: rgba(255, 255, 255, 0.03);
+    --surface-card: rgba(255, 255, 255, 0.05);
+    --surface-hover: rgba(255, 255, 255, 0.08);
+    --border: rgba(255, 255, 255, 0.08);
+    --text: #f4f4f5;
+    --text-muted: #a1a1aa;
+    --green: #10b981;
+    --green-bg: rgba(16, 185, 129, 0.12);
+    --red: #ef4444;
+    --red-bg: rgba(239, 68, 68, 0.12);
+    --font-heading: 'Outfit', sans-serif;
+    --font-body: 'Inter', sans-serif;
+  }
+  * { box-sizing: border-box; outline: none; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    background-image: radial-gradient(circle at 50% 0%, rgba(201, 162, 75, 0.08) 0%, transparent 50%);
+    color: var(--text);
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+    letter-spacing: -0.011em;
+  }
+  a { color: var(--gold); text-decoration: none; transition: color 0.15s; }
+  a:hover { color: var(--gold-hover); }
+  .wrap { max-width: 1200px; margin: 0 auto; padding: 24px 16px; }
+  
+  header.top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(9, 9, 11, 0.8);
+    backdrop-filter: blur(12px);
+    position: sticky;
+    top: 0;
+    z-index: 40;
+  }
+  .brand {
+    color: var(--gold);
+    font-family: var(--font-heading);
+    font-weight: 900;
+    font-size: 22px;
+    background: linear-gradient(135deg, #f0e2bf 0%, #C9A24B 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    letter-spacing: -0.02em;
+  }
+  
+  button {
+    cursor: pointer;
+    border: 1px solid transparent;
+    border-radius: 12px;
+    padding: 10px 18px;
+    font-family: var(--font-body);
+    font-weight: 600;
+    font-size: 13.5px;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .btn-gold {
+    background: var(--gold);
+    color: #000;
+  }
+  .btn-gold:hover {
+    background: #e2b655;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px var(--gold-glow);
+  }
+  .btn-gold:active {
+    transform: translateY(0);
+  }
+  .btn-gold:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+  .btn-ghost {
+    background: var(--surface);
+    color: var(--text);
+    border-color: var(--border);
+  }
+  .btn-ghost:hover {
+    background: var(--surface-hover);
+    border-color: rgba(255, 255, 255, 0.15);
+  }
+  .btn-ghost:active {
+    background: var(--surface);
+  }
+  
+  input, select, textarea {
+    background: var(--surface);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 10px 14px;
+    font-family: var(--font-body);
+    font-size: 14px;
+    transition: all 0.2s;
+  }
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--gold);
+    box-shadow: 0 0 0 3px var(--gold-glow);
+    background: rgba(255, 255, 255, 0.05);
+  }
+  input::placeholder {
+    color: var(--text-muted);
+    opacity: 0.6;
+  }
+  
+  label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+    display: block;
+    margin-bottom: 5px;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+  }
+  .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: end; }
+  
+  .card {
+    background: rgba(22, 22, 26, 0.4);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    margin: 16px 0;
+    backdrop-filter: blur(8px);
+    transition: border-color 0.2s;
+  }
+  .card:hover {
+    border-color: rgba(201, 162, 75, 0.2);
+  }
+  
+  /* Tables styling */
+  table.exp, table.tbl {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 13.5px;
+  }
+  table.exp th, table.exp td, table.tbl th, table.tbl td {
+    text-align: left;
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+    transition: background 0.15s;
+  }
+  table.exp th, table.tbl th {
+    color: var(--gold);
+    font-family: var(--font-heading);
+    font-weight: 700;
+    font-size: 13.5px;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    position: sticky;
+    top: 0;
+    background: #0f0f12;
+    z-index: 10;
+  }
+  table.exp td.num, table.exp th.num, table.tbl td.num, table.tbl th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  
+  table.exp tr.exp-row:hover td, table.tbl tbody tr:hover td {
+    background: var(--surface-hover);
+  }
+  table.exp tr.exp-row { cursor: pointer; }
+  
+  tfoot tr td {
+    background: #0f0f12;
+    border-top: 2px solid var(--border);
+    font-weight: 700;
+  }
+  
+  /* Tabs styling */
+  .tabs { display: flex; gap: 6px; margin: 16px 0; overflow-x: auto; padding-bottom: 4px; }
+  .tabs::-webkit-scrollbar { height: 4px; }
+  .tab {
+    background: var(--surface);
+    border-color: var(--border);
+    color: var(--text-muted);
+    border-radius: 10px;
+    padding: 8px 16px;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+  .tab:hover {
+    color: var(--text);
+    background: var(--surface-hover);
+  }
+  .tab.active {
+    background: var(--gold-gradient);
+    color: #000;
+    border-color: transparent;
+    font-weight: 700;
+  }
+  
+  .hidden { display: none !important; }
+  .modal.hidden { display: none; }
+  .err { color: var(--red); background: var(--red-bg); padding: 8px 12px; border-radius: 8px; font-size: 13px; border: 1px solid rgba(239, 68, 68, 0.2); margin-top: 10px; }
+  .ok { color: var(--green); background: var(--green-bg); padding: 8px 12px; border-radius: 8px; font-size: 13px; border: 1px solid rgba(16, 185, 129, 0.2); margin-top: 10px; }
+  .muted { color: var(--text-muted); }
+  
+  .scroll {
+    overflow: auto;
+    max-height: 64vh;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: #0f0f12;
+  }
+  
+  .emp {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.15s;
+  }
+  .emp:last-child { border-bottom: 0; }
+  .emp:hover { background: var(--surface); }
+  
+  /* Modals */
+  .modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.75);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    z-index: 100;
+    backdrop-filter: blur(16px);
+    animation: fadeIn 0.2s ease-out;
+  }
+  .modal .box {
+    background: #121215;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    max-width: 500px;
+    width: 100%;
+    max-height: 85vh;
+    overflow: auto;
+    padding: 24px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(201, 162, 75, 0.15);
+    animation: scaleIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .detrow {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 4px;
+    border-bottom: 1px solid var(--border);
+    font-size: 13.5px;
+  }
+  .detrow:last-child { border-bottom: 0; }
+  .detrow .detk { color: var(--text-muted); }
+  .detrow .detv { font-weight: 600; text-align: right; }
+  
+  /* Carousels & Movcards */
+  .carousel {
+    display: flex;
+    gap: 14px;
+    overflow-x: auto;
+    padding: 6px 2px 16px;
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+  }
+  .carousel::-webkit-scrollbar { height: 6px; }
+  .carousel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+  .carousel::-webkit-scrollbar-track { background: transparent; }
+  
+  .movcard {
+    scroll-snap-align: start;
+    flex: 0 0 240px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 16px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    transition: all 0.2s ease;
+  }
+  .movcard:hover {
+    border-color: var(--gold);
+    transform: translateY(-2px);
+    background: rgba(255, 255, 255, 0.04);
+    box-shadow: 0 4px 15px rgba(201, 162, 75, 0.15);
+  }
+  .movtipo { font-size: 10px; font-weight: 900; letter-spacing: 0.1em; text-transform: uppercase; }
+  .movprov { font-family: var(--font-heading); font-weight: 700; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text); }
+  .movtotal { font-family: var(--font-heading); font-size: 24px; font-weight: 900; color: var(--gold); }
+  .movmeta { font-size: 11.5px; color: var(--text-muted); }
+  .movpago { margin-top: 4px; }
+  
+  /* Badges */
+  .badge-ok {
+    background: var(--green-bg);
+    color: var(--green);
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    border: 1px solid rgba(16, 185, 129, 0.2);
+  }
+  .badge-no {
+    background: var(--red-bg);
+    color: var(--red);
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+  }
+  .flujo-tot {
+    font-size: 14px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 16px;
+    margin-bottom: 12px;
+  }
+  
+  /* Varas Chat styles */
+  .varas-bubble-user {
+    border-top-right-radius: 2px !important;
+    border: 1px solid rgba(201, 162, 75, 0.2);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  }
+  .varas-bubble-varas {
+    border-top-left-radius: 2px !important;
+    border: 1px solid var(--border);
+  }
+  #varasScroll {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 16px !important;
+    background: #0f0f12;
+  }
+  
+  /* Animations */
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes scaleIn { from { transform: scale(0.96); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  .pulse-dot {
+    width: 6px;
+    height: 6px;
+    background-color: var(--gold);
+    border-radius: 50%;
+    display: inline-block;
+    animation: pulse 1.4s infinite ease-in-out both;
+  }
+  @keyframes pulse {
+    0%, 80%, 100% { transform: scale(0); }
+    40% { transform: scale(1.0); }
+  }
 </style>
 <!-- Meta Pixel - Atiko Digital -->
 <script>window.ATIKO_META_PIXEL_ID='1768028951050353';</script>
 <script src="https://atikodigital.cl/assets/meta-pixel.js" async crossorigin="anonymous"></script>
 <noscript><img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=1768028951050353&ev=PageView&noscript=1"/></noscript>
 </head>
-<body>
-
-<!-- LOGIN -->
+<body><!-- LOGIN -->
 <div id="loginView" class="wrap" style="max-width:380px;">
   <h1 class="brand" style="font-size:24px; margin-top:48px;">Hash IA</h1>
   <p class="muted">Panel del dueño</p>
@@ -120,6 +447,7 @@
           <button id="applyBtn" class="btn-gold">Aplicar</button>
           <button id="excelBtn" class="btn-ghost">Descargar Excel</button>
           <button id="resumenBtn" class="btn-ghost">📲 Enviarme resumen</button>
+          <button id="newExpenseBtn" class="btn-gold" style="margin-left: auto;">➕ Nuevo Gasto/Ingreso</button>
         </div>
         <p id="resumenMsg" class="muted" style="margin:8px 2px 0"></p>
       </div>
@@ -139,6 +467,85 @@
           </div>
           <div id="detalleBody"></div>
           <div id="detalleActions" style="display:flex; gap:8px; margin-top:12px"></div>
+        </div>
+      </div>
+
+      <!-- Modal para Crear Gasto/Ingreso Manual -->
+      <div id="crearGastoModal" class="modal hidden">
+        <div class="box" style="max-width:540px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px">
+            <span class="brand">Nuevo Movimiento Manual</span>
+            <button id="crearGastoClose" class="btn-ghost">✕</button>
+          </div>
+          <div class="row" style="margin-bottom:10px;">
+            <div style="flex:1"><label>Tipo</label>
+              <select id="cgTipo" style="width:100%"><option value="gasto">Gasto</option><option value="ingreso">Ingreso</option></select>
+            </div>
+            <div style="flex:1"><label>Categoría</label>
+              <select id="cgCategoria" style="width:100%"></select>
+            </div>
+          </div>
+          <div class="row" style="margin-bottom:10px;">
+            <div style="flex:1"><label>Proveedor / Origen</label><input id="cgProveedor" style="width:100%" placeholder="ej. Soprole" /></div>
+            <div style="flex:1"><label>RUT Emisor</label><input id="cgRut" style="width:100%" placeholder="77.123.456-9" /></div>
+          </div>
+          <div class="row" style="margin-bottom:10px;">
+            <div style="flex:1"><label>Fecha</label><input id="cgFecha" type="date" style="width:100%" /></div>
+            <div style="flex:1"><label>Folio (N° Doc)</label><input id="cgFolio" style="width:100%" placeholder="1234" /></div>
+          </div>
+          <div class="row" style="margin-bottom:10px;">
+            <div style="flex:1"><label>Neto</label><input id="cgNeto" type="number" style="width:100%" placeholder="0" /></div>
+            <div style="flex:1"><label>IVA</label><input id="cgIva" type="number" style="width:100%" placeholder="0" /></div>
+            <div style="flex:1"><label>Total</label><input id="cgTotal" type="number" style="width:100%" placeholder="0" /></div>
+          </div>
+          <div class="row" style="margin-bottom:10px;">
+            <div style="flex:1"><label>Glosa / Descripción</label><input id="cgGlosa" style="width:100%" placeholder="ej. Compra de insumos" /></div>
+            <div style="flex:1"><label>Pago</label>
+              <select id="cgPago" style="width:100%"><option value="pendiente">Pendiente</option><option value="pagada">Pagada</option></select>
+            </div>
+          </div>
+          <p id="cgErr" class="err hidden"></p>
+          <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:14px">
+            <button id="cgCancel" class="btn-ghost">Cancelar</button>
+            <button id="cgSave" class="btn-gold">Guardar</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal para Editar Cuenta Contable -->
+      <div id="editarCuentaModal" class="modal hidden">
+        <div class="box">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px">
+            <span class="brand">Editar Cuenta</span>
+            <button id="editCuentaClose" class="btn-ghost">✕</button>
+          </div>
+          <div>
+            <label>Código</label><input id="ecCodigo" style="width:100%" />
+            <label style="margin-top:8px">Nombre</label><input id="ecNombre" style="width:100%" />
+            <label style="margin-top:8px">Tipo</label>
+            <select id="ecTipo" style="width:100%">
+              <option value="activo">Activo</option>
+              <option value="pasivo">Pasivo</option>
+              <option value="patrimonio">Patrimonio</option>
+              <option value="resultado_ganancia">Resultado Ganancia</option>
+              <option value="resultado_perdida">Resultado Pérdida</option>
+            </select>
+            <div style="display:flex; gap:16px; margin-top:14px">
+              <label style="display:flex; align-items:center; gap:6px; cursor:pointer">
+                <input type="checkbox" id="ecImputable" />
+                <span>Imputable</span>
+              </label>
+              <label style="display:flex; align-items:center; gap:6px; cursor:pointer">
+                <input type="checkbox" id="ecActivo" />
+                <span>Activa</span>
+              </label>
+            </div>
+          </div>
+          <p id="ecErr" class="err hidden"></p>
+          <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:14px">
+            <button id="ecCancel" class="btn-ghost">Cancelar</button>
+            <button id="ecSave" class="btn-gold">Guardar</button>
+          </div>
         </div>
       </div>
     </section>
@@ -199,6 +606,7 @@
             <button class="tab csub" data-libro="conciliacion">Conciliación</button>
             <button class="tab csub" data-libro="iva">IVA (SII)</button>
             <button class="tab csub" data-libro="manual">Manual</button>
+            <button class="tab csub" data-libro="cuentas">Plan de Cuentas</button>
           </div>
           <button id="cExcelBtn" class="btn-ghost">Descargar Excel</button>
         </div>
@@ -463,6 +871,89 @@
     });
   }
   $('applyBtn').onclick = loadGastos;
+
+  // ── NUEVO MOVIMIENTO MANUAL ──
+  $('newExpenseBtn').onclick = function () {
+    $('cgTipo').value = 'gasto';
+    $('cgCategoria').innerHTML = '<option value="">— Seleccionar —</option>' + CATEGORIES.map(function (c) {
+      return '<option value="' + PanelLib.escapeHtml(c) + '">' + PanelLib.escapeHtml(c) + '</option>';
+    }).join('');
+    $('cgProveedor').value = '';
+    $('cgRut').value = '';
+    var hoy = new Date();
+    $('cgFecha').value = hoy.getFullYear() + '-' + String(hoy.getMonth() + 1).padStart(2, '0') + '-' + String(hoy.getDate()).padStart(2, '0');
+    $('cgFolio').value = '';
+    $('cgNeto').value = '';
+    $('cgIva').value = '';
+    $('cgTotal').value = '';
+    $('cgGlosa').value = '';
+    $('cgPago').value = 'pendiente';
+    $('cgErr').classList.add('hidden');
+    $('crearGastoModal').classList.remove('hidden');
+  };
+
+  $('crearGastoClose').onclick = $('cgCancel').onclick = function () {
+    $('crearGastoModal').classList.add('hidden');
+  };
+
+  $('crearGastoModal').onclick = function (ev) {
+    if (ev.target === $('crearGastoModal')) $('crearGastoModal').classList.add('hidden');
+  };
+
+  // Auto-calcular IVA sobre neto
+  $('cgNeto').oninput = function () {
+    var neto = Number($('cgNeto').value) || 0;
+    var iva = Math.round(neto * 0.19);
+    $('cgIva').value = iva;
+    $('cgTotal').value = neto + iva;
+  };
+
+  // Auto-calcular neto e IVA sobre total
+  $('cgTotal').oninput = function () {
+    var total = Number($('cgTotal').value) || 0;
+    var neto = Math.round(total / 1.19);
+    $('cgIva').value = total - neto;
+    $('cgNeto').value = neto;
+  };
+
+  $('cgSave').onclick = async function () {
+    var tipo = $('cgTipo').value;
+    var total = Number($('cgTotal').value);
+    if (!tipo || isNaN(total) || total === 0) {
+      $('cgErr').textContent = 'El tipo y el monto total son requeridos.';
+      $('cgErr').classList.remove('hidden');
+      return;
+    }
+    $('cgSave').disabled = true;
+    $('cgErr').classList.add('hidden');
+    try {
+      var body = {
+        tipo: tipo,
+        categoria: $('cgCategoria').value || null,
+        proveedor: $('cgProveedor').value.trim() || null,
+        rut_emisor: $('cgRut').value.trim() || null,
+        fecha: $('cgFecha').value || null,
+        folio: $('cgFolio').value.trim() || null,
+        neto: Number($('cgNeto').value) || 0,
+        iva: Number($('cgIva').value) || 0,
+        total: total,
+        glosa: $('cgGlosa').value.trim() || null,
+        estado_pago: $('cgPago').value
+      };
+      var res = await apiFetch('/expenses/manual', {
+        method: 'POST',
+        body: JSON.stringify(body)
+      });
+      if (!res.ok) throw new Error('fail');
+      $('crearGastoModal').classList.add('hidden');
+      loadGastos();
+    } catch (e) {
+      $('cgErr').textContent = 'Error al guardar el movimiento.';
+      $('cgErr').classList.remove('hidden');
+    } finally {
+      $('cgSave').disabled = false;
+    }
+  };
   $('mesBtn').onclick = function () {
     $('fFrom').value = ''; $('fTo').value = ''; $('fPeriodo').value = ymActual(); loadGastos();
   };
@@ -762,7 +1253,11 @@
     function pintar() {
       var cont = $('varasScroll');
       if (!cont) return;
-      cont.innerHTML = PanelLib.varasChatHtml(_varasMensajes, _varasAccion);
+      var msgs = _varasMensajes.slice();
+      if (_varasBusy) {
+        msgs.push({ role: 'varas', text: '', loading: true });
+      }
+      cont.innerHTML = PanelLib.varasChatHtml(msgs, _varasAccion);
       cont.scrollTop = cont.scrollHeight;
       var conf = $('varas-confirmar');
       if (conf) conf.onclick = confirmar;
@@ -815,9 +1310,173 @@
     if (inp) inp.onkeydown = function (e) { if (e.key === 'Enter') { e.preventDefault(); enviar(); } };
   }
 
+  var editingCuentaId = null;
+
+  async function loadCuentasCRUD() {
+    $('cContenido').innerHTML =
+      '<div style="max-width:800px;padding:4px">'
+      + '  <div class="card" style="margin-top:0;margin-bottom:12px">'
+      + '    <h3 style="color:var(--gold);margin-top:0;margin-bottom:12px">Agregar Cuenta Contable</h3>'
+      + '    <div class="row" style="gap:10px;align-items:end;flex-wrap:wrap">'
+      + '      <div style="flex:1;min-width:100px"><label>Código</label><input id="accCodigo" placeholder="ej. 1.1.01" style="width:100%" /></div>'
+      + '      <div style="flex:2;min-width:180px"><label>Nombre</label><input id="accNombre" placeholder="ej. Caja Chica" style="width:100%" /></div>'
+      + '      <div style="flex:1.5;min-width:140px"><label>Tipo</label>'
+      + '        <select id="accTipo" style="width:100%">'
+      + '          <option value="activo">Activo</option>'
+      + '          <option value="pasivo">Pasivo</option>'
+      + '          <option value="patrimonio">Patrimonio</option>'
+      + '          <option value="resultado_ganancia">Resultado Ganancia</option>'
+      + '          <option value="resultado_perdida">Resultado Pérdida</option>'
+      + '        </select>'
+      + '      </div>'
+      + '      <div style="display:flex;align-items:center;height:38px">'
+      + '        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;margin-bottom:0">'
+      + '          <input type="checkbox" id="accImputable" checked />'
+      + '          <span>Imputable</span>'
+      + '        </label>'
+      + '      </div>'
+      + '      <button id="accAgregarBtn" class="btn-gold" style="height:38px">Agregar</button>'
+      + '    </div>'
+      + '    <p id="accFormMsg" class="err hidden" style="margin-top:8px;margin-bottom:0"></p>'
+      + '  </div>'
+      + '  <div class="card" style="margin-top:0">'
+      + '    <h3 style="color:var(--gold);margin-top:0;margin-bottom:12px">Plan de Cuentas</h3>'
+      + '    <div id="cuentasTablaContenedor" class="scroll"></div>'
+      + '  </div>'
+      + '</div>';
+
+    // Hook add action
+    $('accAgregarBtn').onclick = async function () {
+      var codigo = $('accCodigo').value.trim();
+      var nombre = $('accNombre').value.trim();
+      var tipo = $('accTipo').value;
+      var imputable = $('accImputable').checked;
+      
+      if (!codigo || !nombre) {
+        $('accFormMsg').textContent = 'Código y Nombre son requeridos.';
+        $('accFormMsg').classList.remove('hidden');
+        return;
+      }
+      $('accFormMsg').classList.add('hidden');
+      $('accAgregarBtn').disabled = true;
+      try {
+        var res = await apiFetch('/cuentas', {
+          method: 'POST',
+          body: JSON.stringify({ codigo: codigo, nombre: nombre, tipo: tipo, imputable: imputable })
+        });
+        if (!res.ok) {
+          var errData = await res.json();
+          throw new Error(errData.error || 'error');
+        }
+        $('accCodigo').value = '';
+        $('accNombre').value = '';
+        _cuentasCache = null; // Invalidate cache
+        loadCuentasTabla();
+      } catch (e) {
+        $('accFormMsg').textContent = 'Error al agregar la cuenta: ' + e.message;
+        $('accFormMsg').classList.remove('hidden');
+      } finally {
+        $('accAgregarBtn').disabled = false;
+      }
+    };
+
+    // Load accounts table
+    loadCuentasTabla();
+  }
+
+  async function loadCuentasTabla() {
+    var container = $('cuentasTablaContenedor');
+    if (!container) return;
+    container.innerHTML = '<p class="muted" style="padding:16px">Cargando cuentas…</p>';
+    _cuentasCache = null; // force reload
+    try {
+      var cuentas = await getCuentas();
+      container.innerHTML = PanelLib.cuentasTableHtml(cuentas);
+      wireCuentaActions(cuentas);
+    } catch (e) {
+      container.innerHTML = '<p class="err" style="padding:16px">Error al cargar cuentas.</p>';
+    }
+  }
+
+  function wireCuentaActions(cuentas) {
+    var cont = $('cuentasTablaContenedor');
+    if (!cont) return;
+    cont.querySelectorAll('.cta-edit').forEach(function (btn) {
+      btn.onclick = function () {
+        var id = btn.getAttribute('data-id');
+        var c = cuentas.filter(function (x) { return String(x.id) === id; })[0];
+        if (!c) return;
+        editingCuentaId = c.id;
+        $('ecCodigo').value = c.codigo || '';
+        $('ecNombre').value = c.nombre || '';
+        $('ecTipo').value = c.tipo || 'activo';
+        $('ecImputable').checked = !!c.imputable;
+        $('ecActivo').checked = !!c.activo;
+        $('ecErr').classList.add('hidden');
+        $('editarCuentaModal').classList.remove('hidden');
+      };
+    });
+
+    cont.querySelectorAll('.cta-del').forEach(function (btn) {
+      btn.onclick = async function () {
+        var id = btn.getAttribute('data-id');
+        if (!confirm('¿Desactivar esta cuenta? Las transacciones que la usen seguirán existiendo, pero no estará disponible para nuevos asientos.')) return;
+        btn.disabled = true;
+        try {
+          var res = await apiFetch('/cuentas/' + id, { method: 'DELETE' });
+          if (!res.ok) throw new Error('fail');
+          _cuentasCache = null; // Invalidate cache
+          loadCuentasTabla();
+        } catch (e) {
+          btn.disabled = false;
+          alert('No se pudo desactivar la cuenta.');
+        }
+      };
+    });
+  }
+
+  // Hook Edit Modal buttons
+  $('editCuentaClose').onclick = $('ecCancel').onclick = function () {
+    $('editarCuentaModal').classList.add('hidden');
+  };
+  $('editarCuentaModal').onclick = function (ev) {
+    if (ev.target === $('editarCuentaModal')) $('editarCuentaModal').classList.add('hidden');
+  };
+  $('ecSave').onclick = async function () {
+    if (!editingCuentaId) return;
+    var codigo = $('ecCodigo').value.trim();
+    var nombre = $('ecNombre').value.trim();
+    var tipo = $('ecTipo').value;
+    var imputable = $('ecImputable').checked;
+    var activo = $('ecActivo').checked;
+
+    if (!codigo || !nombre) {
+      $('ecErr').textContent = 'Código y Nombre son requeridos.';
+      $('ecErr').classList.remove('hidden');
+      return;
+    }
+    $('ecErr').classList.add('hidden');
+    $('ecSave').disabled = true;
+    try {
+      var res = await apiFetch('/cuentas/' + editingCuentaId, {
+        method: 'PATCH',
+        body: JSON.stringify({ codigo: codigo, nombre: nombre, tipo: tipo, imputable: imputable, activo: activo })
+      });
+      if (!res.ok) throw new Error('fail');
+      $('editarCuentaModal').classList.add('hidden');
+      _cuentasCache = null; // Invalidate cache
+      loadCuentasTabla();
+    } catch (e) {
+      $('ecErr').textContent = 'Error al actualizar la cuenta.';
+      $('ecErr').classList.remove('hidden');
+    } finally {
+      $('ecSave').disabled = false;
+    }
+  };
+
   async function loadContabilidad() {
     $('cContenido').innerHTML = '<p class="muted" style="padding:8px">Cargando…</p>';
-    $('cExcelBtn').classList.toggle('hidden', libroActual === 'varas' || libroActual === 'conciliacion' || libroActual === 'iva' || libroActual === 'manual');
+    $('cExcelBtn').classList.toggle('hidden', libroActual === 'varas' || libroActual === 'conciliacion' || libroActual === 'iva' || libroActual === 'manual' || libroActual === 'cuentas');
     var p = '?periodo=' + encodeURIComponent(cPeriodoVal());
     try {
       var res, data;
@@ -858,6 +1517,9 @@
         res = await apiFetch('/contabilidad/conciliacion?tipo=sii');
         data = await res.json();
         $('cContenido').innerHTML = PanelLib.ivaResumenHtml(data && data.conciliacion === null ? null : data);
+      } else if (libroActual === 'cuentas') {
+        loadCuentasCRUD();
+        return;
       } else {
         res = await apiFetch('/contabilidad/flujo' + p);
         data = await res.json();

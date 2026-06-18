@@ -107,4 +107,58 @@ async function getCuentaGastoId(db, companyId, codigoSii) {
   return getCuentaId(db, companyId, 'gasto_generico');
 }
 
-module.exports = { PLAN_BASE, CLAVES, cuentaPorClave, ensureCuentasTable, sembrarCuentas, listCuentas, getCuentaId, getCuentaGastoId };
+async function createCuenta(db, companyId, { codigo, nombre, tipo, imputable }) {
+  await ensureCuentasTable(db);
+  const r = await db.query(
+    'INSERT INTO cuentas (company_id, codigo, nombre, tipo, imputable) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+    [companyId, codigo, nombre, tipo, imputable !== false]
+  );
+  return r.rows[0];
+}
+
+async function updateCuenta(db, companyId, id, patch) {
+  await ensureCuentasTable(db);
+  const cols = [];
+  const vals = [];
+  let idx = 2; // $1 is reserved for ID
+
+  const fields = ['codigo', 'nombre', 'tipo', 'imputable', 'activo'];
+  for (const f of fields) {
+    if (patch[f] !== undefined) {
+      cols.push(`${f}=$${idx++}`);
+      vals.push(patch[f]);
+    }
+  }
+
+  if (!cols.length) {
+    const res = await db.query('SELECT * FROM cuentas WHERE id=$1 AND company_id=$2', [id, companyId]);
+    return res.rows[0] || null;
+  }
+
+  const sql = `UPDATE cuentas SET ${cols.join(', ')} WHERE id=$1 AND company_id=$2 RETURNING *`;
+  const res = await db.query(sql, [id, ...vals]);
+  return res.rows[0] || null;
+}
+
+async function deactivateCuenta(db, companyId, id) {
+  await ensureCuentasTable(db);
+  const r = await db.query(
+    "UPDATE cuentas SET activo=false WHERE id=$1 AND company_id=$2 RETURNING *",
+    [id, companyId]
+  );
+  return r.rows[0] || null;
+}
+
+module.exports = {
+  PLAN_BASE,
+  CLAVES,
+  cuentaPorClave,
+  ensureCuentasTable,
+  sembrarCuentas,
+  listCuentas,
+  getCuentaId,
+  getCuentaGastoId,
+  createCuenta,
+  updateCuenta,
+  deactivateCuenta
+};
