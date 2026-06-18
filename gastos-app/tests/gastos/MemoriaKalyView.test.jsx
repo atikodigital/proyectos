@@ -14,7 +14,7 @@ beforeEach(() => {
 test('lista las memorias y agrega una nueva', async () => {
   render(<MemoriaKalyView />);
   await screen.findByText(/Cierra domingos/i);
-  fireEvent.change(screen.getByPlaceholderText(/Qué quieres que KALY recuerde/i), { target: { value: 'Nuevo dato' } });
-  fireEvent.click(screen.getByText(/Agregar/i));
+  fireEvent.change(screen.getByPlaceholderText(/Aceptamos transferencias/i), { target: { value: 'Nuevo dato' } });
+  fireEvent.click(screen.getByText(/Guardar Hecho/i));
   await waitFor(() => expect(api.kalyRecordar).toHaveBeenCalledWith(expect.objectContaining({ contenido: 'Nuevo dato' })));
 });
