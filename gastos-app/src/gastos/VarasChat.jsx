@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { api } from './api';
+import VarasVoice from './varas/VarasVoice.jsx';
 
 const ORO = '#C9A24B';
 const BIENVENIDA = 'Soy VARAS, tu controlador financiero. Pregúntame por tus saldos, deudas, flujo o consumo de insumos.';
@@ -54,6 +55,9 @@ export default function VarasChat() {
 
   return (
     <div className="h-full flex flex-col">
+      <div className="shrink-0 border-b pb-1">
+        <VarasVoice />
+      </div>
       <div className="flex-1 min-h-0 overflow-y-auto p-3 grid gap-2 content-start">
         {mensajes.map((m, i) => (
           <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>

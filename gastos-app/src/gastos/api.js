@@ -64,6 +64,7 @@ export const api = {
   // VARAS — chat conversacional
   varasChat(messages) { return req('/api/app/varas/chat', { method: 'POST', body: { messages } }); },
   varasAccion(tipo, args) { return req('/api/app/varas/accion', { method: 'POST', body: { tipo, args } }); },
+  varasTool(name, args) { return req('/api/app/varas/tool', { method: 'POST', body: { name, args } }); },
 
   // VARAS — asientos manuales
   listCuentasApp() { return req('/api/app/cuentas'); },
