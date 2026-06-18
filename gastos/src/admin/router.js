@@ -43,6 +43,19 @@ function createAdminRouter({ db } = {}) {
     return res.status(201).json(await adminRepo.crearLogin(db, req.params.id, b.usuario, b.password, b.nombre));
   });
 
+  router.patch('/clientes/:id/productos', async (req, res) => {
+    const r = await adminRepo.setProductos(db, req.params.id, req.body || {});
+    if (!r) return res.status(404).json({ error: 'no_existe' });
+    return res.json(r);
+  });
+
+  router.get('/clientes/:id', async (req, res) => {
+    const d = new Date();
+    const f = await adminRepo.getFichaCliente(db, req.params.id, d.getFullYear(), d.getMonth() + 1);
+    if (!f) return res.status(404).json({ error: 'no_existe' });
+    return res.json(f);
+  });
+
   return router;
 }
 
