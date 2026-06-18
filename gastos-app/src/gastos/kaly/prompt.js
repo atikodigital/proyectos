@@ -15,6 +15,12 @@ function bloqueMemorias(memorias) {
   return '\n## Lo que sé de este negocio\n' + arr.map((m) => `- ${m.contenido}`).join('\n') + '\n';
 }
 
+function bloqueSenales(senales) {
+  const arr = (Array.isArray(senales) ? senales : []).filter(Boolean);
+  if (!arr.length) return '';
+  return '\n## Saludo proactivo\nAl saludar, abre mencionando de forma breve y natural SOLO esto (una sola cosa, en tu tono, sin agobiar): "' + arr[0] + '". Luego ofrece ayuda.\n';
+}
+
 function fmt(n) {
   if (n == null) return '$0';
   return '$' + Number(n).toLocaleString('es-CL');
@@ -28,6 +34,7 @@ export function buildSystemPrompt(context = {}) {
     resumen = {},
     memorias = [],
     persona = {},
+    senales = [],
   } = context;
 
   const pb = personaBase(persona);
@@ -137,7 +144,7 @@ Reglas:
 - Usa la herramienta \`recordar\` cuando el dueño te diga un dato del negocio que valga la pena recordar (horarios, preferencias, datos suyos) o te pida recordarlo; confírmalo en una frase.
 ${bloqueMemorias(memorias)}
 ${resumenBloque}
-
+${bloqueSenales(senales)}
 # Reglas de Cierre y Confirmación (OBLIGATORIA)
 - Si el usuario dice "no", "nada", "gracias" o similar, despídete cordialmente en una sola frase y finaliza la conversación inmediatamente.
 - NUNCA ejecutes las herramientas marcar_pagada, anular_movimiento ni enviar_resumen_whatsapp sin que el usuario haya dado una confirmación verbal EXPLÍCITA en el turno INMEDIATAMENTE anterior.
@@ -161,6 +168,10 @@ export function instruccionInicial(context = {}, motivo = 'manual') {
     return 'Realiza el onboarding completo ahora. Saluda, preséntate ("Soy Kaly, tu asistente contable...") y pregunta SOLO el nombre: "¿Cuál es su nombre?". Deduce el trato del género del nombre y llama a guardar_preferencias con nombre y trato.';
   }
   if (motivo === 'saludo') {
+    const senal = Array.isArray(context.senales) && context.senales[0];
+    if (senal) {
+      return `Enciende el micrófono y saluda breve: 'Hola, ${saludo}${nombreLabel}'. Menciona enseguida, en tu tono y sin agobiar: '${senal}'. Luego ofrece ayuda con algo como '¿En qué trabajamos hoy?'.`;
+    }
     return `Enciende el micrófono y di exactamente: 'Hola, ${saludo}${nombreLabel}, ¿en qué trabajaremos hoy?' o '¿Necesita ayuda?'`;
   }
   if (motivo === 'inactividad') {
