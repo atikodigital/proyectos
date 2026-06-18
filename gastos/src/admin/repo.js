@@ -16,6 +16,7 @@ async function ensureProductos(db) {
   await db.query("ALTER TABLE companies ADD COLUMN IF NOT EXISTS canales jsonb DEFAULT '[]';");
   await db.query("ALTER TABLE companies ADD COLUMN IF NOT EXISTS burbuja_activa boolean DEFAULT false;");
   await db.query("ALTER TABLE companies ADD COLUMN IF NOT EXISTS burbuja_apps jsonb DEFAULT '[]';");
+  await db.query("ALTER TABLE companies ADD COLUMN IF NOT EXISTS owner_email text;");
   _prodReady.add(db);
 }
 
@@ -87,8 +88,15 @@ async function crearCliente(db, d) {
     nombre: d.nombreEmpresa,
     rut: d.rut || undefined,
     owner_nombre: d.nombreContacto || undefined,
+    owner_whatsapp: d.owner_whatsapp || undefined,
   });
   if (d.plan) await setCompanyPlan(db, empresa.id, d.plan);
+  if (d.owner_email !== undefined) {
+    await ensureProductos(db);
+    const email = String(d.owner_email || '').trim() || null;
+    await db.query('UPDATE companies SET owner_email=$2 WHERE id=$1', [empresa.id, email]);
+    empresa.owner_email = email;
+  }
   if (d.productos !== undefined || d.canales !== undefined || d.burbuja_activa !== undefined || d.burbuja_apps !== undefined) {
     await setProductos(db, empresa.id, { productos: d.productos, canales: d.canales, burbuja_activa: d.burbuja_activa, burbuja_apps: d.burbuja_apps });
   }
@@ -153,7 +161,7 @@ async function getFichaCliente(db, companyId, year, month) {
   await ensurePlan(db);
   await ensureCompanyOnboarding(db);
   const cr = await db.query(
-    'SELECT id, nombre, rut, giro, owner_nombre, owner_whatsapp, wa_phone_number_id, onboarded_at, created_at, plan, productos, canales, burbuja_activa, burbuja_apps FROM companies WHERE id=$1',
+    'SELECT id, nombre, rut, giro, owner_nombre, owner_whatsapp, owner_email, wa_phone_number_id, onboarded_at, created_at, plan, productos, canales, burbuja_activa, burbuja_apps FROM companies WHERE id=$1',
     [companyId]
   );
   const empresa = cr.rows[0];

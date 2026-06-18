@@ -9,6 +9,11 @@ test('el admin tiene UI de productos, canales, burbuja y ficha', () => {
   expect(html).toContain('id="burbuja_activa"');
   expect(html).toContain('id="fichaModal"');
   expect(html).toContain('/productos');
+  // teléfono y email de contacto en el alta de cliente
+  expect(html).toContain('id="nc_telefono"');
+  expect(html).toContain('id="nc_email"');
+  expect(html).toContain('owner_whatsapp');
+  expect(html).toContain('owner_email');
 });
 
 test('editar productos de un cliente existente está cableado (no es código muerto)', () => {

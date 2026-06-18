@@ -76,6 +76,8 @@
       <div class="row">
         <div><label>Empresa</label><input id="nc_empresa" placeholder="Pastelería Dulce" /></div>
         <div><label>RUT (opcional)</label><input id="nc_rut" placeholder="76.111.111-1" /></div>
+        <div><label>Teléfono contacto</label><input id="nc_telefono" placeholder="+56 9 1234 5678" /></div>
+        <div><label>Email contacto</label><input id="nc_email" type="email" autocapitalize="none" placeholder="contacto@empresa.cl" /></div>
         <div><label>Plan</label>
           <select id="nc_plan">
             <option value="free">free</option>
@@ -273,6 +275,7 @@ $('nc_btn').onclick = async () => {
   try {
     await api('/clientes', { method: 'POST', body: JSON.stringify({
       nombreEmpresa: empresa, rut: $('nc_rut').value.trim() || undefined, plan: $('nc_plan').value,
+      owner_whatsapp: $('nc_telefono').value.trim() || undefined, owner_email: $('nc_email').value.trim() || undefined,
       usuario: $('nc_usuario').value.trim() || undefined, password: $('nc_password').value || undefined,
       productos: selChecked('#nc_productos input'),
       canales: selChecked('#nc_canales input'),
@@ -280,7 +283,7 @@ $('nc_btn').onclick = async () => {
       burbuja_apps: $('burbuja_apps').value.split(',').map(s => s.trim()).filter(Boolean),
     }) });
     $('nc_msg').textContent = '✓ Cliente "' + empresa + '" creado';
-    ['nc_empresa', 'nc_rut', 'nc_usuario', 'nc_password', 'burbuja_apps'].forEach(id => $(id).value = '');
+    ['nc_empresa', 'nc_rut', 'nc_telefono', 'nc_email', 'nc_usuario', 'nc_password', 'burbuja_apps'].forEach(id => $(id).value = '');
     document.querySelectorAll('#nc_productos input, #nc_canales input').forEach(c => c.checked = false);
     $('burbuja_activa').checked = false;
     $('nc_plan').value = 'pyme';
@@ -349,7 +352,8 @@ async function abrirFicha(id) {
     const chk = (kind, val, arr) => '<label><input type="checkbox" data-' + kind + '="' + esc(val) + '"' + ((arr || []).includes(val) ? ' checked' : '') + '> ' + esc(val) + '</label>';
     $('fichaBody').innerHTML =
       '<div class="card"><h3>Empresa</h3>' + esc(e.nombre) + ' · ' + esc(e.rut || '—') + ' · ' + esc(e.giro || '—') +
-      '<br>WhatsApp dueño: ' + esc(e.owner_whatsapp || '—') + '<br>Plan: ' + esc(e.plan) + '</div>' +
+      '<br>Teléfono: ' + esc(e.owner_whatsapp || '—') + ' · Email: ' + esc(e.owner_email || '—') +
+      '<br>Plan: ' + esc(e.plan) + '</div>' +
       '<div class="card"><h3>Empleados</h3>' + emp + '</div>' +
       '<div class="card"><h3>Resumen del mes</h3>Ingresos ' + fmtCLP(resu.ingresos) + ' · Gastos ' + fmtCLP(resu.gastos) + ' · Saldo ' + fmtCLP(resu.saldo) + ' · Conciliación ' + con + '</div>' +
       '<div class="card"><h3>Movimientos recientes</h3>' + movs + '</div>' +

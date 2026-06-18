@@ -33,3 +33,11 @@ test('getFichaCliente devuelve null si la empresa no existe', async () => {
   const f = await repo.getFichaCliente(db, '00000000-0000-0000-0000-000000000000', 2026, 6);
   expect(f).toBeNull();
 });
+
+test('crearCliente guarda teléfono y email de contacto y salen en la ficha', async () => {
+  const { db } = await setup();
+  const r = await repo.crearCliente(db, { nombreEmpresa: 'Don Vito', owner_whatsapp: '+56 9 1234 5678', owner_email: '  Contacto@DonVito.cl  ' });
+  const f = await repo.getFichaCliente(db, r.empresa.id, 2026, 6);
+  expect(f.empresa.owner_whatsapp).toBe('+56 9 1234 5678');
+  expect(f.empresa.owner_email).toBe('Contacto@DonVito.cl');
+});
