@@ -43,6 +43,13 @@ function createAdminRouter({ db } = {}) {
     return res.status(201).json(await adminRepo.crearLogin(db, req.params.id, b.usuario, b.password, b.nombre));
   });
 
+  router.patch('/clientes/:id/kaly-persona', async (req, res) => {
+    const { setKalyPersona } = require('../companies/repo');
+    const r = await setKalyPersona(db, req.params.id, req.body || {});
+    if (!r) return res.status(404).json({ error: 'no_existe' });
+    return res.json({ ok: true, kaly_persona: r.kaly_persona });
+  });
+
   return router;
 }
 

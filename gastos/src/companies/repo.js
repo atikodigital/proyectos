@@ -116,10 +116,24 @@ async function ensureCompanyOnboarding(db) {
 async function getCompanyProfile(db, companyId) {
   await ensureCompanyOnboarding(db);
   const r = await db.query(
-    'SELECT id, nombre, rut, giro, owner_nombre, owner_whatsapp, onboarded_at, created_at FROM companies WHERE id=$1',
+    'SELECT id, nombre, rut, giro, owner_nombre, owner_whatsapp, onboarded_at, created_at, kaly_persona FROM companies WHERE id=$1',
     [companyId]
   );
-  return r.rows[0] || null;
+  if (!r.rows[0]) return null;
+  const row = r.rows[0];
+  if (typeof row.kaly_persona === 'string') {
+    try { row.kaly_persona = JSON.parse(row.kaly_persona); } catch (e) { row.kaly_persona = null; }
+  }
+  return row;
+}
+
+async function setKalyPersona(db, companyId, persona) {
+  const p = {};
+  const nombre = String((persona && persona.nombre) || '').slice(0, 40); if (nombre) p.nombre = nombre;
+  const tono = String((persona && persona.tono) || '').slice(0, 40); if (tono) p.tono = tono;
+  const instrucciones = String((persona && persona.instrucciones) || '').slice(0, 500); if (instrucciones) p.instrucciones = instrucciones;
+  await db.query('UPDATE companies SET kaly_persona=$2 WHERE id=$1', [companyId, JSON.stringify(p)]);
+  return getCompanyProfile(db, companyId);
 }
 
 async function setOnboarded(db, companyId) {
@@ -132,5 +146,5 @@ module.exports = {
   createCompany, createEmployee, getCompanyByPhoneNumberId, getEmployeeByPhone, getEmployeeByUsuario,
   listEmployees, updateEmployee, deactivateEmployee, getCompany, updateCompany, getCompanyWa,
   getAgentPrefs, setAgentPrefs, getGiro, setGiro,
-  getCompanyProfile, setOnboarded, ensureCompanyOnboarding,
+  getCompanyProfile, setOnboarded, ensureCompanyOnboarding, setKalyPersona,
 };
