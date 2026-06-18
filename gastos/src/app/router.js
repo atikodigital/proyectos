@@ -253,6 +253,10 @@ function createAppRouter({ db, extractExpense, createLiveToken, sendText, extrac
     return res.json(await chatRepo.listMensajes(db, req.auth.companyId, req.query.channel, req.query.contact));
   });
 
+  router.get('/agent/prefs', async (req, res) => {
+    return res.json(await getAgentPrefs(db, req.auth.employeeId));
+  });
+
   router.patch('/agent/prefs', async (req, res) => {
     const prefs = await setAgentPrefs(db, req.auth.employeeId, req.body || {});
     return res.json({ agent_prefs: prefs });
