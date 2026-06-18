@@ -26,6 +26,7 @@ const catalogRepo = require('../catalog/repo');
 const chatRepo = require('../chat/repo');
 const { registerCatalogRoutes } = require('../catalog/routes');
 const { extraerProductos: realExtraerProductos } = require('../catalog/extraer');
+const realAprender = require('../agent/aprender');
 const { aplicarContabilidad } = require('../contabilidad/contabilizar');
 const contaReportes = require('../contabilidad/reportes');
 const { REGIONES_COMUNAS } = require('../pedidos/comunas-chile');
@@ -37,13 +38,14 @@ const { ejecutarAccion } = require('../varas/acciones');
 const { TOOLS_READ } = require('../varas/tools');
 const memoryRepo = require('../agent/memory');
 
-function createAppRouter({ db, extractExpense, createLiveToken, sendText, extractCartola, componer, extraerProductos, extractLibroSii, varasGemini } = {}) {
+function createAppRouter({ db, extractExpense, createLiveToken, sendText, extractCartola, componer, extraerProductos, extractLibroSii, varasGemini, extraerHechos } = {}) {
   const _extract = extractExpense || realExtract.extractExpense;
   const _extractCartola = extractCartola || ((b64, mime) => require('../ocr/cartola').geminiExtractCartola(b64, mime));
   const _extractLibroSii = extractLibroSii || ((b64, mime) => require('../ocr/libro-sii').geminiExtractLibroSii(b64, mime));
   const _liveToken = createLiveToken || (() => require('../agent/token').createEphemeralToken({ apiKey: process.env.GEMINI_API_KEY }));
   const _sendText = sendText || require('../whatsapp/client').sendText;
   const _extraerProductos = extraerProductos || realExtraerProductos;
+  const _extraerHechos = extraerHechos || realAprender.extraerHechos;
   const _varasGemini = varasGemini || geminiChat;
   const router = express.Router();
 
@@ -282,6 +284,12 @@ function createAppRouter({ db, extractExpense, createLiveToken, sendText, extrac
     const r = await memoryRepo.borrarMemoria(db, req.auth.companyId, req.params.id);
     if (!r) return res.status(404).json({ error: 'no_existe' });
     return res.json({ ok: true });
+  });
+
+  router.post('/kaly/aprender', async (req, res) => {
+    const { transcripcion } = req.body || {};
+    const r = await realAprender.aprenderDeConversacion(db, req.auth.companyId, { transcripcion, extraer: _extraerHechos });
+    return res.json({ creados: r.creados });
   });
 
   router.post('/agent/resumen-whatsapp', async (req, res) => {
