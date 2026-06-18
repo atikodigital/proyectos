@@ -1,6 +1,11 @@
 import React, { useRef, useState } from 'react';
 import Orb from './Orb.jsx';
+import KalyOrb from './KalyOrb.jsx';
 import { buildSalesPrompt, KALY_VOICE } from './prompt.js';
+
+// Mapea el estado de la landing al de la esfera KALY de la app.
+const KALY_STATE = { idle: 'off', thinking: 'connecting', listening: 'listening', speaking: 'speaking', muted: 'listening', error: 'error' };
+void Orb;
 import { TOOL_DECLARATIONS, executeTool } from './tools.js';
 import { openLiveSession } from './live.js';
 
@@ -66,7 +71,7 @@ export default function Hero() {
       <h1 className="text-2xl md:text-4xl text-center text-[#cfeaf3] max-w-2xl mb-2">La IA que le lleva las <span className="text-hud-cyan">cuentas</span> y las <span className="text-hud-gold">ventas</span> a tu pyme</h1>
       <p className="text-sm md:text-base text-[#5ab8cc] text-center mb-6">Háblale a KALY. Te cuenta todo sobre Hash IA.</p>
 
-      <button onClick={iniciar} className="group" aria-label="Iniciar conversación con KALY"><Orb state={state} level={level} /></button>
+      <KalyOrb state={KALY_STATE[state] || 'off'} audioLevel={level} onTap={iniciar} />
       {state === 'idle' && !sessionRef.current && <p className="text-xs text-[#3a8a9a] mt-2">Toca el orbe para hablar con KALY</p>}
       {subtitulo && <p className="text-sm text-hud-cyan text-center max-w-xl mt-3 min-h-[1.5rem]">{subtitulo}</p>}
 

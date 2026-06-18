@@ -28,6 +28,7 @@ const { crearAsientoManual, anularAsientoManual } = require('../contabilidad/man
 const { responder } = require('../varas/chat');
 const { geminiChat } = require('../varas/gemini');
 const { ejecutarAccion } = require('../varas/acciones');
+const { TOOLS_READ } = require('../varas/tools');
 
 function parseFiltros(q = {}) {
   return {
@@ -250,6 +251,18 @@ function createPanelRouter({ db, sendText, varasGemini } = {}) {
   router.post('/varas/accion', async (req, res) => {
     const b = req.body || {};
     res.json(await ejecutarAccion(db, req.auth.companyId, b.tipo, b.args || {}, { sendText: _sendText }));
+  });
+  // Lectura server-side para la voz (Gemini Live): ejecuta una tool de lectura scoped por empresa.
+  router.post('/varas/tool', async (req, res) => {
+    const { name, args } = req.body || {};
+    const fn = TOOLS_READ[name];
+    if (!fn) return res.status(400).json({ error: 'tool_no_permitida' });
+    try {
+      const data = await fn(db, req.auth.companyId, args || {});
+      res.json({ data });
+    } catch (e) {
+      res.status(500).json({ error: 'fallo_tool' });
+    }
   });
 
   return router;
