@@ -5,6 +5,7 @@ import { api } from '../../src/gastos/api';
 jest.mock('../../src/gastos/api');
 // MatchView hace fetch/Capacitor; lo simplificamos para el test de ContabilidadView.
 jest.mock('../../src/gastos/MatchView.jsx', () => () => <div>MatchViewMock</div>);
+jest.mock('../../src/gastos/VarasChat.jsx', () => () => <div>VarasChatMock</div>);
 
 beforeEach(() => {
   api.contabilidadBalance = jest.fn().mockResolvedValue({ cuentas: [{ codigo: '1.1.10.2', nombre: 'Banco', deudor: 0, acreedor: 11900 }], totalDebe: 11900, totalHaber: 11900, cuadrado: true });
@@ -13,9 +14,15 @@ beforeEach(() => {
   api.contabilidadFlujo = jest.fn().mockResolvedValue({ entradas: 0, salidas: 11900, neto: -11900, movimientos: [] });
 });
 
-test('muestra el encabezado VARAS y arranca en Conciliación (MatchView)', () => {
+test('muestra el encabezado VARAS y arranca en la pestaña VARAS (chat)', () => {
   render(<ContabilidadView />);
-  expect(screen.getByText(/VARAS/i)).toBeInTheDocument();
+  expect(screen.getByText(/VARAS · Contabilidad/i)).toBeInTheDocument();
+  expect(screen.getByText('VarasChatMock')).toBeInTheDocument();
+});
+
+test('al tocar Conciliación muestra MatchView', () => {
+  render(<ContabilidadView />);
+  fireEvent.click(screen.getByRole('button', { name: /conciliación/i }));
   expect(screen.getByText('MatchViewMock')).toBeInTheDocument();
 });
 

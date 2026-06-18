@@ -2,12 +2,14 @@ import { useState, useEffect } from 'react';
 import { api } from './api';
 import MatchView from './MatchView.jsx';
 import AsientoManual from './AsientoManual.jsx';
+import VarasChat from './VarasChat.jsx';
 
 const ORO = '#C9A24B';
 function clp(n) { return '$' + (Math.round(Number(n) || 0)).toLocaleString('es-CL'); }
 function ymActual() { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); }
 
 const TABS = [
+  { id: 'varas', label: 'VARAS' },
   { id: 'concil', label: 'Conciliación' },
   { id: 'diario', label: 'Diario' },
   { id: 'mayor', label: 'Mayor' },
@@ -16,8 +18,8 @@ const TABS = [
   { id: 'manual', label: 'Manual' },
 ];
 
-export default function ContabilidadView() {
-  const [tab, setTab] = useState('concil');
+export default function ContabilidadView({ initialTab = 'varas' }) {
+  const [tab, setTab] = useState(initialTab);
   const [periodo, setPeriodo] = useState(ymActual());
   const [data, setData] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -26,7 +28,7 @@ export default function ContabilidadView() {
   function recargar() { setRefreshCount((n) => n + 1); }
 
   useEffect(() => {
-    if (tab === 'concil' || tab === 'manual') { setData(null); return; }
+    if (tab === 'varas' || tab === 'concil' || tab === 'manual') { setData(null); return; }
     let vivo = true;
     setBusy(true); setData(null);
     const fn = tab === 'diario' ? api.contabilidadDiario
@@ -42,7 +44,7 @@ export default function ContabilidadView() {
       <div className="px-4 pt-3 pb-1 shrink-0">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-black" style={{ color: ORO }}>VARAS · Contabilidad</h2>
-          {tab !== 'concil' ? (
+          {tab !== 'concil' && tab !== 'varas' ? (
             <input type="month" value={periodo} onChange={(e) => setPeriodo(e.target.value)} className="text-xs border rounded px-2 py-1" />
           ) : null}
         </div>
@@ -57,7 +59,8 @@ export default function ContabilidadView() {
         </div>
       </div>
       <div className="flex-1 min-h-0 overflow-y-auto">
-        {tab === 'concil' ? <MatchView />
+        {tab === 'varas' ? <VarasChat />
+          : tab === 'concil' ? <MatchView />
           : tab === 'manual' ? <AsientoManual onSaved={() => setTab('diario')} />
           : busy ? <div className="p-4 text-sm opacity-70">Cargando…</div>
           : !data || data.error ? <div className="p-4 text-sm opacity-70">No se pudo cargar el período.</div>

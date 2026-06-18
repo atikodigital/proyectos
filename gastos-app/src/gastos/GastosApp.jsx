@@ -129,7 +129,7 @@ export default function GastosApp() {
                    </div>
                  </div>
         ) : (
-          <ContabilidadView />
+          <ContabilidadView initialTab="concil" />
         )}
         </div>
       </main>
