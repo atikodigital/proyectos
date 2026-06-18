@@ -15,7 +15,11 @@ test('listPedidos devuelve los pedidos de la empresa, más nuevos primero', asyn
   const { db, cid } = await setup();
   await repo.createPedido(db, cid, { contact_name: 'Ana', items: [{ descripcion: 'Pizza', cantidad: 1, precio_unitario: 12000 }] });
   await repo.createPedido(db, cid, { contact_name: 'Beto', items: [{ descripcion: 'Pizza', cantidad: 2, precio_unitario: 12000 }] });
+  // created_at explícito para probar el orden de forma determinística (now() podría empatar)
+  await db.query("UPDATE pedidos SET created_at='2026-01-01' WHERE contact_name='Ana'");
+  await db.query("UPDATE pedidos SET created_at='2026-02-01' WHERE contact_name='Beto'");
   const out = await repo.listPedidos(db, cid, 10);
   expect(out).toHaveLength(2);
-  expect(out[0].contact_name).toBeTruthy();
+  expect(out[0].contact_name).toBe('Beto'); // más nuevo primero
+  expect(out[1].contact_name).toBe('Ana');
 });
