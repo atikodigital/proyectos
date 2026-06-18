@@ -1,6 +1,7 @@
 const { cashflowSummary } = require('../expenses/summary');
 const { getAgentPrefs, getCompany, getCompanyProfile } = require('../companies/repo');
 const { listMemorias } = require('./memory');
+const { construirSenales } = require('./senales');
 
 function saludoHora(now = new Date()) {
   // Hora de Chile continental
@@ -22,7 +23,8 @@ async function buildAgentContext(db, { companyId, employeeId, now = new Date() }
     "SELECT count(*)::int AS n FROM expenses WHERE company_id=$1 AND tipo='gasto' AND estado='confirmado' AND estado_pago='registrada'",
     [companyId]
   );
-  return {
+  const proactividad = prefs.proactividad !== false;
+  const ctx = {
     nombre: prefs.nombre || '',
     trato: prefs.trato || '',
     onboarded: Boolean(prefs.onboarded_at),
@@ -31,7 +33,10 @@ async function buildAgentContext(db, { companyId, employeeId, now = new Date() }
     resumen: { ...s, pendientesPago: pend.rows[0].n },
     memorias,
     persona: (profile && profile.kaly_persona) || {},
+    proactividad,
   };
+  ctx.senales = proactividad ? construirSenales(ctx) : [];
+  return ctx;
 }
 
 module.exports = { buildAgentContext, saludoHora };

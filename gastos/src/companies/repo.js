@@ -91,6 +91,7 @@ async function setAgentPrefs(db, employeeId, patch) {
   if (patch.nombre !== undefined) next.nombre = String(patch.nombre).slice(0, 60);
   if (patch.trato !== undefined) next.trato = String(patch.trato).slice(0, 20);
   if (patch.onboarded) next.onboarded_at = new Date().toISOString();
+  if (patch.proactividad !== undefined) next.proactividad = Boolean(patch.proactividad);
   const r = await db.query('UPDATE employees SET agent_prefs=$1 WHERE id=$2 RETURNING agent_prefs', [JSON.stringify(next), employeeId]);
   return r.rows[0] ? r.rows[0].agent_prefs : null;
 }
