@@ -1,5 +1,9 @@
 // Admin de Hash IA (Atiko/agencia): gestiona los clientes (empresas), sus logins y planes.
-const { createCompany, createEmployee } = require('../companies/repo');
+const { createCompany, createEmployee, listEmployees, ensureCompanyOnboarding } = require('../companies/repo');
+const { listExpenses } = require('../expenses/query');
+const { cashflowSummary } = require('../expenses/summary');
+const matchRepo = require('../match/repo');
+const pedidosRepo = require('../pedidos/repo');
 const { hashPassword } = require('../auth/password');
 
 const PRODUCTOS = ['hashia', 'crm', 'chat', 'pedidos'];
@@ -144,4 +148,30 @@ async function listClientesConStats(db, year, month) {
   return out;
 }
 
-module.exports = { ensurePlan, crearCliente, crearLogin, setCompanyPlan, movimientosDelMes, listClientesConStats, ensureProductos, getProductos, setProductos, PRODUCTOS, CANALES };
+async function getFichaCliente(db, companyId, year, month) {
+  await ensureProductos(db);
+  await ensurePlan(db);
+  await ensureCompanyOnboarding(db);
+  const cr = await db.query(
+    'SELECT id, nombre, rut, giro, owner_nombre, owner_whatsapp, wa_phone_number_id, onboarded_at, created_at, plan, productos, canales, burbuja_activa, burbuja_apps FROM companies WHERE id=$1',
+    [companyId]
+  );
+  const empresa = cr.rows[0];
+  if (!empresa) return null;
+  empresa.productos = empresa.productos || [];
+  empresa.canales = empresa.canales || [];
+  empresa.burbuja_apps = empresa.burbuja_apps || [];
+  const empleados = await listEmployees(db, companyId);
+  const movsAll = await listExpenses(db, companyId, {});
+  const movimientos = movsAll.slice(0, 20).map((e) => ({
+    id: e.id, tipo: e.tipo, proveedor: e.proveedor, total: Number(e.total) || 0,
+    fecha: e.fecha, estado: e.estado, estado_pago: e.estado_pago,
+  }));
+  const resumen = await cashflowSummary(db, companyId, { year, month });
+  const u = await matchRepo.getUltima(db, companyId, 'bancaria');
+  const conciliacion = u ? { cuadrado: u.cuadrado, sca: Number(u.sca), sba: Number(u.sba) } : null;
+  const pedidos = empresa.productos.includes('pedidos') ? await pedidosRepo.listPedidos(db, companyId, 10) : null;
+  return { empresa, empleados, movimientos, resumen, conciliacion, pedidos };
+}
+
+module.exports = { ensurePlan, crearCliente, crearLogin, setCompanyPlan, movimientosDelMes, listClientesConStats, ensureProductos, getProductos, setProductos, PRODUCTOS, CANALES, getFichaCliente };
