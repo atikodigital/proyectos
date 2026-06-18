@@ -162,8 +162,8 @@ async function getFichaCliente(db, companyId, year, month) {
   empresa.canales = empresa.canales || [];
   empresa.burbuja_apps = empresa.burbuja_apps || [];
   const empleados = await listEmployees(db, companyId);
-  const movsAll = await listExpenses(db, companyId, {});
-  const movimientos = movsAll.slice(0, 20).map((e) => ({
+  const movsAll = await listExpenses(db, companyId, { limit: 20 });
+  const movimientos = movsAll.map((e) => ({
     id: e.id, tipo: e.tipo, proveedor: e.proveedor, total: Number(e.total) || 0,
     fecha: e.fecha, estado: e.estado, estado_pago: e.estado_pago,
   }));

@@ -32,6 +32,7 @@ test('PATCH /clientes/:id/productos requiere admin y aplica cambios', async () =
 test('GET /clientes/:id devuelve la ficha; 404 si no existe', async () => {
   const { app, t } = await makeApp();
   const c = await request(app).post('/api/admin/clientes').set('Authorization', `Bearer ${t}`).send({ nombreEmpresa: 'Pizza X' });
+  await request(app).get(`/api/admin/clientes/${c.body.empresa.id}`).expect(401); // sin token de admin
   const ok = await request(app).get(`/api/admin/clientes/${c.body.empresa.id}`).set('Authorization', `Bearer ${t}`);
   expect(ok.status).toBe(200);
   expect(ok.body.empresa.nombre).toBe('Pizza X');

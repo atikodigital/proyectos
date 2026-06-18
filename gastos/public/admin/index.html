@@ -258,6 +258,7 @@ $('nc_btn').onclick = async () => {
     ['nc_empresa', 'nc_rut', 'nc_usuario', 'nc_password', 'burbuja_apps'].forEach(id => $(id).value = '');
     document.querySelectorAll('#nc_productos input, #nc_canales input').forEach(c => c.checked = false);
     $('burbuja_activa').checked = false;
+    $('nc_plan').value = 'pyme';
     cargar();
   } catch (e) { $('nc_msg').className = 'err'; $('nc_msg').textContent = 'Error: ' + e.message; }
 };
@@ -295,7 +296,7 @@ async function abrirFicha(id) {
     const ped = f.pedidos ? (f.pedidos.length + ' pedidos') : 'sin módulo';
     const con = f.conciliacion ? (f.conciliacion.cuadrado ? 'cuadrada' : 'descuadrada') : 'sin conciliación';
     const resu = f.resumen || {};
-    const chk = (kind, val, arr) => '<label><input type="checkbox" data-' + kind + '="' + val + '"' + ((arr || []).includes(val) ? ' checked' : '') + '> ' + val + '</label>';
+    const chk = (kind, val, arr) => '<label><input type="checkbox" data-' + kind + '="' + esc(val) + '"' + ((arr || []).includes(val) ? ' checked' : '') + '> ' + esc(val) + '</label>';
     $('fichaBody').innerHTML =
       '<div class="card"><h3>Empresa</h3>' + esc(e.nombre) + ' · ' + esc(e.rut || '—') + ' · ' + esc(e.giro || '—') +
       '<br>WhatsApp dueño: ' + esc(e.owner_whatsapp || '—') + '<br>Plan: ' + esc(e.plan) + '</div>' +
