@@ -30,12 +30,14 @@ async function listExpenses(db, companyId, filtros = {}) {
   if (filtros.proveedor) add('e.proveedor ILIKE ?', `%${filtros.proveedor}%`);
   if (!filtros.estado) where.push("e.estado <> 'anulado'");
 
+  const lim = (Number.isInteger(filtros.limit) && filtros.limit > 0) ? filtros.limit : 1000;
+  vals.push(lim);
   const r = await db.query(
     `SELECT e.*, emp.nombre AS empleado_nombre
      FROM expenses e
      LEFT JOIN employees emp ON emp.id = e.employee_id
      WHERE ${where.join(' AND ')}
-     ORDER BY e.fecha DESC, e.created_at DESC LIMIT 1000`,
+     ORDER BY e.fecha DESC, e.created_at DESC LIMIT $${vals.length}`,
     vals
   );
   return r.rows;

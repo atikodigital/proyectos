@@ -1,6 +1,65 @@
 // Admin de Hash IA (Atiko/agencia): gestiona los clientes (empresas), sus logins y planes.
-const { createCompany, createEmployee } = require('../companies/repo');
+const { createCompany, createEmployee, listEmployees, ensureCompanyOnboarding } = require('../companies/repo');
+const { listExpenses } = require('../expenses/query');
+const { cashflowSummary } = require('../expenses/summary');
+const matchRepo = require('../match/repo');
+const pedidosRepo = require('../pedidos/repo');
 const { hashPassword } = require('../auth/password');
+
+const PRODUCTOS = ['hashia', 'crm', 'chat', 'pedidos'];
+const CANALES = ['whatsapp', 'messenger', 'instagram', 'email', 'telegram', 'web', 'voz'];
+const _prodReady = new WeakSet();
+
+async function ensureProductos(db) {
+  if (_prodReady.has(db)) return;
+  await db.query("ALTER TABLE companies ADD COLUMN IF NOT EXISTS productos jsonb DEFAULT '[]';");
+  await db.query("ALTER TABLE companies ADD COLUMN IF NOT EXISTS canales jsonb DEFAULT '[]';");
+  await db.query("ALTER TABLE companies ADD COLUMN IF NOT EXISTS burbuja_activa boolean DEFAULT false;");
+  await db.query("ALTER TABLE companies ADD COLUMN IF NOT EXISTS burbuja_apps jsonb DEFAULT '[]';");
+  _prodReady.add(db);
+}
+
+// Normaliza un array a strings minúscula/trim/sin duplicados. Si se pasa `permitidos`,
+// además descarta las claves fuera de ese catálogo. Si no, acepta texto libre no vacío.
+function _normalizeArr(arr, permitidos = null) {
+  const out = [];
+  for (const v of (Array.isArray(arr) ? arr : [])) {
+    const k = String(v || '').trim().toLowerCase();
+    if (k && (!permitidos || permitidos.includes(k)) && !out.includes(k)) out.push(k);
+  }
+  return out;
+}
+
+async function getProductos(db, companyId) {
+  await ensureProductos(db);
+  const r = await db.query('SELECT id, productos, canales, burbuja_activa, burbuja_apps FROM companies WHERE id=$1', [companyId]);
+  return r.rows[0] || null;
+}
+
+async function setProductos(db, companyId, patch = {}) {
+  await ensureProductos(db);
+  const sets = [];
+  const vals = [companyId];
+  if (patch.productos !== undefined) {
+    vals.push(JSON.stringify(_normalizeArr(patch.productos, PRODUCTOS)));
+    sets.push(`productos=$${vals.length}::jsonb`);
+  }
+  if (patch.canales !== undefined) {
+    vals.push(JSON.stringify(_normalizeArr(patch.canales, CANALES)));
+    sets.push(`canales=$${vals.length}::jsonb`);
+  }
+  if (patch.burbuja_activa !== undefined) {
+    vals.push(!!patch.burbuja_activa);
+    sets.push(`burbuja_activa=$${vals.length}`);
+  }
+  if (patch.burbuja_apps !== undefined) {
+    vals.push(JSON.stringify(_normalizeArr(patch.burbuja_apps)));
+    sets.push(`burbuja_apps=$${vals.length}::jsonb`);
+  }
+  if (!sets.length) return getProductos(db, companyId);
+  const r = await db.query(`UPDATE companies SET ${sets.join(', ')} WHERE id=$1 RETURNING id, productos, canales, burbuja_activa, burbuja_apps`, vals);
+  return r.rows[0] || null;
+}
 
 const _ready = new WeakSet();
 async function ensurePlan(db) {
@@ -30,6 +89,9 @@ async function crearCliente(db, d) {
     owner_nombre: d.nombreContacto || undefined,
   });
   if (d.plan) await setCompanyPlan(db, empresa.id, d.plan);
+  if (d.productos !== undefined || d.canales !== undefined || d.burbuja_activa !== undefined || d.burbuja_apps !== undefined) {
+    await setProductos(db, empresa.id, { productos: d.productos, canales: d.canales, burbuja_activa: d.burbuja_activa, burbuja_apps: d.burbuja_apps });
+  }
   let employee = null;
   if (d.usuario && d.password) {
     const ph = await hashPassword(String(d.password));
@@ -71,7 +133,8 @@ async function movimientosDelMes(db, companyId, year, month) {
 
 async function listClientesConStats(db, year, month) {
   await ensurePlan(db);
-  const cs = await db.query('SELECT id, nombre, rut, plan, owner_nombre, created_at FROM companies ORDER BY created_at ASC');
+  await ensureProductos(db);
+  const cs = await db.query('SELECT id, nombre, rut, plan, productos, canales, burbuja_activa, owner_nombre, created_at FROM companies ORDER BY created_at ASC');
   const out = [];
   for (const c of cs.rows) {
     const emp = await db.query('SELECT count(*)::int AS n FROM employees WHERE company_id=$1', [c.id]);
@@ -79,9 +142,36 @@ async function listClientesConStats(db, year, month) {
     out.push({
       id: c.id, nombre: c.nombre, rut: c.rut, plan: c.plan || 'free',
       contacto: c.owner_nombre || null, empleados: emp.rows[0].n, movimientos,
+      productos: c.productos || [], canales: c.canales || [], burbuja_activa: !!c.burbuja_activa,
     });
   }
   return out;
 }
 
-module.exports = { ensurePlan, crearCliente, crearLogin, setCompanyPlan, movimientosDelMes, listClientesConStats };
+async function getFichaCliente(db, companyId, year, month) {
+  await ensureProductos(db);
+  await ensurePlan(db);
+  await ensureCompanyOnboarding(db);
+  const cr = await db.query(
+    'SELECT id, nombre, rut, giro, owner_nombre, owner_whatsapp, wa_phone_number_id, onboarded_at, created_at, plan, productos, canales, burbuja_activa, burbuja_apps FROM companies WHERE id=$1',
+    [companyId]
+  );
+  const empresa = cr.rows[0];
+  if (!empresa) return null;
+  empresa.productos = empresa.productos || [];
+  empresa.canales = empresa.canales || [];
+  empresa.burbuja_apps = empresa.burbuja_apps || [];
+  const empleados = await listEmployees(db, companyId);
+  const movsAll = await listExpenses(db, companyId, { limit: 20 });
+  const movimientos = movsAll.map((e) => ({
+    id: e.id, tipo: e.tipo, proveedor: e.proveedor, total: Number(e.total) || 0,
+    fecha: e.fecha, estado: e.estado, estado_pago: e.estado_pago,
+  }));
+  const resumen = await cashflowSummary(db, companyId, { year, month });
+  const u = await matchRepo.getUltima(db, companyId, 'bancaria');
+  const conciliacion = u ? { cuadrado: u.cuadrado, sca: Number(u.sca), sba: Number(u.sba) } : null;
+  const pedidos = empresa.productos.includes('pedidos') ? await pedidosRepo.listPedidos(db, companyId, 10) : null;
+  return { empresa, empleados, movimientos, resumen, conciliacion, pedidos };
+}
+
+module.exports = { ensurePlan, crearCliente, crearLogin, setCompanyPlan, movimientosDelMes, listClientesConStats, ensureProductos, getProductos, setProductos, PRODUCTOS, CANALES, getFichaCliente };

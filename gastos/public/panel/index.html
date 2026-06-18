@@ -872,17 +872,6 @@
           <span class="material-symbols-outlined text-[20px]">account_balance</span>
           <span class="text-sm">Contabilidad</span>
         </button>
-        <div class="side-nav-subgroup flex flex-col gap-1 pl-4 mt-1 border-l border-[#343535] ml-6" id="subgroupContabilidad">
-          <button class="sub-tab csub active text-xs py-2 px-3 rounded-lg text-[#d0c6ab] hover:text-[#e3e2e2] hover:bg-[#343535]/30 w-full text-left" data-libro="diario">📓 Diario</button>
-          <button class="sub-tab csub text-xs py-2 px-3 rounded-lg text-[#d0c6ab] hover:text-[#e3e2e2] hover:bg-[#343535]/30 w-full text-left" data-libro="mayor">📖 Mayor</button>
-          <button class="sub-tab csub text-xs py-2 px-3 rounded-lg text-[#d0c6ab] hover:text-[#e3e2e2] hover:bg-[#343535]/30 w-full text-left" data-libro="balance">⚖️ Balance</button>
-          <button class="sub-tab csub text-xs py-2 px-3 rounded-lg text-[#d0c6ab] hover:text-[#e3e2e2] hover:bg-[#343535]/30 w-full text-left" data-libro="flujo">💸 Flujo de Caja</button>
-          <button class="sub-tab csub text-xs py-2 px-3 rounded-lg text-[#d0c6ab] hover:text-[#e3e2e2] hover:bg-[#343535]/30 w-full text-left" data-libro="conciliacion">🔄 Conciliación</button>
-          <button class="sub-tab csub text-xs py-2 px-3 rounded-lg text-[#d0c6ab] hover:text-[#e3e2e2] hover:bg-[#343535]/30 w-full text-left" data-libro="iva">🏛️ IVA (SII)</button>
-          <button class="sub-tab csub text-xs py-2 px-3 rounded-lg text-[#d0c6ab] hover:text-[#e3e2e2] hover:bg-[#343535]/30 w-full text-left" data-libro="manual">📝 Asiento Manual</button>
-          <button class="sub-tab csub text-xs py-2 px-3 rounded-lg text-[#d0c6ab] hover:text-[#e3e2e2] hover:bg-[#343535]/30 w-full text-left" data-libro="cuentas">📋 Plan de Cuentas</button>
-          <button class="sub-tab csub text-xs py-2 px-3 rounded-lg text-[#d0c6ab] hover:text-[#e3e2e2] hover:bg-[#343535]/30 w-full text-left" data-libro="varas">💬 Chat VARAS</button>
-        </div>
       </div>
 
       <!-- CRM -->
@@ -1366,21 +1355,21 @@
 
     <!-- CONTABILIDAD -->
     <section id="contabilidadSection" class="hidden">
-      <div class="card">
+      <div class="card" style="display:flex; flex-direction:column; gap:16px;">
         <div class="row">
           <div><label>Período</label><input id="cPeriodo" type="month" /></div>
-          <div class="tabs hidden" style="margin:0">
-            <button class="tab csub" data-libro="varas">VARAS</button>
-            <button class="tab csub active" data-libro="diario">Diario</button>
-            <button class="tab csub" data-libro="mayor">Mayor</button>
-            <button class="tab csub" data-libro="balance">Balance</button>
-            <button class="tab csub" data-libro="flujo">Flujo de Caja</button>
-            <button class="tab csub" data-libro="conciliacion">Conciliación</button>
-            <button class="tab csub" data-libro="iva">IVA (SII)</button>
-            <button class="tab csub" data-libro="manual">Manual</button>
-            <button class="tab csub" data-libro="cuentas">Plan de Cuentas</button>
-          </div>
-          <button id="cExcelBtn" class="btn-ghost">Descargar Excel</button>
+          <button id="cExcelBtn" class="btn-ghost" style="margin-left:auto">Descargar Excel</button>
+        </div>
+        <div class="flex flex-wrap gap-3 w-full" id="contabilidadSubMenu">
+          <button class="csub" data-libro="diario">📓 Diario</button>
+          <button class="csub" data-libro="mayor">📖 Mayor</button>
+          <button class="csub" data-libro="balance">⚖️ Balance</button>
+          <button class="csub" data-libro="flujo">💸 Flujo de Caja</button>
+          <button class="csub" data-libro="conciliacion">🔄 Conciliación</button>
+          <button class="csub" data-libro="iva">🏛️ IVA (SII)</button>
+          <button class="csub" data-libro="manual">📝 Asiento Manual</button>
+          <button class="csub" data-libro="cuentas">📋 Plan de Cuentas</button>
+          <button class="csub" data-libro="varas">💬 Chat VARAS</button>
         </div>
       </div>
       <div id="cContenido" class="scroll" style="padding:12px"><p class="muted">Cargando…</p></div>
@@ -1545,9 +1534,9 @@
       var isActive = (libro === activeSubTab && activeTab === 'contabilidad');
       btn.classList.toggle('active', isActive);
       if (isActive) {
-        btn.className = "sub-tab csub active text-xs py-2 px-3 rounded-lg text-[#ffd700] bg-[#ffd700]/10 border border-[#ffd700]/20 w-full text-left font-semibold";
+        btn.className = "csub active glass-panel border border-[#ffd700] bg-[#ffd700]/10 text-[#ffd700] px-4 py-2 rounded-xl flex items-center gap-2 transition-all font-bold text-[13px] shadow-[0_0_10px_rgba(255,215,0,0.2)]";
       } else {
-        btn.className = "sub-tab csub text-xs py-2 px-3 rounded-lg text-[#d0c6ab] hover:text-[#e3e2e2] hover:bg-[#343535]/30 w-full text-left";
+        btn.className = "csub glass-panel bg-[#292a2a]/50 border border-[#343535] text-[#d0c6ab] hover:text-[#e3e2e2] hover:border-[#ffd700]/50 hover:bg-[#343535]/50 px-4 py-2 rounded-xl flex items-center gap-2 transition-all text-[13px] font-semibold";
       }
     });
   }

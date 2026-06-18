@@ -1,0 +1,8 @@
+# Dependencias del generador (se reinstalan con: cd generador && npm install)
+generador/node_modules/
+
+# Salida regenerable (con: node render.js / node genera-pdf.js). No versionar binarios pesados.
+documentos/*.png
+documentos/*.jpg
+HASH-IA_81-documentos_BellaNapoli.pdf
+_impresion.html
