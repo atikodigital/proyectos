@@ -1,4 +1,4 @@
-package app.matico.dashboard;
+package cl.atikodigital.hashia;
 
 import android.content.Context;
 import android.content.Intent;

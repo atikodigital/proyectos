@@ -1,4 +1,4 @@
-package app.matico.dashboard;
+package cl.atikodigital.hashia;
 
 import android.os.Bundle;
 import android.view.accessibility.AccessibilityNodeInfo;

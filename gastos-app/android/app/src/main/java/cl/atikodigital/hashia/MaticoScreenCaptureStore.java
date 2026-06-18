@@ -1,4 +1,4 @@
-package app.matico.dashboard;
+package cl.atikodigital.hashia;
 
 import com.getcapacitor.JSArray;
 import com.getcapacitor.JSObject;

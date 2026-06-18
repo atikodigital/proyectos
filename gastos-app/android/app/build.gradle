@@ -6,10 +6,10 @@ def keystoreProps = new Properties()
 if (keystorePropsFile.exists()) { keystoreProps.load(new FileInputStream(keystorePropsFile)) }
 
 android {
-    namespace = "app.matico.dashboard"
+    namespace = "cl.atikodigital.hashia"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "cl.atikodigital.gastos"
+        applicationId "cl.atikodigital.hashia"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 43

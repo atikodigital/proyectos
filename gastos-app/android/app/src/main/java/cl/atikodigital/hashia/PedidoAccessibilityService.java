@@ -1,4 +1,4 @@
-package app.matico.dashboard;
+package cl.atikodigital.hashia;
 
 import android.provider.Settings;
 import android.accessibilityservice.AccessibilityService;
