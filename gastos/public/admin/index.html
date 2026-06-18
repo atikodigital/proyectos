@@ -87,6 +87,27 @@
         <div><label>Usuario (login dueño)</label><input id="nc_usuario" autocapitalize="none" placeholder="dulce" /></div>
         <div><label>Contraseña</label><input id="nc_password" placeholder="Clave123" /></div>
         <div><button id="nc_btn" class="btn-gold">Crear</button></div>
+        <div style="flex-basis:100%">
+          <label>Productos</label>
+          <div id="nc_productos" class="row" style="gap:14px">
+            <label><input type="checkbox" data-prod="hashia"> Hash IA</label>
+            <label><input type="checkbox" data-prod="crm"> CRM</label>
+            <label><input type="checkbox" data-prod="chat"> Chat</label>
+            <label><input type="checkbox" data-prod="pedidos"> Pedidos</label>
+          </div>
+          <label style="margin-top:8px">Canales (Chat/CRM)</label>
+          <div id="nc_canales" class="row" style="gap:14px">
+            <label><input type="checkbox" data-canal="whatsapp"> WhatsApp</label>
+            <label><input type="checkbox" data-canal="messenger"> Messenger</label>
+            <label><input type="checkbox" data-canal="instagram"> Instagram</label>
+            <label><input type="checkbox" data-canal="email"> Email</label>
+            <label><input type="checkbox" data-canal="telegram"> Telegram</label>
+            <label><input type="checkbox" data-canal="web"> Web</label>
+            <label><input type="checkbox" data-canal="voz"> Voz</label>
+          </div>
+          <label style="margin-top:8px"><input type="checkbox" id="burbuja_activa"> Burbuja flotante (Hash IA)</label>
+          <input id="burbuja_apps" placeholder="Apps de la burbuja: whatsapp, rappi, banco…" style="width:100%" />
+        </div>
       </div>
       <p id="nc_msg" class="ok"></p>
     </div>
@@ -101,12 +122,23 @@
         <table class="exp">
           <thead><tr>
             <th>Empresa</th><th>RUT</th><th>Plan</th>
-            <th class="num">Empleados</th><th class="num">Mov. del mes</th><th>Acciones</th>
+            <th class="num">Empleados</th><th class="num">Mov. del mes</th><th>Productos</th><th>Acciones</th>
           </tr></thead>
-          <tbody id="clientesBody"><tr><td colspan="6" class="muted">Cargando…</td></tr></tbody>
+          <tbody id="clientesBody"><tr><td colspan="7" class="muted">Cargando…</td></tr></tbody>
         </table>
       </div>
       <p id="listErr" class="err"></p>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL FICHA CLIENTE -->
+<div id="fichaModal" class="modal hidden">
+  <div class="box" style="max-width:680px">
+    <h3 style="margin:0 0 8px; color:var(--gold)">👁️ Ficha del cliente</h3>
+    <div id="fichaBody" class="muted">Cargando…</div>
+    <div class="row" style="justify-content:flex-end; margin-top:12px">
+      <button id="ficha_cerrar" class="btn-ghost">Cerrar</button>
     </div>
   </div>
 </div>
@@ -174,7 +206,7 @@ async function cargar() {
   try {
     const cli = await api('/clientes');
     const body = $('clientesBody');
-    if (!cli.length) { body.innerHTML = '<tr><td colspan="6" class="muted">Aún no hay clientes. Crea el primero arriba.</td></tr>'; return; }
+    if (!cli.length) { body.innerHTML = '<tr><td colspan="7" class="muted">Aún no hay clientes. Crea el primero arriba.</td></tr>'; return; }
     body.innerHTML = cli.map(c => (
       '<tr>' +
       '<td><b>' + esc(c.nombre) + '</b>' + (c.contacto ? '<br><span class="muted" style="font-size:11px">' + esc(c.contacto) + '</span>' : '') + '</td>' +
@@ -182,7 +214,10 @@ async function cargar() {
       '<td>' + planSelect(c.id, c.plan) + '</td>' +
       '<td class="num">' + c.empleados + '</td>' +
       '<td class="num"><span class="big" style="font-size:16px">' + c.movimientos + '</span></td>' +
-      '<td><button class="btn-ghost btn-sm" data-login="' + esc(c.id) + '" data-nombre="' + esc(c.nombre) + '">🔑 Login</button></td>' +
+      '<td>' + (c.productos || []).map(p => '<span class="pill">' + esc(p) + '</span>').join(' ') +
+        (c.burbuja_activa ? ' <span class="pill" title="Burbuja">🫧</span>' : '') + '</td>' +
+      '<td><button class="btn-ghost btn-sm" data-login="' + esc(c.id) + '" data-nombre="' + esc(c.nombre) + '">🔑 Login</button> ' +
+        '<button class="btn-ghost btn-sm" data-ficha="' + esc(c.id) + '">👁️ Ver ficha</button></td>' +
       '</tr>'
     )).join('');
     body.querySelectorAll('select[data-plan]').forEach(sel => {
@@ -194,6 +229,7 @@ async function cargar() {
     body.querySelectorAll('button[data-login]').forEach(btn => {
       btn.onclick = () => openLoginModal(btn.dataset.login, btn.dataset.nombre);
     });
+    body.querySelectorAll('button[data-ficha]').forEach(btn => { btn.onclick = () => abrirFicha(btn.dataset.ficha); });
   } catch (e) {
     if (e.status === 401) { $('logoutBtn').click(); return; }
     $('listErr').textContent = 'Error al cargar: ' + e.message;
@@ -206,13 +242,20 @@ $('nc_btn').onclick = async () => {
   $('nc_msg').textContent = ''; $('nc_msg').className = 'ok';
   const empresa = $('nc_empresa').value.trim();
   if (!empresa) { $('nc_msg').className = 'err'; $('nc_msg').textContent = 'Falta el nombre de la empresa'; return; }
+  const selChecked = (q) => Array.from(document.querySelectorAll(q)).filter(c => c.checked).map(c => c.dataset.prod || c.dataset.canal);
   try {
     await api('/clientes', { method: 'POST', body: JSON.stringify({
       nombreEmpresa: empresa, rut: $('nc_rut').value.trim() || undefined, plan: $('nc_plan').value,
       usuario: $('nc_usuario').value.trim() || undefined, password: $('nc_password').value || undefined,
+      productos: selChecked('#nc_productos input'),
+      canales: selChecked('#nc_canales input'),
+      burbuja_activa: $('burbuja_activa').checked,
+      burbuja_apps: $('burbuja_apps').value.split(',').map(s => s.trim()).filter(Boolean),
     }) });
     $('nc_msg').textContent = '✓ Cliente "' + empresa + '" creado';
-    ['nc_empresa', 'nc_rut', 'nc_usuario', 'nc_password'].forEach(id => $(id).value = '');
+    ['nc_empresa', 'nc_rut', 'nc_usuario', 'nc_password', 'burbuja_apps'].forEach(id => $(id).value = '');
+    document.querySelectorAll('#nc_productos input, #nc_canales input').forEach(c => c.checked = false);
+    $('burbuja_activa').checked = false;
     cargar();
   } catch (e) { $('nc_msg').className = 'err'; $('nc_msg').textContent = 'Error: ' + e.message; }
 };
@@ -236,6 +279,37 @@ $('lm_save').onclick = async () => {
     setTimeout(() => { $('loginModal').classList.add('hidden'); cargar(); }, 900);
   } catch (e) { $('lm_msg').className = 'err'; $('lm_msg').textContent = 'Error: ' + e.message; }
 };
+
+// ---- ficha del cliente ----
+function fmtCLP(n){ return '$' + Number(n||0).toLocaleString('es-CL'); }
+async function abrirFicha(id) {
+  $('fichaModal').classList.remove('hidden');
+  $('fichaBody').innerHTML = 'Cargando…';
+  try {
+    const f = await api('/clientes/' + id);
+    const e = f.empresa;
+    const emp = (f.empleados || []).map(x => esc(x.nombre) + ' · ' + esc(x.phone || 's/tel') + ' · ' + esc(x.rol)).join('<br>') || '—';
+    const movs = (f.movimientos || []).map(m => esc(m.fecha || '') + ' · ' + esc(m.proveedor || '') + ' · ' + fmtCLP(m.total) + ' · ' + esc(m.estado_pago || '')).join('<br>') || '—';
+    const ped = f.pedidos ? (f.pedidos.length + ' pedidos') : 'sin módulo';
+    const con = f.conciliacion ? (f.conciliacion.cuadrado ? 'cuadrada' : 'descuadrada') : 'sin conciliación';
+    $('fichaBody').innerHTML =
+      '<div class="card"><h3>Empresa</h3>' + esc(e.nombre) + ' · ' + esc(e.rut || '—') + ' · ' + esc(e.giro || '—') +
+      '<br>WhatsApp dueño: ' + esc(e.owner_whatsapp || '—') +
+      '<br>Plan: ' + esc(e.plan) + ' · Productos: ' + (e.productos || []).join(', ') +
+      '<br>Canales: ' + (e.canales || []).join(', ') +
+      '<br>Burbuja: ' + (e.burbuja_activa ? 'activa · ' + (e.burbuja_apps || []).join(', ') : 'inactiva') + '</div>' +
+      '<div class="card"><h3>Empleados</h3>' + emp + '</div>' +
+      '<div class="card"><h3>Resumen del mes</h3>Ingresos ' + fmtCLP(f.resumen.ingresos) + ' · Gastos ' + fmtCLP(f.resumen.gastos) + ' · Saldo ' + fmtCLP(f.resumen.saldo) + ' · Conciliación ' + con + '</div>' +
+      '<div class="card"><h3>Movimientos recientes</h3>' + movs + '</div>' +
+      '<div class="card"><h3>Pedidos</h3>' + esc(ped) + '</div>';
+  } catch (err) { $('fichaBody').innerHTML = 'Error: ' + esc(err.message); }
+}
+$('ficha_cerrar').onclick = () => $('fichaModal').classList.add('hidden');
+
+// ---- actualizar productos ----
+async function actualizarProductos(id, productos) {
+  await api('/clientes/' + id + '/productos', { method: 'PATCH', body: JSON.stringify({ productos }) });
+}
 
 // init
 if (token) { show('app'); cargar(); } else { show('login'); }
