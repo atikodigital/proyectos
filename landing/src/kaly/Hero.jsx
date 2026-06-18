@@ -1,12 +1,14 @@
 import React, { useRef, useState } from 'react';
 import Orb from './Orb.jsx';
-import { fetchKalyToken } from './token.js';
 import { buildSalesPrompt, KALY_VOICE } from './prompt.js';
 import { TOOL_DECLARATIONS, executeTool } from './tools.js';
 import { openLiveSession } from './live.js';
 
 const APK_URL = 'https://gastos.atikodigital.cl/panel/HashIA.apk';
 const WHATSAPP_URL = 'https://wa.me/56927130792';
+// Proxy WS público del backend: el navegador conecta acá y el server pone la API key.
+const KALY_WS_URL = 'wss://gastos.atikodigital.cl/api/public/kaly-ws';
+const KALY_MODEL = 'gemini-2.5-flash-native-audio-preview-09-2025';
 const CHIPS = ['¿Qué es Hash IA?', '¿Cuánto cuesta?', '¿Sirve para mi negocio?', 'Muéstrame las características'];
 const FEATURES = {
   finanzas: [
@@ -41,10 +43,10 @@ export default function Hero() {
     if (sessionRef.current) return;
     setState('thinking');
     try {
-      const { token, model } = await fetchKalyToken();
       const session = openLiveSession({
-        token, model, voice: KALY_VOICE, systemPrompt: buildSalesPrompt(), tools: TOOL_DECLARATIONS,
-        onState: setState, onAudioLevel: (_, rms) => setLevel(Math.min(1, rms * 6)),
+        wsUrl: KALY_WS_URL, model: KALY_MODEL, voice: KALY_VOICE, systemPrompt: buildSalesPrompt(), tools: TOOL_DECLARATIONS,
+        onState: (s) => { setState(s); if (s === 'error') setModoTexto(true); },
+        onAudioLevel: (_, rms) => setLevel(Math.min(1, rms * 6)),
         onAgentTranscript: (t) => setSubtitulo(t),
         onToolCall: (fc) => { executeTool(fc.name, fc.args || {}, ui); session.sendToolResponse(fc.id, fc.name, { ok: true }); },
         onClose: () => { sessionRef.current = null; setState('idle'); },

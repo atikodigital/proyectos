@@ -1,10 +1,12 @@
 // Port web de openLiveSession (Gemini Live, WS BidiGenerateContent v1alpha).
-// El token efímero viene del endpoint público (opts.token); el navegador nunca ve la API key.
+// La landing pública conecta vía opts.wsUrl (proxy del backend que pone la API key
+// server-side); en modo directo usa opts.token. El navegador NUNCA ve la API key.
 const WS_HOST = 'wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent';
 
 export function openLiveSession(opts) {
-  const { token, model, systemPrompt, tools, voice, onAudioLevel, onState, onUserTranscript, onToolCall, onClose, wsFactory, audio = true } = opts;
-  const ws = (wsFactory || ((url) => new WebSocket(url)))(`${WS_HOST}?key=${encodeURIComponent(token)}`);
+  const { token, model, systemPrompt, tools, voice, wsUrl, onAudioLevel, onState, onUserTranscript, onToolCall, onClose, wsFactory, audio = true } = opts;
+  const url = wsUrl || `${WS_HOST}?key=${encodeURIComponent(token)}`;
+  const ws = (wsFactory || ((u) => new WebSocket(u)))(url);
   let closed = false; let micStop = null; let player = null; let muted = false;
   let sessionReady = false;
   const queue = [];
