@@ -1018,9 +1018,9 @@
         </div>
 
         <!-- Columna Izquierda (Visual): Filtros, Saldo y Tabla -->
-        <div class="xl:col-span-3 flex flex-col gap-6 w-full order-1 xl:order-1">
-          <div class="glass-panel rounded-2xl p-6 border border-[#343535]/50 order-2">
-            <div class="flex flex-wrap items-end gap-4">
+        <div class="xl:col-span-3 flex flex-col gap-4 w-full order-1 xl:order-1">
+          <div class="glass-panel rounded-2xl p-4 border border-[#343535]/50 order-3">
+            <div class="flex flex-wrap items-end gap-3">
               <div class="flex flex-col gap-1">
                 <label class="text-[10px] font-bold text-[#d0c6ab] tracking-wider uppercase ml-1">Desde</label>
                 <input id="fFrom" type="date" class="bg-[#292a2a]/50 border border-[#343535] rounded-xl px-3 py-2 text-xs text-on-surface focus:border-[#ffd700] focus:ring-1 focus:ring-[#ffd700]/50 outline-none transition-all [color-scheme:dark]" />
@@ -1125,15 +1125,16 @@
           </div>
 
           <!-- Gráfico de Evolución del Período -->
-          <div id="chartCard" class="glass-card rounded-2xl p-6 border border-[#343535]/50 hidden order-3">
-            <div class="flex items-center justify-between mb-4">
+          <!-- Gráfico de Evolución del Período -->
+          <div id="chartCard" class="glass-card rounded-2xl p-4 border border-[#343535]/50 hidden order-2">
+            <div class="flex items-center justify-between mb-2">
               <h3 class="text-sm font-bold text-[#ffd700] flex items-center gap-2">
                 <span class="material-symbols-outlined text-[18px]">bar_chart</span>
                 Evolución del Período
               </h3>
               <span class="text-[10px] font-semibold text-[#d0c6ab] font-mono" id="chartSubLabel"></span>
             </div>
-            <div style="position:relative; height:180px;">
+            <div style="position:relative; height:130px;">
               <canvas id="gastosChart"></canvas>
             </div>
           </div>
