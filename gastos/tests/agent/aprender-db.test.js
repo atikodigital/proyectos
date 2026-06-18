@@ -42,20 +42,24 @@ describe('aprenderDeConversacion', () => {
       { tipo: 'negocio', contenido: 'Atiende lunes a sábado' },
       { tipo: 'negocio', contenido: 'Vende empanadas' },
     ]);
-    const r = await aprenderDeConversacion(db, COMPANY_ID, { transcripcion: TRANS4, extraer });
+    const juzgar = jest.fn().mockResolvedValue({ accion: 'insertar', indice: null });
+    const r = await aprenderDeConversacion(db, COMPANY_ID, { transcripcion: TRANS4, extraer, juzgar });
     expect(r.creados).toBe(2);
     const mem = await listMemorias(db, COMPANY_ID);
     expect(mem).toHaveLength(2);
     expect(mem.every((m) => m.origen === 'auto')).toBe(true);
   });
 
-  test('dedupe: descarta hechos casi-idénticos a la memoria existente', async () => {
+  test('reconcilia: el juez marca un hecho como duplicado y no se inserta', async () => {
     await db.query("INSERT INTO kaly_memory(company_id, tipo, contenido, origen) VALUES($1,'negocio','Vende empanadas','dueño')", [COMPANY_ID]);
     const extraer = jest.fn().mockResolvedValue([
-      { tipo: 'negocio', contenido: 'vende empanadas' },        // duplicado (case/espacios)
+      { tipo: 'negocio', contenido: 'vende empanadas' },        // duplicado
       { tipo: 'negocio', contenido: 'Atiende lunes a sábado' }, // nuevo
     ]);
-    const r = await aprenderDeConversacion(db, COMPANY_ID, { transcripcion: TRANS4, extraer });
+    const juzgar = jest.fn()
+      .mockResolvedValueOnce({ accion: 'duplicado', indice: 1 })
+      .mockResolvedValueOnce({ accion: 'insertar', indice: null });
+    const r = await aprenderDeConversacion(db, COMPANY_ID, { transcripcion: TRANS4, extraer, juzgar });
     expect(r.creados).toBe(1);
     const mem = await listMemorias(db, COMPANY_ID);
     expect(mem.map((m) => m.contenido).sort()).toEqual(['Atiende lunes a sábado', 'Vende empanadas']);

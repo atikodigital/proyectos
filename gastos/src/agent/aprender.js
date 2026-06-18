@@ -1,7 +1,8 @@
 // Aprender automático (M2): al cerrar una conversación sustancial, extrae los
 // hechos nuevos del negocio/dueño y los guarda en kaly_memory (origen 'auto').
 const axios = require('axios');
-const { listMemorias, crearMemoria, normalizeMemoria, formatMemoriaBlock } = require('./memory');
+const { listMemorias, normalizeMemoria, formatMemoriaBlock } = require('./memory');
+const { reconciliar } = require('./gestionar');
 
 const BASE = 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
 
@@ -68,28 +69,24 @@ async function extraerHechos({ transcripcion, memoriaActual, http } = {}) {
   return arr.map((h) => normalizeMemoria(h)).filter(Boolean);
 }
 
-function normTxt(s) {
-  return String(s || '').toLowerCase().replace(/\s+/g, ' ').trim();
-}
-
-async function aprenderDeConversacion(db, companyId, { transcripcion, http, extraer } = {}) {
+async function aprenderDeConversacion(db, companyId, { transcripcion, http, extraer, juzgar } = {}) {
   if (!esSustancial(transcripcion)) return { creados: 0, skip: true };
   const extraerFn = extraer || extraerHechos;
   const memoriaActual = await listMemorias(db, companyId);
-  const existentes = new Set(memoriaActual.map((m) => normTxt(m.contenido)));
   let hechos;
   try {
     hechos = await extraerFn({ transcripcion, memoriaActual, http });
   } catch (_e) {
     return { creados: 0, error: true };
   }
-  const nuevos = (hechos || []).filter((h) => h && !existentes.has(normTxt(h.contenido)));
-  const creados = [];
-  for (const h of nuevos) {
-    const m = await crearMemoria(db, companyId, { ...h, origen: 'auto' });
-    if (m) creados.push(m);
+  let creados = 0;
+  const acciones = [];
+  for (const h of hechos || []) {
+    const r = await reconciliar(db, companyId, { ...h, origen: 'auto' }, { http, juzgar });
+    if (r) acciones.push(r.accion);
+    if (r && (r.accion === 'insertar' || r.accion === 'reemplaza')) creados += 1;
   }
-  return { creados: creados.length, hechos: creados };
+  return { creados, acciones };
 }
 
 module.exports = { esSustancial, extraerHechos, aprenderDeConversacion, parseJsonLoose };
