@@ -195,6 +195,8 @@ $('logoutBtn').onclick = () => { token = ''; localStorage.removeItem(TKEY); show
 
 // ---- lista de clientes ----
 const PLANES = ['free', 'basico', 'pyme', 'empresa'];
+const PRODUCTOS = ['hashia', 'crm', 'chat', 'pedidos'];
+const CANALES = ['whatsapp', 'messenger', 'instagram', 'email', 'telegram', 'web', 'voz'];
 function planSelect(id, plan) {
   return '<select data-plan="' + esc(id) + '" class="btn-sm">' +
     PLANES.map(p => '<option value="' + p + '"' + (p === plan ? ' selected' : '') + '>' + p + '</option>').join('') + '</select>';
@@ -292,23 +294,41 @@ async function abrirFicha(id) {
     const movs = (f.movimientos || []).map(m => esc(m.fecha || '') + ' · ' + esc(m.proveedor || '') + ' · ' + fmtCLP(m.total) + ' · ' + esc(m.estado_pago || '')).join('<br>') || '—';
     const ped = f.pedidos ? (f.pedidos.length + ' pedidos') : 'sin módulo';
     const con = f.conciliacion ? (f.conciliacion.cuadrado ? 'cuadrada' : 'descuadrada') : 'sin conciliación';
+    const resu = f.resumen || {};
+    const chk = (kind, val, arr) => '<label><input type="checkbox" data-' + kind + '="' + val + '"' + ((arr || []).includes(val) ? ' checked' : '') + '> ' + val + '</label>';
     $('fichaBody').innerHTML =
       '<div class="card"><h3>Empresa</h3>' + esc(e.nombre) + ' · ' + esc(e.rut || '—') + ' · ' + esc(e.giro || '—') +
-      '<br>WhatsApp dueño: ' + esc(e.owner_whatsapp || '—') +
-      '<br>Plan: ' + esc(e.plan) + ' · Productos: ' + (e.productos || []).join(', ') +
-      '<br>Canales: ' + (e.canales || []).join(', ') +
-      '<br>Burbuja: ' + (e.burbuja_activa ? 'activa · ' + (e.burbuja_apps || []).join(', ') : 'inactiva') + '</div>' +
+      '<br>WhatsApp dueño: ' + esc(e.owner_whatsapp || '—') + '<br>Plan: ' + esc(e.plan) + '</div>' +
       '<div class="card"><h3>Empleados</h3>' + emp + '</div>' +
-      '<div class="card"><h3>Resumen del mes</h3>Ingresos ' + fmtCLP(f.resumen.ingresos) + ' · Gastos ' + fmtCLP(f.resumen.gastos) + ' · Saldo ' + fmtCLP(f.resumen.saldo) + ' · Conciliación ' + con + '</div>' +
+      '<div class="card"><h3>Resumen del mes</h3>Ingresos ' + fmtCLP(resu.ingresos) + ' · Gastos ' + fmtCLP(resu.gastos) + ' · Saldo ' + fmtCLP(resu.saldo) + ' · Conciliación ' + con + '</div>' +
       '<div class="card"><h3>Movimientos recientes</h3>' + movs + '</div>' +
-      '<div class="card"><h3>Pedidos</h3>' + esc(ped) + '</div>';
+      '<div class="card"><h3>Pedidos</h3>' + esc(ped) + '</div>' +
+      '<div class="card"><h3>Editar productos</h3>' +
+        '<label>Productos</label><div id="fe_productos" class="row" style="gap:12px">' + PRODUCTOS.map(p => chk('prod', p, e.productos)).join('') + '</div>' +
+        '<label style="margin-top:6px">Canales (Chat/CRM)</label><div id="fe_canales" class="row" style="gap:12px">' + CANALES.map(c => chk('canal', c, e.canales)).join('') + '</div>' +
+        '<label style="margin-top:6px"><input type="checkbox" id="fe_burbuja"' + (e.burbuja_activa ? ' checked' : '') + '> Burbuja flotante</label>' +
+        '<input id="fe_burbuja_apps" style="width:100%" value="' + esc((e.burbuja_apps || []).join(', ')) + '" placeholder="apps de la burbuja: whatsapp, rappi, banco…">' +
+        '<div class="row" style="justify-content:flex-end; margin-top:8px; align-items:center; gap:10px"><span id="fe_msg" class="ok"></span><button id="ficha_guardar" class="btn-gold btn-sm">Guardar productos</button></div>' +
+      '</div>';
+    $('ficha_guardar').onclick = () => guardarProductos(id);
   } catch (err) { $('fichaBody').innerHTML = 'Error: ' + esc(err.message); }
 }
 $('ficha_cerrar').onclick = () => $('fichaModal').classList.add('hidden');
 
-// ---- actualizar productos ----
-async function actualizarProductos(id, productos) {
-  await api('/clientes/' + id + '/productos', { method: 'PATCH', body: JSON.stringify({ productos }) });
+// ---- agregar / quitar productos a un cliente existente ----
+async function guardarProductos(id) {
+  const sel = (q) => Array.from(document.querySelectorAll(q)).filter(c => c.checked).map(c => c.dataset.prod || c.dataset.canal);
+  $('fe_msg').className = 'ok'; $('fe_msg').textContent = '';
+  try {
+    await api('/clientes/' + id + '/productos', { method: 'PATCH', body: JSON.stringify({
+      productos: sel('#fe_productos input'),
+      canales: sel('#fe_canales input'),
+      burbuja_activa: $('fe_burbuja').checked,
+      burbuja_apps: $('fe_burbuja_apps').value.split(',').map(s => s.trim()).filter(Boolean),
+    }) });
+    $('fe_msg').textContent = '✓ Guardado';
+    cargar();
+  } catch (e) { $('fe_msg').className = 'err'; $('fe_msg').textContent = 'Error: ' + e.message; }
 }
 
 // init
