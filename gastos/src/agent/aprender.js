@@ -68,4 +68,28 @@ async function extraerHechos({ transcripcion, memoriaActual, http } = {}) {
   return arr.map((h) => normalizeMemoria(h)).filter(Boolean);
 }
 
-module.exports = { esSustancial, extraerHechos, parseJsonLoose };
+function normTxt(s) {
+  return String(s || '').toLowerCase().replace(/\s+/g, ' ').trim();
+}
+
+async function aprenderDeConversacion(db, companyId, { transcripcion, http, extraer } = {}) {
+  if (!esSustancial(transcripcion)) return { creados: 0, skip: true };
+  const extraerFn = extraer || extraerHechos;
+  const memoriaActual = await listMemorias(db, companyId);
+  const existentes = new Set(memoriaActual.map((m) => normTxt(m.contenido)));
+  let hechos;
+  try {
+    hechos = await extraerFn({ transcripcion, memoriaActual, http });
+  } catch (_e) {
+    return { creados: 0, error: true };
+  }
+  const nuevos = (hechos || []).filter((h) => h && !existentes.has(normTxt(h.contenido)));
+  const creados = [];
+  for (const h of nuevos) {
+    const m = await crearMemoria(db, companyId, { ...h, origen: 'auto' });
+    if (m) creados.push(m);
+  }
+  return { creados: creados.length, hechos: creados };
+}
+
+module.exports = { esSustancial, extraerHechos, aprenderDeConversacion, parseJsonLoose };
