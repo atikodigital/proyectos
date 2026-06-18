@@ -871,9 +871,8 @@
         <button class="side-tab group-toggle text-[#d0c6ab] hover:text-[#e3e2e2] hover:bg-[#343535]/50 transition-all duration-300 flex items-center gap-3 px-4 py-3 rounded-xl border border-transparent hover:border-[#343535] w-full text-left" id="btnContabilidadGroup" data-tab="contabilidad">
           <span class="material-symbols-outlined text-[20px]">account_balance</span>
           <span class="text-sm">Contabilidad</span>
-          <span class="group-arrow ml-auto text-xs transition-transform duration-200">▼</span>
         </button>
-        <div class="side-nav-subgroup hidden flex flex-col gap-1 pl-4 mt-1 border-l border-[#343535] ml-6" id="subgroupContabilidad">
+        <div class="side-nav-subgroup flex flex-col gap-1 pl-4 mt-1 border-l border-[#343535] ml-6" id="subgroupContabilidad">
           <button class="sub-tab csub active text-xs py-2 px-3 rounded-lg text-[#d0c6ab] hover:text-[#e3e2e2] hover:bg-[#343535]/30 w-full text-left" data-libro="diario">📓 Diario</button>
           <button class="sub-tab csub text-xs py-2 px-3 rounded-lg text-[#d0c6ab] hover:text-[#e3e2e2] hover:bg-[#343535]/30 w-full text-left" data-libro="mayor">📖 Mayor</button>
           <button class="sub-tab csub text-xs py-2 px-3 rounded-lg text-[#d0c6ab] hover:text-[#e3e2e2] hover:bg-[#343535]/30 w-full text-left" data-libro="balance">⚖️ Balance</button>
@@ -1063,8 +1062,8 @@
               <button id="anioBtn" class="bg-[#292a2a]/50 border border-[#343535] text-[#d0c6ab] hover:text-[#e3e2e2] px-3 py-2 rounded-xl text-xs transition-colors">Año</button>
               <button id="excelBtn" class="bg-[#292a2a]/50 border border-[#343535] text-[#d0c6ab] hover:text-[#e3e2e2] px-3 py-2 rounded-xl text-xs transition-colors">Excel</button>
               <button id="resumenBtn" class="bg-[#292a2a]/50 border border-[#343535] text-[#d0c6ab] hover:text-[#e3e2e2] px-3 py-2 rounded-xl text-xs transition-colors">WhatsApp Resumen</button>
-              <button id="newExpenseBtn" class="bg-gradient-to-r from-[#ffd700] to-[#e9c400] text-[#3a3000] hover:shadow-[0_0_20px_rgba(255,215,0,0.4)] transition-all px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1 ml-auto">
-                <span class="material-symbols-outlined text-[16px]">add</span> Nuevo Movimiento
+              <button id="newExpenseBtn" class="bg-gradient-to-r from-[#ffd700] to-[#e9c400] text-[#3a3000] hover:shadow-[0_0_20px_rgba(255,215,0,0.4)] transition-all px-3 py-1.5 rounded-lg text-[11px] font-bold flex items-center gap-1 ml-auto">
+                <span class="material-symbols-outlined text-[14px]">add</span> Nuevo Movimiento
               </button>
             </div>
             <p id="resumenMsg" class="text-xs text-[#d0c6ab] mt-2"></p>
@@ -1585,21 +1584,7 @@
   sideTabs.forEach(function (b) {
     b.onclick = function () {
       var tab = b.getAttribute('data-tab');
-      if (b.id === 'btnContabilidadGroup') {
-        var subgroup = $('subgroupContabilidad');
-        var groupContainer = $('groupContabilidadContainer');
-        var isExpanded = !subgroup.classList.contains('hidden');
-        if (isExpanded) {
-          subgroup.classList.add('hidden');
-          groupContainer.classList.remove('expanded');
-        } else {
-          subgroup.classList.remove('hidden');
-          groupContainer.classList.add('expanded');
-        }
-      } else {
-        $('subgroupContabilidad').classList.add('hidden');
-        $('groupContabilidadContainer').classList.remove('expanded');
-      }
+      // El menú de Contabilidad ahora siempre está visible
 
       updateSidebarUi(tab, tab === 'contabilidad' ? libroActual : null);
       $('gastosSection').classList.toggle('hidden', tab !== 'gastos');
@@ -2393,8 +2378,7 @@
   }
   document.querySelectorAll('.csub').forEach(function (b) {
     b.onclick = function () {
-      $('subgroupContabilidad').classList.remove('hidden');
-      $('groupContabilidadContainer').classList.add('expanded');
+      // El menú de Contabilidad ahora siempre está visible
 
       var libro = b.getAttribute('data-libro');
       libroActual = libro;
