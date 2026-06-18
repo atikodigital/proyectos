@@ -7,8 +7,10 @@ const { createWebhookRouter } = require('./whatsapp/webhook');
 const { createAppRouter } = require('./app/router');
 const { createPanelRouter } = require('./panel/router');
 const { createAdminRouter } = require('./admin/router');
+const http = require('http');
 const { getPool } = require('./db/pool');
 const { createEphemeralToken } = require('./agent/token');
+const { attachKalyProxy } = require('./agent/kaly-proxy');
 
 const app = express();
 app.use(cors());
@@ -52,7 +54,14 @@ app.use((err, req, res, next) => {
 
 if (require.main === module) {
   const port = process.env.PORT || 3100;
-  app.listen(port, () => console.log(`atiko-gastos en :${port}`));
+  const server = http.createServer(app);
+  // Proxy WS público de KALY para la landing: el navegador conecta a /api/public/kaly-ws
+  // y el backend reenvía a Gemini Live con la API key (que nunca sale al cliente).
+  if (process.env.GEMINI_API_KEY) {
+    attachKalyProxy(server, { apiKey: process.env.GEMINI_API_KEY });
+    console.log('[kaly] proxy WS público en /api/public/kaly-ws');
+  }
+  server.listen(port, () => console.log(`atiko-gastos en :${port}`));
 }
 
 module.exports = { app };
