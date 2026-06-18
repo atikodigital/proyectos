@@ -206,8 +206,14 @@ async function getPedido(db, companyId, id) {
   return r.rows[0] || null;
 }
 
+async function listPedidos(db, companyId, limit = 10) {
+  await ensurePedidosTable(db);
+  const r = await db.query('SELECT * FROM pedidos WHERE company_id=$1 ORDER BY created_at DESC LIMIT $2', [companyId, limit]);
+  return r.rows;
+}
+
 module.exports = {
   PEDIDO_ESTADOS, ensurePedidosTable, createPedido, markSent,
   pedidoToText, getCompanyPie, setCompanyPie, fmtCLP, waLink, waPhone,
-  getPedidoConfig, setPedidoConfig, costoEnvio, getPedido,
+  getPedidoConfig, setPedidoConfig, costoEnvio, getPedido, listPedidos,
 };
