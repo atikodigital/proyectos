@@ -4,9 +4,16 @@ import { api } from '../../src/gastos/api';
 
 jest.mock('../../src/gastos/api');
 
+jest.mock('../../src/gastos/agente/AgentInteractionProvider.jsx', () => ({
+  __esModule: true,
+  useAgentInteraction: () => ({ proponer: global.__proponer, pedirEvidencia: jest.fn(), interaccionAbierta: false }),
+  AgentInteractionProvider: ({ children }) => children,
+}));
+
 beforeEach(() => {
   api.varasChat = jest.fn();
   api.varasAccion = jest.fn();
+  global.__proponer = jest.fn().mockResolvedValue({});
 });
 
 test('(a) escribe y envía: aparece la burbuja del usuario y luego el reply de VARAS', async () => {
@@ -37,4 +44,32 @@ test('(b) accionPropuesta: aparece Confirmar; al hacer click llama varasAccion c
   fireEvent.click(confirmar);
   await waitFor(() => expect(api.varasAccion).toHaveBeenCalledWith('marcar_pagado', { descripcion: 'Proveedor X' }));
   expect(await screen.findByText(/hecho/i)).toBeInTheDocument();
+});
+
+test('al confirmar una acción propuesta, pasa por proponer y ejecuta si se confirma', async () => {
+  global.__proponer = jest.fn().mockResolvedValue({});
+  api.varasChat.mockResolvedValue({ reply: 'ok', accionPropuesta: { tipo: 'marcar_pagada', args: { id: 'x' }, descripcion: 'Marcar pagado' } });
+  api.varasAccion.mockResolvedValue({ ok: true });
+  render(<VarasChat />);
+  fireEvent.change(screen.getByPlaceholderText(/preg/i), { target: { value: 'paga algo' } });
+  fireEvent.click(screen.getByRole('button', { name: /enviar/i }));
+  expect(await screen.findByText('Marcar pagado')).toBeInTheDocument();
+  const confirmar = await screen.findByRole('button', { name: /confirmar/i });
+  fireEvent.click(confirmar);
+  await waitFor(() => expect(global.__proponer).toHaveBeenCalled());
+  await waitFor(() => expect(api.varasAccion).toHaveBeenCalledWith('marcar_pagada', expect.objectContaining({ id: 'x' })));
+});
+
+test('si proponer devuelve null, NO ejecuta la acción', async () => {
+  global.__proponer = jest.fn().mockResolvedValue(null);
+  api.varasChat.mockResolvedValue({ reply: 'ok', accionPropuesta: { tipo: 'marcar_pagada', args: { id: 'x' }, descripcion: 'Marcar pagado' } });
+  api.varasAccion.mockResolvedValue({ ok: true });
+  render(<VarasChat />);
+  fireEvent.change(screen.getByPlaceholderText(/preg/i), { target: { value: 'paga algo' } });
+  fireEvent.click(screen.getByRole('button', { name: /enviar/i }));
+  expect(await screen.findByText('Marcar pagado')).toBeInTheDocument();
+  const confirmar = await screen.findByRole('button', { name: /confirmar/i });
+  fireEvent.click(confirmar);
+  await waitFor(() => expect(global.__proponer).toHaveBeenCalled());
+  expect(api.varasAccion).not.toHaveBeenCalled();
 });

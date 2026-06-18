@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { api } from './api';
 import VarasVoice from './varas/VarasVoice.jsx';
+import { useAgentInteraction } from './agente/AgentInteractionProvider.jsx';
 
 const ORO = '#C9A24B';
 const BIENVENIDA = 'Soy VARAS, tu controlador financiero. Pregúntame por tus saldos, deudas, flujo o consumo de insumos.';
@@ -11,6 +12,7 @@ export default function VarasChat() {
   const [busy, setBusy] = useState(false);
   const [accion, setAccion] = useState(null);
   const finRef = useRef(null);
+  const { proponer } = useAgentInteraction();
 
   useEffect(() => {
     const el = finRef.current;
@@ -41,7 +43,16 @@ export default function VarasChat() {
     if (!accion || busy) return;
     setBusy(true);
     try {
-      await api.varasAccion(accion.tipo, accion.args);
+      const datos = await proponer({
+        titulo: accion.descripcion || 'Confirmar acción',
+        accion: accion.tipo,
+        campos: Object.entries(accion.args || {}).map(([key, valor]) => ({
+          key, label: key, valor: valor == null ? '' : valor,
+          tipo: typeof valor === 'number' ? 'numero' : 'texto',
+        })),
+      });
+      if (!datos) { setAccion(null); setBusy(false); return; }
+      await api.varasAccion(accion.tipo, { ...accion.args, ...datos });
       setMensajes((prev) => [...prev, { role: 'varas', text: '✓ Hecho.' }]);
       setAccion(null);
     } catch (_e) {
