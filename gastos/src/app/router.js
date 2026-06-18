@@ -27,6 +27,7 @@ const chatRepo = require('../chat/repo');
 const { registerCatalogRoutes } = require('../catalog/routes');
 const { extraerProductos: realExtraerProductos } = require('../catalog/extraer');
 const realAprender = require('../agent/aprender');
+const realGestionar = require('../agent/gestionar');
 const { aplicarContabilidad } = require('../contabilidad/contabilizar');
 const contaReportes = require('../contabilidad/reportes');
 const { REGIONES_COMUNAS } = require('../pedidos/comunas-chile');
@@ -38,7 +39,7 @@ const { ejecutarAccion } = require('../varas/acciones');
 const { TOOLS_READ } = require('../varas/tools');
 const memoryRepo = require('../agent/memory');
 
-function createAppRouter({ db, extractExpense, createLiveToken, sendText, extractCartola, componer, extraerProductos, extractLibroSii, varasGemini, extraerHechos } = {}) {
+function createAppRouter({ db, extractExpense, createLiveToken, sendText, extractCartola, componer, extraerProductos, extractLibroSii, varasGemini, extraerHechos, juzgarHecho } = {}) {
   const _extract = extractExpense || realExtract.extractExpense;
   const _extractCartola = extractCartola || ((b64, mime) => require('../ocr/cartola').geminiExtractCartola(b64, mime));
   const _extractLibroSii = extractLibroSii || ((b64, mime) => require('../ocr/libro-sii').geminiExtractLibroSii(b64, mime));
@@ -46,6 +47,7 @@ function createAppRouter({ db, extractExpense, createLiveToken, sendText, extrac
   const _sendText = sendText || require('../whatsapp/client').sendText;
   const _extraerProductos = extraerProductos || realExtraerProductos;
   const _extraerHechos = extraerHechos || realAprender.extraerHechos;
+  const _juzgarHecho = juzgarHecho || realGestionar.juzgarHecho;
   const _varasGemini = varasGemini || geminiChat;
   const router = express.Router();
 
@@ -276,9 +278,10 @@ function createAppRouter({ db, extractExpense, createLiveToken, sendText, extrac
     return res.json(await memoryRepo.listMemorias(db, req.auth.companyId));
   });
   router.post('/kaly/memoria', async (req, res) => {
-    const m = await memoryRepo.crearMemoria(db, req.auth.companyId, { ...(req.body || {}), origen: (req.body && req.body.origen) || 'dueño' });
-    if (!m) return res.status(400).json({ error: 'contenido_vacio' });
-    return res.status(201).json(m);
+    const origen = (req.body && req.body.origen) || 'dueño';
+    const r = await realGestionar.reconciliar(db, req.auth.companyId, { ...(req.body || {}), origen }, { juzgar: _juzgarHecho });
+    if (!r) return res.status(400).json({ error: 'contenido_vacio' });
+    return res.status(r.accion === 'duplicado' ? 200 : 201).json({ accion: r.accion, memoria: r.memoria });
   });
   router.delete('/kaly/memoria/:id', async (req, res) => {
     const r = await memoryRepo.borrarMemoria(db, req.auth.companyId, req.params.id);
@@ -288,7 +291,7 @@ function createAppRouter({ db, extractExpense, createLiveToken, sendText, extrac
 
   router.post('/kaly/aprender', async (req, res) => {
     const { transcripcion } = req.body || {};
-    const r = await realAprender.aprenderDeConversacion(db, req.auth.companyId, { transcripcion, extraer: _extraerHechos });
+    const r = await realAprender.aprenderDeConversacion(db, req.auth.companyId, { transcripcion, extraer: _extraerHechos, juzgar: _juzgarHecho });
     return res.json({ creados: r.creados });
   });
 
