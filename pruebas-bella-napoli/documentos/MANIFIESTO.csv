@@ -1,0 +1,38 @@
+﻿archivo;tipo;emisor/receptor;rut;fecha;folio;neto;iva;total;categoria/glosa;estilo
+01_compra_comercial_1287.png;GASTO (factura);COMERCIAL MOLINERA LO VALLEDOR LTDA;78.901.234-2;04/06/2026;1287;380000;72200;452200;Mercadería;digital
+02_compra_comercial_1342.png;GASTO (factura);COMERCIAL MOLINERA LO VALLEDOR LTDA;78.901.234-2;18/06/2026;1342;360000;68400;428400;Mercadería;digital
+03_compra_soprole_88231.png;GASTO (factura);SOPROLE S.A.;90.876.000-K;05/06/2026;88231;520000;98800;618800;Mercadería;digital
+04_compra_soprole_88944.png;GASTO (factura);SOPROLE S.A.;90.876.000-K;19/06/2026;88944;480000;91200;571200;Mercadería;digital
+05_compra_distribuidora_4521.png;GASTO (boleta);DISTRIBUIDORA VEGA CENTRAL LTDA;76.543.210-3;02/06/2026;4521;120000;22800;142800;Mercadería;foto
+06_compra_distribuidora_4612.png;GASTO (boleta);DISTRIBUIDORA VEGA CENTRAL LTDA;76.543.210-3;12/06/2026;4612;115000;21850;136850;Mercadería;foto
+07_compra_distribuidora_4733.png;GASTO (boleta);DISTRIBUIDORA VEGA CENTRAL LTDA;76.543.210-3;23/06/2026;4733;130000;24700;154700;Mercadería;foto
+08_compra_embotelladora_220145.png;GASTO (factura);EMBOTELLADORA ANDINA S.A.;91.041.000-8;06/06/2026;220145;240000;45600;285600;Mercadería;digital
+09_compra_embotelladora_221890.png;GASTO (factura);EMBOTELLADORA ANDINA S.A.;91.041.000-8;20/06/2026;221890;220000;41800;261800;Mercadería;digital
+10_compra_abastible_7781.png;GASTO (factura);ABASTIBLE S.A.;91.806.000-6;07/06/2026;7781;95000;18050;113050;Servicios básicos;digital
+11_compra_abastible_7990.png;GASTO (factura);ABASTIBLE S.A.;91.806.000-6;21/06/2026;7990;95000;18050;113050;Servicios básicos;digital
+12_compra_envases_3312.png;GASTO (factura);ENVASES DEL PACÍFICO SpA;76.998.877-7;10/06/2026;3312;180000;34200;214200;Insumos / Materiales;digital
+13_compra_inmobiliaria_9001.png;GASTO (factura);INMOBILIARIA PROVIDENCIA LTDA;77.665.544-9;05/06/2026;9001;1200000;228000;1428000;Arriendo;digital
+14_compra_enel_550321.png;GASTO (factura);ENEL DISTRIBUCIÓN CHILE S.A.;96.800.570-7;11/06/2026;550321;168067;31933;200000;Servicios básicos;digital
+15_compra_aguas_770445.png;GASTO (factura);AGUAS ANDINAS S.A.;61.808.000-5;11/06/2026;770445;54622;10378;65000;Servicios básicos;digital
+16_compra_telefónica_660112.png;GASTO (factura);TELEFÓNICA MÓVILES CHILE S.A.;87.845.500-2;09/06/2026;660112;29412;5588;35000;Servicios básicos;digital
+17_compra_compañía_30551.png;GASTO (boleta);COMPAÑÍA DE PETRÓLEOS DE CHILE COPEC S.A.;99.520.000-7;08/06/2026;30551;33613;6386;39999;Combustible;foto
+18_compra_compañía_31002.png;GASTO (boleta);COMPAÑÍA DE PETRÓLEOS DE CHILE COPEC S.A.;99.520.000-7;22/06/2026;31002;29412;5588;35000;Combustible;foto
+19_venta_factura_121.png;INGRESO (factura);CONSTRUCTORA ANDES LTDA;79.123.456-5;06/06/2026;121;320000;60800;380800;Almuerzo equipo obra - 25 pizzas familiares;digital
+20_venta_factura_122.png;INGRESO (factura);CORPORACIÓN EDUCACIONAL SAN MARCOS;65.123.456-5;12/06/2026;122;450000;85500;535500;Evento aniversario - 40 pizzas + bebidas;digital
+21_venta_factura_123.png;INGRESO (factura);SOLUCIONES TI SpA;76.112.233-9;17/06/2026;123;280000;53200;333200;Almuerzo corporativo - 20 pizzas;digital
+22_venta_factura_124.png;INGRESO (factura);CLÍNICA VIDA PLENA S.A.;96.112.334-8;24/06/2026;124;510000;96900;606900;Coffee/almuerzo jornada - 35 pizzas;digital
+23_venta_factura_125.png;INGRESO (factura);I. MUNICIPALIDAD DE PROVIDENCIA;69.070.100-6;27/06/2026;125;680000;129200;809200;Evento comunitario - 55 pizzas + bebidas;digital
+24_venta_factura_126.png;INGRESO (factura);BANCO DEL ESTADO DE CHILE;97.030.000-7;30/06/2026;126;240000;45600;285600;Almuerzo sucursal - 18 pizzas;digital
+25_venta_boleta_1001.png;INGRESO (boleta);Bella Napoli (publico);-;02/06/2026;1001;38571;7329;45900;2 Pizza Familiar + 2 Bebida 1.5L;foto
+26_venta_boleta_1027.png;INGRESO (boleta);Bella Napoli (publico);-;09/06/2026;1027;24286;4614;28900;1 Pizza Mediana + 1 Bebida;foto
+27_venta_boleta_1055.png;INGRESO (boleta);Bella Napoli (publico);-;15/06/2026;1055;44034;8366;52400;2 Pizza Familiar + Pan ajo + Bebida;foto
+28_venta_boleta_1089.png;INGRESO (boleta);Bella Napoli (publico);-;22/06/2026;1089;28403;5397;33800;1 Pizza Familiar + Bebida 1.5L;foto
+29_venta_boleta_1124.png;INGRESO (boleta);Bella Napoli (publico);-;29/06/2026;1124;34622;6578;41200;1 Pizza Familiar + Postre + Bebida;digital
+30_transf_juan_8810045.png;EGRESO/PAGO (transferencia);Juan Pérez Muñoz;15.234.567-4;30/06/2026;op 8810045;;;620000;Sueldo junio 2026 - Pizzero;digital
+31_transf_carlos_8810046.png;EGRESO/PAGO (transferencia);Carlos Soto Vega;16.345.678-8;30/06/2026;op 8810046;;;560000;Sueldo junio 2026 - Pizzero;digital
+32_transf_maría_8810047.png;EGRESO/PAGO (transferencia);María González Rojas;17.456.789-1;30/06/2026;op 8810047;;;480000;Sueldo junio 2026 - Cajera;digital
+33_transf_pedro_8810048.png;EGRESO/PAGO (transferencia);Pedro Ramírez Díaz;18.567.890-3;30/06/2026;op 8810048;;;450000;Sueldo junio 2026 - Repartidor;foto
+34_transf_inmobiliaria_8809912.png;EGRESO/PAGO (transferencia);INMOBILIARIA PROVIDENCIA LTDA;77.665.544-9;10/06/2026;op 8809912;;;1428000;Arriendo local junio 2026;digital
+35_transf_envases_8810099.png;EGRESO/PAGO (transferencia);ENVASES DEL PACÍFICO SpA;76.998.877-7;30/06/2026;op 8810099;;;214200;Pago factura 3312 - cajas pizza [NO COBRADO AÚN (diferencia conciliación)];digital
+36_deposito_transito.png;INGRESO/DEPOSITO;Bella Napoli;-;30/06/2026;-;;;720000;"Depósito ventas efectivo fin de semana [Depositado 30/06, el banco acredita 01/07 (diferencia conciliación)]";digital
+37_cartola_banco_chile_junio.png;CARTOLA (conciliacion);Banco de Chile;000-12345-67;01-30/06/2026;-;;;;24 movimientos;digital
