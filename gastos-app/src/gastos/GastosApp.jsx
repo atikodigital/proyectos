@@ -10,6 +10,7 @@ import KalyAgent from './kaly/KalyAgent.jsx';
 import { APP_VERSION } from './version';
 import ChatView from './ChatView.jsx';
 import OnboardingWizard from './onboarding/OnboardingWizard.jsx';
+import MemoriaKalyView from './MemoriaKalyView.jsx';
 
 function clp(n) { return '$' + (Math.round(Number(n) || 0)).toLocaleString('es-CL'); }
 function fechaCorta(v) { if (!v) return ''; const s = String(v); return s.length >= 10 ? s.slice(0, 10) : s; }
@@ -30,6 +31,7 @@ export default function GastosApp() {
   const [matchDoc, setMatchDoc] = useState(null);
   const [mostrarOnboarding, setMostrarOnboarding] = useState(false);
   const [saltado, setSaltado] = useState(false);
+  const [mostrarMemoria, setMostrarMemoria] = useState(false);
 
   useEffect(() => {
     if (!authed) return;
@@ -75,12 +77,23 @@ export default function GastosApp() {
           onCrearPedido={() => { setMostrarOnboarding(false); setTab('chat'); }}
         />
       )}
+      {mostrarMemoria && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 50, background: 'rgba(0,0,0,0.85)', overflowY: 'auto' }}>
+          <div style={{ maxWidth: 480, margin: '0 auto', paddingBottom: 32 }}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '12px 12px 0' }}>
+              <button onClick={() => setMostrarMemoria(false)} style={{ background: 'transparent', color: '#fff', fontSize: 20, border: 0, cursor: 'pointer' }}>✕</button>
+            </div>
+            <MemoriaKalyView />
+          </div>
+        </div>
+      )}
       <header className="flex justify-between items-center p-4 border-b shrink-0">
         <span className="font-black" style={{ color: '#C9A24B' }}>Hash IA <span className="text-xs font-normal opacity-50">{APP_VERSION}</span></span>
         <div className="flex items-center gap-2">
           {!mostrarOnboarding && (
             <button className="text-xs opacity-60 border border-current rounded px-2 py-0.5" onClick={() => setMostrarOnboarding(true)}>Configurar mi negocio</button>
           )}
+          <button className="text-xs opacity-60 border border-current rounded px-2 py-0.5" onClick={() => setMostrarMemoria(true)}>Memoria KALY</button>
           <button className="text-xs opacity-60" onClick={() => { clearToken(); setAuthed(false); }}>Salir</button>
         </div>
       </header>
