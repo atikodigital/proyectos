@@ -34,6 +34,7 @@ export default function KalyAgent() {
   const inactivityTimerRef = useRef(null);
   const contextRef = useRef(null);
   const mutedRef = useRef(muted);
+  const turnosRef = useRef([]);
   useEffect(() => { mutedRef.current = muted; }, [muted]);
 
   function clearSilenceTimer() {
@@ -43,6 +44,19 @@ export default function KalyAgent() {
     clearSilenceTimer();
     silenceTimerRef.current = setTimeout(() => { silenceTimerRef.current = null; stopFn(); }, SILENCE_MS);
   }
+  function pushTurn(role, text) {
+    const t = String(text || '').trim();
+    if (!t) return;
+    const arr = turnosRef.current;
+    const last = arr[arr.length - 1];
+    if (last && last.role === role) last.text = `${last.text} ${t}`;
+    else arr.push({ role, text: t });
+  }
+  function flushAprender() {
+    const turnos = turnosRef.current;
+    turnosRef.current = [];
+    if (turnos.length >= 4) { api.kalyAprender({ transcripcion: turnos }).catch(() => {}); }
+  }
 
   const aplicarMute = useCallback((nv) => {
     setMutedState(nv);
@@ -51,6 +65,7 @@ export default function KalyAgent() {
   }, []);
 
   const stop = useCallback(() => {
+    flushAprender();
     clearSilenceTimer();
     if (sessionRef.current) { sessionRef.current.close(); sessionRef.current = null; }
     setState('off');
@@ -82,12 +97,14 @@ export default function KalyAgent() {
       };
       const onAudioLevel = (_dir, v) => setLevel(v);
       const onUserTranscript = (text) => {
+        pushTurn('user', text);
         clearSilenceTimer();
         setMessages((prev) => [...prev, { sender: 'user', text }]);
         if (esSilenciar(text)) { aplicarMute(true); return; }
         if (esNegativa(text)) setTimeout(() => stop(), 2500);
       };
       const onAgentTranscript = (text) => {
+        pushTurn('kaly', text);
         setMessages((prev) => {
           const last = prev[prev.length - 1];
           if (last && last.sender === 'kaly' && !last.isSystem) {
@@ -105,7 +122,7 @@ export default function KalyAgent() {
         });
         if (sessionRef.current) sessionRef.current.sendToolResponse(fc.id, fc.name, out);
       };
-      const onClose = () => { sessionRef.current = null; setState('off'); setMessages([]); };
+      const onClose = () => { flushAprender(); sessionRef.current = null; setState('off'); setMessages([]); };
 
       const session = openLiveSession({
         token: s.token,

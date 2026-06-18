@@ -102,6 +102,7 @@ export const api = {
   kalyMemorias() { return req('/api/app/kaly/memoria'); },
   kalyRecordar(m) { return req('/api/app/kaly/memoria', { method: 'POST', body: m }); },
   kalyBorrarMemoria(id) { return req(`/api/app/kaly/memoria/${id}`, { method: 'DELETE' }); },
+  kalyAprender(payload) { return req('/api/app/kaly/aprender', { method: 'POST', body: payload }); },
 
   // Pedido desde catálogo
   pedidoFromCatalog(payload) { return req('/api/app/pedido/from-catalog', { method: 'POST', body: payload }); },

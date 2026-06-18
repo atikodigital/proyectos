@@ -52,6 +52,7 @@ jest.mock('../../src/gastos/api', () => ({
         resumen: {},
       },
     }),
+    kalyAprender: jest.fn().mockResolvedValue({ creados: 0 }),
   },
 }));
 
@@ -220,4 +221,36 @@ test('(8) silenciada (kaly_muted=1) igual auto-arranca, pero callada (setMuted(t
   await act(async () => { render(<KalyAgent />); });
   expect(api.agentSession).toHaveBeenCalledTimes(1);
   await waitFor(() => expect(lastSession.setMuted).toHaveBeenCalledWith(true));
+});
+
+test('(9) al cerrar con ≥4 turnos → llama api.kalyAprender con la transcripción acumulada', async () => {
+  await act(async () => { render(<KalyAgent />); });
+  await waitFor(() => expect(openLiveSession).toHaveBeenCalledTimes(1));
+
+  act(() => {
+    lastLiveOpts.onUserTranscript('atiendo de 9 a 18');
+    lastLiveOpts.onAgentTranscript('anotado');
+    lastLiveOpts.onUserTranscript('vendo empanadas');
+    lastLiveOpts.onAgentTranscript('genial');
+  });
+
+  act(() => { lastLiveOpts.onClose(); });
+
+  expect(api.kalyAprender).toHaveBeenCalledTimes(1);
+  const arg = api.kalyAprender.mock.calls[0][0];
+  expect(Array.isArray(arg.transcripcion)).toBe(true);
+  expect(arg.transcripcion.length).toBeGreaterThanOrEqual(4);
+});
+
+test('(10) al cerrar con <4 turnos → NO llama api.kalyAprender', async () => {
+  await act(async () => { render(<KalyAgent />); });
+  await waitFor(() => expect(openLiveSession).toHaveBeenCalledTimes(1));
+
+  act(() => {
+    lastLiveOpts.onUserTranscript('hola');
+    lastLiveOpts.onAgentTranscript('hola, ¿en qué te ayudo?');
+  });
+  act(() => { lastLiveOpts.onClose(); });
+
+  expect(api.kalyAprender).not.toHaveBeenCalled();
 });

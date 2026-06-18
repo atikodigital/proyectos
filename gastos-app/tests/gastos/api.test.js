@@ -92,3 +92,15 @@ test('resumenWhatsapp hace POST /api/app/agent/resumen-whatsapp', async () => {
   expect(url).toContain('/api/app/agent/resumen-whatsapp');
   expect(opts.method).toBe('POST');
 });
+
+test('kalyAprender hace POST a /api/app/kaly/aprender con la transcripción', async () => {
+  setToken('TK');
+  fetch.mockResolvedValue({ ok: true, status: 200, json: async () => ({ creados: 2 }) });
+  const payload = { transcripcion: [{ role: 'user', text: 'hola' }] };
+  const out = await api.kalyAprender(payload);
+  expect(out).toEqual({ creados: 2 });
+  const [url, opts] = fetch.mock.calls[fetch.mock.calls.length - 1];
+  expect(url).toContain('/api/app/kaly/aprender');
+  expect(opts.method).toBe('POST');
+  expect(JSON.parse(opts.body)).toEqual(payload);
+});
