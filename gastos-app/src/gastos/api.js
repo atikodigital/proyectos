@@ -98,6 +98,11 @@ export const api = {
   listAuxiliaresApp() { return req('/api/app/auxiliares'); },
   setLineaAuxiliar(lineaId, auxiliar_id) { return req(`/api/app/lineas/${lineaId}`, { method: 'PATCH', body: { auxiliar_id } }); },
 
+  // KALY — memoria personalizada
+  kalyMemorias() { return req('/api/app/kaly/memoria'); },
+  kalyRecordar(m) { return req('/api/app/kaly/memoria', { method: 'POST', body: m }); },
+  kalyBorrarMemoria(id) { return req(`/api/app/kaly/memoria/${id}`, { method: 'DELETE' }); },
+
   // Pedido desde catálogo
   pedidoFromCatalog(payload) { return req('/api/app/pedido/from-catalog', { method: 'POST', body: payload }); },
   getPedidoConfig() { return req('/api/app/pedido-config'); },

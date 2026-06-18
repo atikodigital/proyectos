@@ -13,6 +13,7 @@ jest.mock('../../src/gastos/api', () => ({
     listProducts: jest.fn(),
     createProduct: jest.fn(),
     updateProduct: jest.fn(),
+    kalyRecordar: jest.fn(),
   },
 }));
 
@@ -24,8 +25,8 @@ beforeEach(() => {
 
 // ── TOOL_DECLARATIONS ─────────────────────────────────────────────────────────
 
-test('TOOL_DECLARATIONS has 11 entries', () => {
-  expect(TOOL_DECLARATIONS).toHaveLength(11);
+test('TOOL_DECLARATIONS has 12 entries', () => {
+  expect(TOOL_DECLARATIONS).toHaveLength(12);
   const names = TOOL_DECLARATIONS.map((t) => t.name);
   expect(names).toContain('guardar_preferencias');
   expect(names).toContain('obtener_resumen');
@@ -38,6 +39,7 @@ test('TOOL_DECLARATIONS has 11 entries', () => {
   expect(names).toContain('editar_precio');
   expect(names).toContain('editar_stock');
   expect(names).toContain('listar_productos');
+  expect(names).toContain('recordar');
 });
 
 // ── guardar_preferencias ──────────────────────────────────────────────────────
@@ -270,4 +272,13 @@ test('listar_productos mapea nombre/precio/stock/activo y respeta limite', async
   expect(api.listProducts).toHaveBeenCalledWith(true);
   expect(result.productos).toHaveLength(2);
   expect(result.productos[0]).toEqual({ nombre: 'Torta', precio: 18000, stock: 3, activo: true });
+});
+
+// ── recordar (memoria KALY) ───────────────────────────────────────────────────
+
+test('recordar llama api.kalyRecordar con contenido y tipo', async () => {
+  api.kalyRecordar.mockResolvedValue({ id: 'm1', contenido: 'Cierra domingos' });
+  const result = await executeTool('recordar', { tipo: 'negocio', contenido: 'Cierra domingos' });
+  expect(api.kalyRecordar).toHaveBeenCalledWith({ tipo: 'negocio', contenido: 'Cierra domingos' });
+  expect(result).toEqual({ ok: true, contenido: 'Cierra domingos' });
 });

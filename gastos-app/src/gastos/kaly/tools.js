@@ -30,7 +30,8 @@ export const TOOL_DECLARATIONS = [
   { name: 'agregar_producto', description: 'Crea un producto nuevo en el catálogo de ventas. Confirma DESPUÉS de crearlo.', parameters: { type: 'OBJECT', properties: { nombre: { type: 'STRING', description: 'Nombre del producto' }, precio: { type: 'NUMBER', description: 'Precio en pesos chilenos enteros' }, tipo: { type: 'STRING', enum: ['producto', 'servicio'], description: 'por defecto producto' } }, required: ['nombre', 'precio'] } },
   { name: 'editar_precio', description: 'Cambia el precio de un producto que YA existe en el catálogo.', parameters: { type: 'OBJECT', properties: { nombre: { type: 'STRING', description: 'nombre o parte del nombre del producto' }, nuevo_precio: { type: 'NUMBER', description: 'nuevo precio en CLP entero' } }, required: ['nombre', 'nuevo_precio'] } },
   { name: 'editar_stock', description: 'Fija el stock disponible de un producto que YA existe.', parameters: { type: 'OBJECT', properties: { nombre: { type: 'STRING', description: 'nombre o parte del nombre del producto' }, stock: { type: 'NUMBER', description: 'unidades disponibles' } }, required: ['nombre', 'stock'] } },
-  { name: 'listar_productos', description: 'Lista los productos del catálogo con su precio y stock.', parameters: { type: 'OBJECT', properties: { limite: { type: 'NUMBER' } } } }
+  { name: 'listar_productos', description: 'Lista los productos del catálogo con su precio y stock.', parameters: { type: 'OBJECT', properties: { limite: { type: 'NUMBER' } } } },
+  { name: 'recordar', description: 'Guarda un dato importante del negocio o del dueño para recordarlo en futuras conversaciones (ej. horarios, preferencias, datos del dueño).', parameters: { type: 'OBJECT', properties: { contenido: { type: 'STRING', description: 'el dato a recordar, en una frase' }, tipo: { type: 'STRING', enum: ['negocio', 'dueño', 'preferencia', 'hecho'] } }, required: ['contenido'] } }
 ];
 
 function buscarMovimiento(rows, proveedor) {
@@ -88,6 +89,10 @@ export async function executeTool(name, args = {}, { onPrefsSaved } = {}) {
     if (name === 'listar_productos') {
       const rows = await api.listProducts(true);
       return { productos: rows.slice(0, args.limite || 10).map((p) => ({ nombre: p.nombre, precio: p.precio_base, stock: p.stock, activo: p.activo })) };
+    }
+    if (name === 'recordar') {
+      const r = await api.kalyRecordar({ tipo: args.tipo, contenido: args.contenido });
+      return { ok: true, contenido: r.contenido };
     }
     return { error: 'tool_desconocida' };
   } catch (e) {
