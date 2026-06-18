@@ -1,5 +1,6 @@
 const { cashflowSummary } = require('../expenses/summary');
-const { getAgentPrefs, getCompany } = require('../companies/repo');
+const { getAgentPrefs, getCompany, getCompanyProfile } = require('../companies/repo');
+const { listMemorias } = require('./memory');
 
 function saludoHora(now = new Date()) {
   // Hora de Chile continental
@@ -10,9 +11,11 @@ function saludoHora(now = new Date()) {
 }
 
 async function buildAgentContext(db, { companyId, employeeId, now = new Date() }) {
-  const [prefs, company] = await Promise.all([
+  const [prefs, company, profile, memorias] = await Promise.all([
     getAgentPrefs(db, employeeId),
     getCompany(db, companyId),
+    getCompanyProfile(db, companyId),
+    listMemorias(db, companyId),
   ]);
   const s = await cashflowSummary(db, companyId, { year: now.getFullYear(), month: now.getMonth() + 1 });
   const pend = await db.query(
@@ -26,6 +29,8 @@ async function buildAgentContext(db, { companyId, employeeId, now = new Date() }
     saludoHora: saludoHora(now),
     empresaNombre: (company && company.nombre) || '',
     resumen: { ...s, pendientesPago: pend.rows[0].n },
+    memorias,
+    persona: (profile && profile.kaly_persona) || {},
   };
 }
 
