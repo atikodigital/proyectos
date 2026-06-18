@@ -35,6 +35,7 @@ const { responder } = require('../varas/chat');
 const { geminiChat } = require('../varas/gemini');
 const { ejecutarAccion } = require('../varas/acciones');
 const { TOOLS_READ } = require('../varas/tools');
+const memoryRepo = require('../agent/memory');
 
 function createAppRouter({ db, extractExpense, createLiveToken, sendText, extractCartola, componer, extraerProductos, extractLibroSii, varasGemini } = {}) {
   const _extract = extractExpense || realExtract.extractExpense;
@@ -266,6 +267,21 @@ function createAppRouter({ db, extractExpense, createLiveToken, sendText, extrac
     const context = await buildAgentContext(db, { companyId: req.auth.companyId, employeeId: req.auth.employeeId });
     console.log('[kaly] token live emitido para empleado', req.auth.employeeId);
     return res.json({ ...tok, context });
+  });
+
+  // ── KALY memoria (hechos scoped por empresa) ──
+  router.get('/kaly/memoria', async (req, res) => {
+    return res.json(await memoryRepo.listMemorias(db, req.auth.companyId));
+  });
+  router.post('/kaly/memoria', async (req, res) => {
+    const m = await memoryRepo.crearMemoria(db, req.auth.companyId, { ...(req.body || {}), origen: (req.body && req.body.origen) || 'dueño' });
+    if (!m) return res.status(400).json({ error: 'contenido_vacio' });
+    return res.status(201).json(m);
+  });
+  router.delete('/kaly/memoria/:id', async (req, res) => {
+    const r = await memoryRepo.borrarMemoria(db, req.auth.companyId, req.params.id);
+    if (!r) return res.status(404).json({ error: 'no_existe' });
+    return res.json({ ok: true });
   });
 
   router.post('/agent/resumen-whatsapp', async (req, res) => {
