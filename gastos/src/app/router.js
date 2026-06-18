@@ -31,14 +31,18 @@ const contaReportes = require('../contabilidad/reportes');
 const { REGIONES_COMUNAS } = require('../pedidos/comunas-chile');
 const { mapCategoryToSii } = require('../domain/categories');
 const { crearAsientoManual, anularAsientoManual } = require('../contabilidad/manual');
+const { responder } = require('../varas/chat');
+const { geminiChat } = require('../varas/gemini');
+const { ejecutarAccion } = require('../varas/acciones');
 
-function createAppRouter({ db, extractExpense, createLiveToken, sendText, extractCartola, componer, extraerProductos, extractLibroSii } = {}) {
+function createAppRouter({ db, extractExpense, createLiveToken, sendText, extractCartola, componer, extraerProductos, extractLibroSii, varasGemini } = {}) {
   const _extract = extractExpense || realExtract.extractExpense;
   const _extractCartola = extractCartola || ((b64, mime) => require('../ocr/cartola').geminiExtractCartola(b64, mime));
   const _extractLibroSii = extractLibroSii || ((b64, mime) => require('../ocr/libro-sii').geminiExtractLibroSii(b64, mime));
   const _liveToken = createLiveToken || (() => require('../agent/token').createEphemeralToken({ apiKey: process.env.GEMINI_API_KEY }));
   const _sendText = sendText || require('../whatsapp/client').sendText;
   const _extraerProductos = extraerProductos || realExtraerProductos;
+  const _varasGemini = varasGemini || geminiChat;
   const router = express.Router();
 
   router.post('/login', async (req, res) => {
@@ -85,6 +89,16 @@ function createAppRouter({ db, extractExpense, createLiveToken, sendText, extrac
     const a = await anularAsientoManual(db, req.auth.companyId, req.params.id);
     if (!a) return res.status(404).json({ error: 'no_existe' });
     res.json({ ok: true });
+  });
+
+  // ── VARAS chat IA ──
+  router.post('/varas/chat', async (req, res) => {
+    const messages = (req.body && req.body.messages) || [];
+    res.json(await responder(db, req.auth.companyId, messages, { gemini: _varasGemini }));
+  });
+  router.post('/varas/accion', async (req, res) => {
+    const b = req.body || {};
+    res.json(await ejecutarAccion(db, req.auth.companyId, b.tipo, b.args || {}, { sendText: _sendText }));
   });
 
   registerCatalogRoutes(router, { db });

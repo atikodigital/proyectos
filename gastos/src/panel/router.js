@@ -25,6 +25,9 @@ const { sembrarPorRubro } = require('../auxiliares/semilla');
 const { getGiro, setGiro } = require('../companies/repo');
 const contaCuentas = require('../contabilidad/cuentas');
 const { crearAsientoManual, anularAsientoManual } = require('../contabilidad/manual');
+const { responder } = require('../varas/chat');
+const { geminiChat } = require('../varas/gemini');
+const { ejecutarAccion } = require('../varas/acciones');
 
 function parseFiltros(q = {}) {
   return {
@@ -33,8 +36,9 @@ function parseFiltros(q = {}) {
   };
 }
 
-function createPanelRouter({ db, sendText } = {}) {
+function createPanelRouter({ db, sendText, varasGemini } = {}) {
   const _sendText = sendText || realWaClient.sendText;
+  const _varasGemini = varasGemini || geminiChat;
   const router = express.Router();
 
   router.post('/login', async (req, res) => {
@@ -236,6 +240,16 @@ function createPanelRouter({ db, sendText } = {}) {
     const a = await anularAsientoManual(db, req.auth.companyId, req.params.id);
     if (!a) return res.status(404).json({ error: 'no_existe' });
     res.json({ ok: true });
+  });
+
+  // ── VARAS chat IA ──
+  router.post('/varas/chat', async (req, res) => {
+    const messages = (req.body && req.body.messages) || [];
+    res.json(await responder(db, req.auth.companyId, messages, { gemini: _varasGemini }));
+  });
+  router.post('/varas/accion', async (req, res) => {
+    const b = req.body || {};
+    res.json(await ejecutarAccion(db, req.auth.companyId, b.tipo, b.args || {}, { sendText: _sendText }));
   });
 
   return router;
