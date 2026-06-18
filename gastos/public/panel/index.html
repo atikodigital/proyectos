@@ -191,6 +191,7 @@
         <div class="row">
           <div><label>Período</label><input id="cPeriodo" type="month" /></div>
           <div class="tabs" style="margin:0">
+            <button class="tab csub" data-libro="varas">VARAS</button>
             <button class="tab csub active" data-libro="diario">Diario</button>
             <button class="tab csub" data-libro="mayor">Mayor</button>
             <button class="tab csub" data-libro="balance">Balance</button>
@@ -731,13 +732,99 @@
     });
   }
 
+  // ── VARAS (chat conversacional) ───────────────────────────────────────────
+  var VARAS_BIENVENIDA = 'Soy VARAS, tu controlador financiero. Pregúntame por tus saldos, deudas, flujo o consumo de insumos.';
+  var _varasMensajes = null;
+  var _varasAccion = null;
+  var _varasBusy = false;
+
+  async function varasChat(messages) {
+    var res = await apiFetch('/varas/chat', { method: 'POST', body: JSON.stringify({ messages: messages }) });
+    if (!res.ok) throw new Error('varas-chat');
+    return res.json();
+  }
+  async function varasAccion(tipo, args) {
+    var res = await apiFetch('/varas/accion', { method: 'POST', body: JSON.stringify({ tipo: tipo, args: args }) });
+    if (!res.ok) throw new Error('varas-accion');
+    return res.json();
+  }
+
+  function renderVarasChat() {
+    if (!_varasMensajes) _varasMensajes = [{ role: 'varas', text: VARAS_BIENVENIDA }];
+    $('cContenido').innerHTML =
+      '<div style="max-width:680px;display:flex;flex-direction:column;height:100%">'
+      + '<div id="varasScroll" class="scroll" style="flex:1;min-height:200px;padding:4px"></div>'
+      + '<div class="row" style="margin-top:8px;gap:8px">'
+      + '<input id="varasInput" style="flex:1" placeholder="Pregúntale a VARAS…" />'
+      + '<button id="varasEnviar" class="btn-gold">Enviar</button>'
+      + '</div></div>';
+
+    function pintar() {
+      var cont = $('varasScroll');
+      if (!cont) return;
+      cont.innerHTML = PanelLib.varasChatHtml(_varasMensajes, _varasAccion);
+      cont.scrollTop = cont.scrollHeight;
+      var conf = $('varas-confirmar');
+      if (conf) conf.onclick = confirmar;
+      var canc = $('varas-cancelar');
+      if (canc) canc.onclick = function () { _varasAccion = null; pintar(); };
+    }
+
+    async function enviar() {
+      var inp = $('varasInput');
+      var texto = (inp && inp.value || '').trim();
+      if (!texto || _varasBusy) return;
+      _varasMensajes.push({ role: 'user', text: texto });
+      _varasAccion = null;
+      _varasBusy = true;
+      if (inp) inp.value = '';
+      pintar();
+      try {
+        var historial = _varasMensajes.map(function (m) { return { role: m.role === 'varas' ? 'assistant' : 'user', text: m.text }; });
+        var r = await varasChat(historial);
+        _varasMensajes.push({ role: 'varas', text: (r && r.reply) || '' });
+        if (r && r.accionPropuesta) _varasAccion = r.accionPropuesta;
+      } catch (e) {
+        if (e.message !== '401') _varasMensajes.push({ role: 'varas', text: 'No pude procesar eso, intenta de nuevo.' });
+      } finally {
+        _varasBusy = false;
+        pintar();
+      }
+    }
+
+    async function confirmar() {
+      if (!_varasAccion || _varasBusy) return;
+      _varasBusy = true;
+      var acc = _varasAccion;
+      try {
+        await varasAccion(acc.tipo, acc.args);
+        _varasMensajes.push({ role: 'varas', text: '✓ Hecho.' });
+        _varasAccion = null;
+      } catch (e) {
+        if (e.message !== '401') _varasMensajes.push({ role: 'varas', text: 'No pude ejecutar la acción, intenta de nuevo.' });
+      } finally {
+        _varasBusy = false;
+        pintar();
+      }
+    }
+
+    pintar();
+    var btn = $('varasEnviar');
+    if (btn) btn.onclick = enviar;
+    var inp = $('varasInput');
+    if (inp) inp.onkeydown = function (e) { if (e.key === 'Enter') { e.preventDefault(); enviar(); } };
+  }
+
   async function loadContabilidad() {
     $('cContenido').innerHTML = '<p class="muted" style="padding:8px">Cargando…</p>';
-    $('cExcelBtn').classList.toggle('hidden', libroActual === 'conciliacion' || libroActual === 'iva' || libroActual === 'manual');
+    $('cExcelBtn').classList.toggle('hidden', libroActual === 'varas' || libroActual === 'conciliacion' || libroActual === 'iva' || libroActual === 'manual');
     var p = '?periodo=' + encodeURIComponent(cPeriodoVal());
     try {
       var res, data;
-      if (libroActual === 'manual') {
+      if (libroActual === 'varas') {
+        renderVarasChat();
+        return;
+      } else if (libroActual === 'manual') {
         renderManualForm();
         return;
       } else if (libroActual === 'diario') {

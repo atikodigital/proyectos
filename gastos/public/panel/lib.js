@@ -274,5 +274,29 @@
       + (filas || '<tr><td colspan="3">Sin evolución.</td></tr>') + '</tbody></table>';
   }
 
-  return { fmtClp, escapeHtml, buildQuery, totalsFromRows, cashflowFromRows, expensesTableHtml, expensesCarouselHtml, detalleRows, detalleHtml, desdePriceLib: desdePriceLib, productosListHtml: productosListHtml, cuadreManual: cuadreManual, diarioTableHtml: diarioTableHtml, mayorTableHtml: mayorTableHtml, balanceTableHtml: balanceTableHtml, flujoTableHtml: flujoTableHtml, conciliacionHtml: conciliacionHtml, ivaResumenHtml: ivaResumenHtml, auxiliaresTableHtml: auxiliaresTableHtml, consumoHtml: consumoHtml };
+  function varasChatHtml(mensajes, accion) {
+    var oro = '#C9A24B';
+    var burbujas = (mensajes || []).map(function (m) {
+      var esUser = m.role === 'user';
+      var cls = esUser ? 'varas-bubble-user' : 'varas-bubble-varas';
+      var align = esUser ? 'flex-end' : 'flex-start';
+      var bg = esUser ? 'rgba(201,162,75,0.13)' : 'rgba(255,255,255,0.06)';
+      var col = esUser ? '#f0e2bf' : '#e8e8ee';
+      return '<div style="display:flex;justify-content:' + align + ';margin:4px 0">'
+        + '<div class="' + cls + '" style="max-width:80%;border-radius:14px;padding:8px 12px;font-size:13px;white-space:pre-wrap;background:' + bg + ';color:' + col + '">'
+        + escapeHtml(m.text) + '</div></div>';
+    }).join('');
+    var tarjeta = '';
+    if (accion) {
+      tarjeta = '<div id="varasAccionCard" style="border:1px solid ' + oro + ';border-radius:14px;padding:12px;margin:8px 0;font-size:13px">'
+        + '<div style="font-weight:900;color:' + oro + ';margin-bottom:8px">' + escapeHtml(accion.descripcion) + '</div>'
+        + '<div style="display:flex;gap:8px">'
+        + '<button id="varas-confirmar" class="btn-gold" style="font-size:12px;padding:5px 14px">Confirmar</button>'
+        + '<button id="varas-cancelar" class="btn-ghost" style="font-size:12px;padding:5px 14px">Cancelar</button>'
+        + '</div></div>';
+    }
+    return '<div id="varasMensajes" style="display:flex;flex-direction:column">' + burbujas + tarjeta + '</div>';
+  }
+
+  return { fmtClp, escapeHtml, buildQuery, totalsFromRows, cashflowFromRows, expensesTableHtml, expensesCarouselHtml, detalleRows, detalleHtml, desdePriceLib: desdePriceLib, productosListHtml: productosListHtml, cuadreManual: cuadreManual, diarioTableHtml: diarioTableHtml, mayorTableHtml: mayorTableHtml, balanceTableHtml: balanceTableHtml, flujoTableHtml: flujoTableHtml, conciliacionHtml: conciliacionHtml, ivaResumenHtml: ivaResumenHtml, auxiliaresTableHtml: auxiliaresTableHtml, consumoHtml: consumoHtml, varasChatHtml: varasChatHtml };
 });
