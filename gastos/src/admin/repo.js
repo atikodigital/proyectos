@@ -2,6 +2,54 @@
 const { createCompany, createEmployee } = require('../companies/repo');
 const { hashPassword } = require('../auth/password');
 
+const PRODUCTOS = ['hashia', 'crm', 'chat', 'pedidos'];
+const CANALES = ['whatsapp', 'messenger', 'instagram', 'email', 'telegram', 'web', 'voz'];
+const _prodReady = new WeakSet();
+
+async function ensureProductos(db) {
+  if (_prodReady.has(db)) return;
+  await db.query("ALTER TABLE companies ADD COLUMN IF NOT EXISTS productos jsonb DEFAULT '[]';");
+  await db.query("ALTER TABLE companies ADD COLUMN IF NOT EXISTS canales jsonb DEFAULT '[]';");
+  await db.query("ALTER TABLE companies ADD COLUMN IF NOT EXISTS burbuja_activa boolean DEFAULT false;");
+  await db.query("ALTER TABLE companies ADD COLUMN IF NOT EXISTS burbuja_apps jsonb DEFAULT '[]';");
+  _prodReady.add(db);
+}
+
+function _filtrar(arr, permitidos) {
+  const out = [];
+  for (const v of (Array.isArray(arr) ? arr : [])) {
+    const k = String(v || '').trim().toLowerCase();
+    if (permitidos.includes(k) && !out.includes(k)) out.push(k);
+  }
+  return out;
+}
+function _appsLibres(arr) {
+  const out = [];
+  for (const v of (Array.isArray(arr) ? arr : [])) {
+    const k = String(v || '').trim().toLowerCase();
+    if (k && !out.includes(k)) out.push(k);
+  }
+  return out;
+}
+
+async function getProductos(db, companyId) {
+  await ensureProductos(db);
+  const r = await db.query('SELECT id, productos, canales, burbuja_activa, burbuja_apps FROM companies WHERE id=$1', [companyId]);
+  return r.rows[0] || null;
+}
+
+async function setProductos(db, companyId, patch = {}) {
+  await ensureProductos(db);
+  const sets = []; const vals = [companyId];
+  if (patch.productos !== undefined) { vals.push(JSON.stringify(_filtrar(patch.productos, PRODUCTOS))); sets.push(`productos=$${vals.length}::jsonb`); }
+  if (patch.canales !== undefined) { vals.push(JSON.stringify(_filtrar(patch.canales, CANALES))); sets.push(`canales=$${vals.length}::jsonb`); }
+  if (patch.burbuja_activa !== undefined) { vals.push(!!patch.burbuja_activa); sets.push(`burbuja_activa=$${vals.length}`); }
+  if (patch.burbuja_apps !== undefined) { vals.push(JSON.stringify(_appsLibres(patch.burbuja_apps))); sets.push(`burbuja_apps=$${vals.length}::jsonb`); }
+  if (!sets.length) return getProductos(db, companyId);
+  const r = await db.query(`UPDATE companies SET ${sets.join(', ')} WHERE id=$1 RETURNING id, productos, canales, burbuja_activa, burbuja_apps`, vals);
+  return r.rows[0] || null;
+}
+
 const _ready = new WeakSet();
 async function ensurePlan(db) {
   if (_ready.has(db)) return;
@@ -84,4 +132,4 @@ async function listClientesConStats(db, year, month) {
   return out;
 }
 
-module.exports = { ensurePlan, crearCliente, crearLogin, setCompanyPlan, movimientosDelMes, listClientesConStats };
+module.exports = { ensurePlan, crearCliente, crearLogin, setCompanyPlan, movimientosDelMes, listClientesConStats, ensureProductos, getProductos, setProductos, PRODUCTOS, CANALES };
