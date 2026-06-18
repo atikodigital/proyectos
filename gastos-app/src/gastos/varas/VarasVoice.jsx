@@ -58,7 +58,7 @@ export default function VarasVoice() {
     const session = openLiveSession({
       token: s.token,
       model: s.model || LIVE_MODEL_FALLBACK,
-      voice: 'Orus',
+      voice: 'Gacrux',
       systemPrompt: buildVarasVoicePrompt(s.context || {}),
       tools: TOOL_DECLARATIONS,
       audio: true,

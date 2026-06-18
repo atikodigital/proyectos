@@ -28,11 +28,11 @@ function setupVoz(voice) {
   return fake;
 }
 
-test('voice:"Orus" → el setup enviado al onopen incluye voiceName:"Orus"', () => {
-  const fake = setupVoz('Orus');
+test('voice:"Gacrux" → el setup enviado al onopen incluye voiceName:"Gacrux"', () => {
+  const fake = setupVoz('Gacrux');
   fake.onopen();
   const sent = JSON.parse(fake.send.mock.calls[0][0]);
-  expect(sent.setup.generationConfig.speechConfig.voiceConfig.prebuiltVoiceConfig.voiceName).toBe('Orus');
+  expect(sent.setup.generationConfig.speechConfig.voiceConfig.prebuiltVoiceConfig.voiceName).toBe('Gacrux');
 });
 
 test('sin voice → el setup usa "Charon" por defecto (KALY intacto)', () => {

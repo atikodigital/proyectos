@@ -46,14 +46,14 @@ test('NO auto-arranca al montar (VARAS solo arranca al tocar la esfera)', () => 
   expect(openLiveSession).not.toHaveBeenCalled();
 });
 
-test('tocar la esfera → connecting → openLiveSession con voz Orus', async () => {
+test('tocar la esfera → connecting → openLiveSession con voz Gacrux', async () => {
   render(<VarasVoice />);
   const orb = screen.getByRole('button', { name: 'VARAS' });
   await act(async () => { fireEvent.click(orb); });
 
   expect(api.agentSession).toHaveBeenCalledTimes(1);
   await waitFor(() => expect(openLiveSession).toHaveBeenCalledTimes(1));
-  expect(lastLiveOpts.voice).toBe('Orus');
+  expect(lastLiveOpts.voice).toBe('Gacrux');
   expect(lastLiveOpts.audio).toBe(true);
   expect(typeof lastLiveOpts.systemPrompt).toBe('string');
 
