@@ -111,6 +111,25 @@
   </div>
 </div>
 
+<!-- MODAL KALY PERSONA -->
+<div id="kalyModal" class="modal hidden">
+  <div class="box">
+    <h3 style="margin:0 0 4px; color:var(--gold)">🧠 Personalidad de KALY</h3>
+    <p class="muted" id="km_empresa" style="margin-top:0"></p>
+    <label>Nombre de KALY para este cliente</label>
+    <input id="km_nombre" autocapitalize="none" style="width:100%" placeholder="KALY" />
+    <label style="margin-top:10px">Tono</label>
+    <input id="km_tono" style="width:100%" placeholder="amigable, profesional, informal…" />
+    <label style="margin-top:10px">Instrucciones adicionales</label>
+    <textarea id="km_instrucciones" style="width:100%; background:#ffffff10; color:#fff; border:1px solid #ffffff26; border-radius:10px; padding:9px 11px; resize:vertical; min-height:80px; font-family:inherit"></textarea>
+    <p id="km_msg" class="ok"></p>
+    <div class="row" style="justify-content:flex-end; margin-top:12px">
+      <button id="km_cancel" class="btn-ghost">Cerrar</button>
+      <button id="km_save" class="btn-gold">Guardar</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL RESET LOGIN -->
 <div id="loginModal" class="modal hidden">
   <div class="box">
@@ -182,7 +201,10 @@ async function cargar() {
       '<td>' + planSelect(c.id, c.plan) + '</td>' +
       '<td class="num">' + c.empleados + '</td>' +
       '<td class="num"><span class="big" style="font-size:16px">' + c.movimientos + '</span></td>' +
-      '<td><button class="btn-ghost btn-sm" data-login="' + esc(c.id) + '" data-nombre="' + esc(c.nombre) + '">🔑 Login</button></td>' +
+      '<td style="white-space:nowrap">' +
+        '<button class="btn-ghost btn-sm" data-login="' + esc(c.id) + '" data-nombre="' + esc(c.nombre) + '">🔑 Login</button> ' +
+        '<button class="btn-ghost btn-sm" data-kaly="' + esc(c.id) + '" data-nombre="' + esc(c.nombre) + '">🧠 KALY</button>' +
+      '</td>' +
       '</tr>'
     )).join('');
     body.querySelectorAll('select[data-plan]').forEach(sel => {
@@ -193,6 +215,9 @@ async function cargar() {
     });
     body.querySelectorAll('button[data-login]').forEach(btn => {
       btn.onclick = () => openLoginModal(btn.dataset.login, btn.dataset.nombre);
+    });
+    body.querySelectorAll('button[data-kaly]').forEach(btn => {
+      btn.onclick = () => openKalyModal(btn.dataset.kaly, btn.dataset.nombre);
     });
   } catch (e) {
     if (e.status === 401) { $('logoutBtn').click(); return; }
@@ -235,6 +260,31 @@ $('lm_save').onclick = async () => {
     $('lm_msg').textContent = '✓ Login guardado para "' + usuario + '"';
     setTimeout(() => { $('loginModal').classList.add('hidden'); cargar(); }, 900);
   } catch (e) { $('lm_msg').className = 'err'; $('lm_msg').textContent = 'Error: ' + e.message; }
+};
+
+// ---- modal kaly persona ----
+let km_id = null;
+function openKalyModal(id, nombre) {
+  km_id = id;
+  $('km_empresa').textContent = nombre;
+  $('km_nombre').value = ''; $('km_tono').value = ''; $('km_instrucciones').value = '';
+  $('km_msg').textContent = ''; $('km_msg').className = 'ok';
+  $('kalyModal').classList.remove('hidden');
+}
+$('km_cancel').onclick = () => $('kalyModal').classList.add('hidden');
+$('km_save').onclick = async () => {
+  $('km_msg').textContent = ''; $('km_msg').className = 'ok';
+  const nombre = $('km_nombre').value.trim();
+  const tono = $('km_tono').value.trim();
+  const instrucciones = $('km_instrucciones').value.trim();
+  if (!nombre && !tono && !instrucciones) {
+    $('km_msg').className = 'err'; $('km_msg').textContent = 'Completa al menos un campo'; return;
+  }
+  try {
+    await api('/clientes/' + km_id + '/kaly-persona', { method: 'PATCH', body: JSON.stringify({ nombre, tono, instrucciones }) });
+    $('km_msg').textContent = '✓ Personalidad de KALY guardada';
+    setTimeout(() => $('kalyModal').classList.add('hidden'), 1000);
+  } catch (e) { $('km_msg').className = 'err'; $('km_msg').textContent = 'Error: ' + e.message; }
 };
 
 // init
