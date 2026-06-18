@@ -15,19 +15,13 @@ async function ensureProductos(db) {
   _prodReady.add(db);
 }
 
-function _filtrar(arr, permitidos) {
+// Normaliza un array a strings minúscula/trim/sin duplicados. Si se pasa `permitidos`,
+// además descarta las claves fuera de ese catálogo. Si no, acepta texto libre no vacío.
+function _normalizeArr(arr, permitidos = null) {
   const out = [];
   for (const v of (Array.isArray(arr) ? arr : [])) {
     const k = String(v || '').trim().toLowerCase();
-    if (permitidos.includes(k) && !out.includes(k)) out.push(k);
-  }
-  return out;
-}
-function _appsLibres(arr) {
-  const out = [];
-  for (const v of (Array.isArray(arr) ? arr : [])) {
-    const k = String(v || '').trim().toLowerCase();
-    if (k && !out.includes(k)) out.push(k);
+    if (k && (!permitidos || permitidos.includes(k)) && !out.includes(k)) out.push(k);
   }
   return out;
 }
@@ -40,11 +34,24 @@ async function getProductos(db, companyId) {
 
 async function setProductos(db, companyId, patch = {}) {
   await ensureProductos(db);
-  const sets = []; const vals = [companyId];
-  if (patch.productos !== undefined) { vals.push(JSON.stringify(_filtrar(patch.productos, PRODUCTOS))); sets.push(`productos=$${vals.length}::jsonb`); }
-  if (patch.canales !== undefined) { vals.push(JSON.stringify(_filtrar(patch.canales, CANALES))); sets.push(`canales=$${vals.length}::jsonb`); }
-  if (patch.burbuja_activa !== undefined) { vals.push(!!patch.burbuja_activa); sets.push(`burbuja_activa=$${vals.length}`); }
-  if (patch.burbuja_apps !== undefined) { vals.push(JSON.stringify(_appsLibres(patch.burbuja_apps))); sets.push(`burbuja_apps=$${vals.length}::jsonb`); }
+  const sets = [];
+  const vals = [companyId];
+  if (patch.productos !== undefined) {
+    vals.push(JSON.stringify(_normalizeArr(patch.productos, PRODUCTOS)));
+    sets.push(`productos=$${vals.length}::jsonb`);
+  }
+  if (patch.canales !== undefined) {
+    vals.push(JSON.stringify(_normalizeArr(patch.canales, CANALES)));
+    sets.push(`canales=$${vals.length}::jsonb`);
+  }
+  if (patch.burbuja_activa !== undefined) {
+    vals.push(!!patch.burbuja_activa);
+    sets.push(`burbuja_activa=$${vals.length}`);
+  }
+  if (patch.burbuja_apps !== undefined) {
+    vals.push(JSON.stringify(_normalizeArr(patch.burbuja_apps)));
+    sets.push(`burbuja_apps=$${vals.length}::jsonb`);
+  }
   if (!sets.length) return getProductos(db, companyId);
   const r = await db.query(`UPDATE companies SET ${sets.join(', ')} WHERE id=$1 RETURNING id, productos, canales, burbuja_activa, burbuja_apps`, vals);
   return r.rows[0] || null;

@@ -32,3 +32,9 @@ test('setProductos parcial no borra lo no enviado', async () => {
   expect(r.productos).toEqual(['hashia']);
   expect(r.burbuja_activa).toBe(true);
 });
+
+test('getProductos devuelve null si la empresa no existe', async () => {
+  const { db } = await setup();
+  const r = await repo.getProductos(db, '00000000-0000-0000-0000-000000000000');
+  expect(r).toBeNull();
+});
