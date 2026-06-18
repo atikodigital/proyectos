@@ -33,6 +33,20 @@ const KALY_COLUMNS = [
   "ALTER TABLE employees ADD COLUMN IF NOT EXISTS kaly_onboarded boolean NOT NULL DEFAULT false",
 ];
 
+const MEMORY_DDL = [
+  `CREATE TABLE IF NOT EXISTS kaly_memory (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    company_id uuid NOT NULL,
+    tipo text NOT NULL DEFAULT 'hecho',
+    contenido text NOT NULL,
+    origen text NOT NULL DEFAULT 'kaly',
+    activo boolean NOT NULL DEFAULT true,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now()
+  )`,
+  "ALTER TABLE companies ADD COLUMN IF NOT EXISTS kaly_persona jsonb",
+];
+
 // Índices de dedup (no únicos: el override permite una 2ª fila a propósito).
 const DEDUP_INDEXES = [
   "CREATE INDEX IF NOT EXISTS idx_expenses_dedup_doc ON expenses(company_id, rut_emisor, folio)",
@@ -55,6 +69,9 @@ async function migrate(db) {
   }
   for (const stmt of KALY_COLUMNS) {
     try { await db.query(stmt); } catch (e) { /* pg-mem: ya existen del schema */ }
+  }
+  for (const stmt of MEMORY_DDL) {
+    try { await db.query(stmt); } catch (e) { /* pg-mem / ya existe */ }
   }
   for (const stmt of DEDUP_INDEXES) {
     try { await db.query(stmt); } catch (e) { /* tolerante */ }

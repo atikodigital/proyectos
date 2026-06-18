@@ -23,4 +23,26 @@ function formatMemoriaBlock(memorias) {
   return out.trim();
 }
 
-module.exports = { normalizeMemoria, formatMemoriaBlock, TIPOS };
+async function crearMemoria(db, companyId, input) {
+  const n = normalizeMemoria(input);
+  if (!n) return null;
+  const origen = input && input.origen === 'dueño' ? 'dueño' : 'kaly';
+  const r = await db.query(
+    "INSERT INTO kaly_memory(company_id, tipo, contenido, origen) VALUES($1,$2,$3,$4) RETURNING id, tipo, contenido, origen, created_at",
+    [companyId, n.tipo, n.contenido, origen]
+  );
+  return r.rows[0];
+}
+async function listMemorias(db, companyId, { limite = 50 } = {}) {
+  const r = await db.query(
+    "SELECT id, tipo, contenido, origen, created_at FROM kaly_memory WHERE company_id=$1 AND activo=true ORDER BY created_at DESC LIMIT $2",
+    [companyId, limite]
+  );
+  return r.rows;
+}
+async function borrarMemoria(db, companyId, id) {
+  const r = await db.query("UPDATE kaly_memory SET activo=false, updated_at=now() WHERE id=$1 AND company_id=$2 RETURNING id", [id, companyId]);
+  return r.rows[0] || null;
+}
+
+module.exports = { normalizeMemoria, formatMemoriaBlock, TIPOS, crearMemoria, listMemorias, borrarMemoria };

@@ -69,3 +69,14 @@ CREATE TABLE IF NOT EXISTS users (
 
 CREATE INDEX IF NOT EXISTS idx_expenses_company ON expenses(company_id);
 CREATE INDEX IF NOT EXISTS idx_expenses_estado ON expenses(estado);
+
+CREATE TABLE IF NOT EXISTS kaly_memory (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  company_id uuid NOT NULL,
+  tipo text NOT NULL DEFAULT 'hecho',
+  contenido text NOT NULL,
+  origen text NOT NULL DEFAULT 'kaly',
+  activo boolean NOT NULL DEFAULT true,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
