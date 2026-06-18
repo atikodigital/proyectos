@@ -254,3 +254,15 @@ test('(10) al cerrar con <4 turnos → NO llama api.kalyAprender', async () => {
 
   expect(api.kalyAprender).not.toHaveBeenCalled();
 });
+
+test('(11) onToolCall pasa proponer y pedirEvidencia en el ctx de executeTool', async () => {
+  await act(async () => { render(<KalyAgent />); });
+  await waitFor(() => expect(openLiveSession).toHaveBeenCalledTimes(1));
+  const fc = { id: '9', name: 'agregar_producto', args: { nombre: 'X', precio: 1000 } };
+  await act(async () => { await lastLiveOpts.onToolCall(fc); });
+  expect(executeTool).toHaveBeenCalledWith(
+    'agregar_producto',
+    { nombre: 'X', precio: 1000 },
+    expect.objectContaining({ proponer: expect.any(Function), pedirEvidencia: expect.any(Function) }),
+  );
+});

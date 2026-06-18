@@ -11,6 +11,7 @@ import { openLiveSession } from './live.js';
 import { TOOL_DECLARATIONS, executeTool } from './tools.js';
 import { buildSystemPrompt, instruccionInicial } from './prompt.js';
 import { decideAutoStart, esNegativa, hoyStr, SILENCE_MS, INACTIVITY_MS } from './logic.js';
+import { useAgentInteraction } from '../agente/AgentInteractionProvider.jsx';
 
 const LIVE_MODEL_FALLBACK =
   typeof __KALY_LIVE_MODEL__ !== 'undefined'
@@ -36,6 +37,14 @@ export default function KalyAgent() {
   const mutedRef = useRef(muted);
   const turnosRef = useRef([]);
   useEffect(() => { mutedRef.current = muted; }, [muted]);
+
+  const { proponer, pedirEvidencia, interaccionAbierta } = useAgentInteraction();
+
+  useEffect(() => {
+    if (sessionRef.current && sessionRef.current.setMuted) {
+      sessionRef.current.setMuted(interaccionAbierta || mutedRef.current);
+    }
+  }, [interaccionAbierta]);
 
   function clearSilenceTimer() {
     if (silenceTimerRef.current != null) { clearTimeout(silenceTimerRef.current); silenceTimerRef.current = null; }
@@ -119,6 +128,8 @@ export default function KalyAgent() {
             contextRef.current = { ...contextRef.current, ...p, onboarded: true };
             localStorage.setItem('kaly_onboarded', '1');
           },
+          proponer,
+          pedirEvidencia,
         });
         if (sessionRef.current) sessionRef.current.sendToolResponse(fc.id, fc.name, out);
       };

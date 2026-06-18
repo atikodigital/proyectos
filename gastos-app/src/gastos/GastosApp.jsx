@@ -11,6 +11,7 @@ import { APP_VERSION } from './version';
 import ChatView from './ChatView.jsx';
 import OnboardingWizard from './onboarding/OnboardingWizard.jsx';
 import MemoriaKalyView from './MemoriaKalyView.jsx';
+import { AgentInteractionProvider } from './agente/AgentInteractionProvider.jsx';
 
 function clp(n) { return '$' + (Math.round(Number(n) || 0)).toLocaleString('es-CL'); }
 function fechaCorta(v) { if (!v) return ''; const s = String(v); return s.length >= 10 ? s.slice(0, 10) : s; }
@@ -68,6 +69,7 @@ export default function GastosApp() {
   }
 
   return (
+    <AgentInteractionProvider>
     <div className="h-screen flex flex-col overflow-hidden">
       {mostrarOnboarding && (
         <OnboardingWizard
@@ -166,5 +168,6 @@ export default function GastosApp() {
         </nav>
       )}
     </div>
+    </AgentInteractionProvider>
   );
 }
