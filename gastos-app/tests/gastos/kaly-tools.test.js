@@ -14,6 +14,8 @@ jest.mock('../../src/gastos/api', () => ({
     createProduct: jest.fn(),
     updateProduct: jest.fn(),
     kalyRecordar: jest.fn(),
+    matchCartola: jest.fn(),
+    createExpense: jest.fn(),
   },
 }));
 
@@ -25,8 +27,8 @@ beforeEach(() => {
 
 // ── TOOL_DECLARATIONS ─────────────────────────────────────────────────────────
 
-test('TOOL_DECLARATIONS has 12 entries', () => {
-  expect(TOOL_DECLARATIONS).toHaveLength(12);
+test('TOOL_DECLARATIONS has 13 entries', () => {
+  expect(TOOL_DECLARATIONS).toHaveLength(13);
   const names = TOOL_DECLARATIONS.map((t) => t.name);
   expect(names).toContain('guardar_preferencias');
   expect(names).toContain('obtener_resumen');
@@ -40,6 +42,7 @@ test('TOOL_DECLARATIONS has 12 entries', () => {
   expect(names).toContain('editar_stock');
   expect(names).toContain('listar_productos');
   expect(names).toContain('recordar');
+  expect(names).toContain('pedir_documento');
 });
 
 // ── guardar_preferencias ──────────────────────────────────────────────────────
@@ -281,4 +284,40 @@ test('recordar llama api.kalyRecordar con contenido y tipo', async () => {
   const result = await executeTool('recordar', { tipo: 'negocio', contenido: 'Cierra domingos' });
   expect(api.kalyRecordar).toHaveBeenCalledWith({ tipo: 'negocio', contenido: 'Cierra domingos' });
   expect(result).toEqual({ ok: true, contenido: 'Cierra domingos' });
+});
+
+// ── protocolo de propuesta (escritura por proponer) ───────────────────────────
+
+describe('protocolo de propuesta (escritura por proponer)', () => {
+  test('agregar_producto pasa por proponer y solo crea si se confirma', async () => {
+    api.createProduct.mockResolvedValue({ nombre: 'Empanada', precio_base: 1600 });
+    const proponer = jest.fn().mockResolvedValue({ nombre: 'Empanada', precio: 1600, tipo: 'producto' });
+    const r = await executeTool('agregar_producto', { nombre: 'Empanada', precio: 1500, tipo: 'producto' }, { proponer });
+    expect(proponer).toHaveBeenCalledTimes(1);
+    expect(api.createProduct).toHaveBeenCalledWith(expect.objectContaining({ nombre: 'Empanada', precio_base: 1600 }));
+    expect(r.ok).toBe(true);
+  });
+
+  test('si el usuario cancela (proponer→null) NO llama al api', async () => {
+    const proponer = jest.fn().mockResolvedValue(null);
+    const r = await executeTool('agregar_producto', { nombre: 'X', precio: 1000 }, { proponer });
+    expect(api.createProduct).not.toHaveBeenCalled();
+    expect(r.cancelado).toBe(true);
+  });
+
+  test('una tool de LECTURA no llama a proponer', async () => {
+    api.listExpenses.mockResolvedValue([]);
+    const proponer = jest.fn();
+    await executeTool('obtener_resumen', {}, { proponer });
+    expect(proponer).not.toHaveBeenCalled();
+  });
+
+  test('pedir_documento usa pedirEvidencia y manda la foto a createExpense', async () => {
+    const pedirEvidencia = jest.fn().mockResolvedValue({ imageBase64: 'IMG', imageMimeType: 'image/png' });
+    api.createExpense.mockResolvedValue({ id: 'e1' });
+    const r = await executeTool('pedir_documento', { motivo: 'la boleta', destino: 'gasto' }, { pedirEvidencia });
+    expect(pedirEvidencia).toHaveBeenCalledWith({ motivo: 'la boleta' });
+    expect(api.createExpense).toHaveBeenCalledWith('IMG', 'image/png');
+    expect(r.ok).toBe(true);
+  });
 });

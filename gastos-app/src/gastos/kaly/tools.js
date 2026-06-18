@@ -32,7 +32,64 @@ export const TOOL_DECLARATIONS = [
   { name: 'editar_stock', description: 'Fija el stock disponible de un producto que YA existe.', parameters: { type: 'OBJECT', properties: { nombre: { type: 'STRING', description: 'nombre o parte del nombre del producto' }, stock: { type: 'NUMBER', description: 'unidades disponibles' } }, required: ['nombre', 'stock'] } },
   { name: 'listar_productos', description: 'Lista los productos del catálogo con su precio y stock.', parameters: { type: 'OBJECT', properties: { limite: { type: 'NUMBER' } } } },
   { name: 'recordar', description: 'Guarda un dato importante del negocio o del dueño para recordarlo en futuras conversaciones (ej. horarios, preferencias, datos del dueño).', parameters: { type: 'OBJECT', properties: { contenido: { type: 'STRING', description: 'el dato a recordar, en una frase' }, tipo: { type: 'STRING', enum: ['negocio', 'dueño', 'preferencia', 'hecho'] } }, required: ['contenido'] } }
+  ,{ name: 'pedir_documento', description: 'Pide al usuario que adjunte una foto o captura de un documento (boleta, factura, comprobante o cartola). Úsalo cuando necesites ver un documento.', parameters: { type: 'OBJECT', properties: { motivo: { type: 'STRING', description: 'qué documento pides, en pocas palabras' }, destino: { type: 'STRING', enum: ['gasto', 'cartola'], description: 'gasto = boleta/factura/comprobante; cartola = cartola bancaria' } }, required: ['motivo'] } }
 ];
+
+const TOOLS_ESCRITURA = new Set([
+  'guardar_preferencias', 'marcar_pagada', 'anular_movimiento', 'enviar_resumen_whatsapp',
+  'crear_movimiento_manual', 'agregar_producto', 'editar_precio', 'editar_stock', 'recordar',
+]);
+
+export function construirPropuesta(name, args = {}) {
+  switch (name) {
+    case 'agregar_producto':
+      return { titulo: 'Crear producto', accion: name, campos: [
+        { key: 'nombre', label: 'Nombre', valor: args.nombre || '', tipo: 'texto' },
+        { key: 'precio', label: 'Precio (CLP)', valor: Number(args.precio) || 0, tipo: 'numero' },
+        { key: 'tipo', label: 'Tipo', valor: args.tipo === 'servicio' ? 'servicio' : 'producto', tipo: 'opciones', opciones: ['producto', 'servicio'] },
+      ] };
+    case 'editar_precio':
+      return { titulo: 'Cambiar precio', accion: name, campos: [
+        { key: 'nombre', label: 'Producto', valor: args.nombre || '', tipo: 'texto' },
+        { key: 'nuevo_precio', label: 'Nuevo precio (CLP)', valor: Number(args.nuevo_precio) || 0, tipo: 'numero' },
+      ] };
+    case 'editar_stock':
+      return { titulo: 'Fijar stock', accion: name, campos: [
+        { key: 'nombre', label: 'Producto', valor: args.nombre || '', tipo: 'texto' },
+        { key: 'stock', label: 'Stock', valor: Number(args.stock) || 0, tipo: 'numero' },
+      ] };
+    case 'recordar':
+      return { titulo: 'Guardar en memoria', accion: name, campos: [
+        { key: 'contenido', label: 'Dato a recordar', valor: args.contenido || '', tipo: 'texto' },
+        { key: 'tipo', label: 'Tipo', valor: ['negocio', 'dueño', 'preferencia', 'hecho'].includes(args.tipo) ? args.tipo : 'hecho', tipo: 'opciones', opciones: ['negocio', 'dueño', 'preferencia', 'hecho'] },
+      ] };
+    case 'crear_movimiento_manual':
+      return { titulo: 'Registrar movimiento', accion: name, campos: [
+        { key: 'tipo', label: 'Tipo', valor: args.tipo === 'ingreso' ? 'ingreso' : 'gasto', tipo: 'opciones', opciones: ['gasto', 'ingreso'] },
+        { key: 'proveedor', label: 'Proveedor / descripción', valor: args.proveedor || '', tipo: 'texto' },
+        { key: 'total', label: 'Total (CLP)', valor: Number(args.total) || 0, tipo: 'numero' },
+        { key: 'categoria', label: 'Categoría', valor: args.categoria || '', tipo: 'texto' },
+        { key: 'estado_pago', label: 'Estado de pago', valor: args.estado_pago === 'pagada' ? 'pagada' : 'pendiente', tipo: 'opciones', opciones: ['pendiente', 'pagada'] },
+      ] };
+    case 'marcar_pagada':
+      return { titulo: 'Marcar gasto como pagado', accion: name, nota: 'Buscaré el gasto que coincida y lo marcaré como pagado.', campos: [
+        { key: 'proveedor', label: 'Proveedor / descripción', valor: args.proveedor || '', tipo: 'texto' },
+      ] };
+    case 'anular_movimiento':
+      return { titulo: 'Anular movimiento', accion: name, nota: 'Buscaré el movimiento que coincida y lo anularé.', campos: [
+        { key: 'proveedor', label: 'Proveedor / descripción', valor: args.proveedor || '', tipo: 'texto' },
+      ] };
+    case 'enviar_resumen_whatsapp':
+      return { titulo: 'Enviar resumen por WhatsApp', accion: name, nota: 'Se enviará el resumen de flujo de caja al WhatsApp del dueño.', campos: [] };
+    case 'guardar_preferencias':
+      return { titulo: 'Guardar tus datos', accion: name, campos: [
+        { key: 'nombre', label: 'Nombre', valor: args.nombre || '', tipo: 'texto' },
+        { key: 'trato', label: 'Trato', valor: args.trato === 'señora' ? 'señora' : 'señor', tipo: 'opciones', opciones: ['señor', 'señora'] },
+      ] };
+    default:
+      return null;
+  }
+}
 
 function buscarMovimiento(rows, proveedor) {
   const q = String(proveedor || '').toLowerCase();
@@ -44,7 +101,23 @@ function buscarProducto(rows, nombre) {
   return rows.find((r) => String(r.nombre || '').toLowerCase().includes(q)) || null;
 }
 
-export async function executeTool(name, args = {}, { onPrefsSaved } = {}) {
+export async function executeTool(name, args = {}, { onPrefsSaved, proponer, pedirEvidencia } = {}) {
+  // Caso A: pedir documento → captura.
+  if (name === 'pedir_documento') {
+    if (typeof pedirEvidencia !== 'function') return { error: 'no_disponible' };
+    const ev = await pedirEvidencia({ motivo: args.motivo });
+    if (!ev) return { cancelado: true, detalle: 'El usuario no adjuntó nada.' };
+    try {
+      if (args.destino === 'cartola') { const r = await api.matchCartola(ev.imageBase64, ev.imageMimeType); return { ok: true, ...r }; }
+      const r = await api.createExpense(ev.imageBase64, ev.imageMimeType); return { ok: true, id: r.id };
+    } catch (e) { return { error: 'fallo_operacion', detalle: e.message || 'error' }; }
+  }
+  // Caso B: escritura → propuesta editable (si hay 'proponer').
+  if (TOOLS_ESCRITURA.has(name) && typeof proponer === 'function') {
+    const datos = await proponer(construirPropuesta(name, args));
+    if (!datos) return { cancelado: true, detalle: 'El usuario canceló la acción.' };
+    args = { ...args, ...datos };
+  }
   try {
     if (name === 'guardar_preferencias') {
       await api.agentPrefs({ nombre: args.nombre, trato: args.trato, onboarded: true });
