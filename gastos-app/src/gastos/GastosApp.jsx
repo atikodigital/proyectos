@@ -7,6 +7,7 @@ import MyExpenses from './MyExpenses.jsx';
 import EvidenceIntake from '../components/EvidenceIntake.jsx';
 import ContabilidadView from './ContabilidadView.jsx';
 import KalyAgent from './kaly/KalyAgent.jsx';
+import VarasChat from './VarasChat.jsx';
 import { APP_VERSION } from './version';
 import ChatView from './ChatView.jsx';
 import OnboardingWizard from './onboarding/OnboardingWizard.jsx';
@@ -100,7 +101,7 @@ export default function GastosApp() {
         </div>
       </header>
       <main className="flex-1 min-h-0 flex flex-col overflow-hidden">
-        {!pending && !dup && (
+        {!pending && !dup && (tab === 'capturar' || tab === 'chat') && (
           <div className="px-4 py-2 bg-slate-50/50 border-b border-slate-200/40 shrink-0">
             <KalyAgent />
           </div>
@@ -130,19 +131,14 @@ export default function GastosApp() {
                    <EvidenceIntake maxEvidence={1} value={[]} onChange={onChange} showNativeCapture />
                  </div>
         ) : tab === 'mis' ? (
-          <MyExpenses />
+          <div className="h-full flex flex-col">
+            <div className="shrink-0 border-b" style={{ height: '42%' }}><VarasChat /></div>
+            <div className="flex-1 min-h-0 overflow-y-auto"><MyExpenses /></div>
+          </div>
         ) : tab === 'chat' ? (
           <ChatView />
         ) : tab === 'transaccional' ? (
-          busy ? <div className="p-6">Procesando…</div>
-               : <div className="h-full overflow-hidden p-4 flex flex-col gap-2">
-                   <h2 className="text-xl font-black shrink-0" style={{ color: '#C9A24B' }}>Transaccional</h2>
-                   <p className="text-xs opacity-70 shrink-0">Regístralo sin imagen: díctame el detalle y yo deduzco gasto o ingreso, calculo el IVA y lo registro. <span className="font-bold">Próximamente.</span></p>
-                   <p className="px-2 mt-1 text-xs opacity-70 shrink-0">…o captura un documento:</p>
-                   <div className="flex-1 min-h-0 overflow-hidden">
-                     <EvidenceIntake maxEvidence={1} value={[]} onChange={onChange} showNativeCapture />
-                   </div>
-                 </div>
+          <div className="h-full"><VarasChat /></div>
         ) : (
           <ContabilidadView initialTab="concil" />
         )}

@@ -50,3 +50,23 @@ test('acción desconocida -> error', async () => {
   const r = await ejecutarAccion(db, COMPANY, 'formatear_disco', {}, {});
   expect(r.ok).toBe(false);
 });
+
+test('crear_movimiento registra un gasto confirmado con neto/IVA calculados', async () => {
+  const db = await makeDb();
+  const r = await ejecutarAccion(db, COMPANY, 'crear_movimiento', { tipo: 'gasto', proveedor: 'Molinera', total: 119000, categoria: 'Mercadería e insumos del giro' }, {});
+  expect(r.ok).toBe(true);
+  const { listExpenses } = require('../../src/expenses/query');
+  const movs = await listExpenses(db, COMPANY, {});
+  expect(movs).toHaveLength(1);
+  expect(movs[0].tipo).toBe('gasto');
+  expect(Number(movs[0].total)).toBe(119000);
+  expect(Number(movs[0].neto)).toBe(100000);
+  expect(movs[0].estado).toBe('confirmado');
+});
+
+test('crear_movimiento sin monto -> error', async () => {
+  const db = await makeDb();
+  const r = await ejecutarAccion(db, COMPANY, 'crear_movimiento', { tipo: 'gasto', proveedor: 'X' }, {});
+  expect(r.ok).toBe(false);
+  expect(r.error).toBe('monto_requerido');
+});

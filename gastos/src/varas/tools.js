@@ -4,7 +4,7 @@ const reportes = require('../contabilidad/reportes');
 const matchRepo = require('../match/repo');
 const auxReportes = require('../auxiliares/reportes');
 
-const ACCION_NAMES = new Set(['marcar_pagado', 'crear_asiento_manual', 'enviar_resumen_whatsapp']);
+const ACCION_NAMES = new Set(['marcar_pagado', 'crear_asiento_manual', 'enviar_resumen_whatsapp', 'crear_movimiento']);
 
 async function _saldoClave(db, companyId, clave, filtros) {
   const mayor = await reportes.libroMayor(db, companyId, filtros || {});
@@ -53,12 +53,14 @@ const TOOL_DECLARATIONS = [
   { name: 'marcar_pagado', description: 'Marca un gasto como pagado (requiere confirmación).', parameters: { type: 'object', properties: { descripcion: { type: 'string' } } } },
   { name: 'crear_asiento_manual', description: 'Crea un asiento manual (requiere confirmación).', parameters: { type: 'object', properties: { fecha: { type: 'string' }, glosa: { type: 'string' }, lineas: { type: 'array' } } } },
   { name: 'enviar_resumen_whatsapp', description: 'Envía el resumen de caja al WhatsApp del dueño (requiere confirmación).', parameters: { type: 'object', properties: {} } },
+  { name: 'crear_movimiento', description: 'Registra un movimiento (gasto o ingreso) dictado por el dueño, calculando neto/IVA (requiere confirmación).', parameters: { type: 'object', properties: { tipo: { type: 'string', enum: ['gasto', 'ingreso'] }, proveedor: { type: 'string' }, total: { type: 'number' }, neto: { type: 'number' }, fecha: { type: 'string' }, categoria: { type: 'string' } }, required: ['tipo'] } },
 ];
 
 function descAccion(tipo, args = {}) {
   if (tipo === 'marcar_pagado') return `Marcar como pagado: ${args.descripcion || 'el gasto indicado'}.`;
   if (tipo === 'crear_asiento_manual') return `Crear asiento manual: ${args.glosa || 'ajuste'}.`;
   if (tipo === 'enviar_resumen_whatsapp') return 'Enviar el resumen de caja por WhatsApp.';
+  if (tipo === 'crear_movimiento') return `Registrar ${args.tipo === 'ingreso' ? 'ingreso' : 'gasto'}${args.proveedor ? ' de ' + args.proveedor : ''}${args.total ? ' por $' + Number(args.total).toLocaleString('es-CL') : ''}.`;
   return 'Acción propuesta.';
 }
 
