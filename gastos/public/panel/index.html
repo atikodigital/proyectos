@@ -228,7 +228,12 @@
     border-radius: 16px;
     background: #0f0f12;
   }
-  
+  .scroll::-webkit-scrollbar { height: 8px; width: 8px; }
+  .scroll::-webkit-scrollbar-thumb { background: rgba(255,215,0,0.35); border-radius: 10px; }
+  .scroll::-webkit-scrollbar-thumb:hover { background: rgba(255,215,0,0.55); }
+  .scroll::-webkit-scrollbar-track { background: transparent; }
+  .scroll { scrollbar-width: thin; scrollbar-color: rgba(255,215,0,0.35) transparent; }
+
   .emp {
     display: flex;
     justify-content: space-between;

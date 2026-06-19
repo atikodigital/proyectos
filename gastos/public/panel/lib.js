@@ -42,7 +42,7 @@
     ['Tipo', 'tipo'], ['Fecha', 'fecha'], ['Empleado', 'empleado_nombre'], ['Proveedor', 'proveedor'],
     ['RUT', 'rut_emisor'], ['Folio', 'folio'], ['N° oper.', 'nro_operacion'], ['Categoría', 'categoria'],
   ];
-  const MONEY = [['Neto', 'neto'], ['IVA', 'iva'], ['Total', 'total']];
+  const MONEY = [['Total', 'total']];
 
   function cashflowFromRows(rows) {
     const acc = { gastos: 0, ingresos: 0, saldo: 0, countGastos: 0, countIngresos: 0 };
@@ -76,8 +76,6 @@
     }).join('');
     const t = totalsFromRows(list);
     const foot = '<tfoot><tr><td colspan="8" class="num"><b>Totales</b></td>'
-      + '<td class="num"><b>' + fmtClp(t.neto) + '</b></td>'
-      + '<td class="num"><b>' + fmtClp(t.iva) + '</b></td>'
       + '<td class="num"><b>' + fmtClp(t.total) + '</b></td><td></td><td></td></tr></tfoot>';
     return '<table class="exp">' + thead + '<tbody>' + body + '</tbody>' + foot + '</table>';
   }
