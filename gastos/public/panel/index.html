@@ -1254,51 +1254,24 @@
 
     <!-- CRM -->
     <section id="crmSection" class="hidden">
-      <div class="glass-card rounded-2xl p-6 border border-[#343535]/50 mb-6">
-        <div class="flex items-center justify-between mb-6">
-          <h2 class="text-base font-bold text-[#ffd700] flex items-center gap-2">
-            <span class="material-symbols-outlined text-[20px]">chat_bubble</span>
-            CRM — Conversaciones
-          </h2>
-          <button class="bg-gradient-to-r from-[#ffd700] to-[#e9c400] text-[#3a3000] px-4 py-2 rounded-xl text-xs font-bold">+ Nueva conversación</button>
+      <div class="grid grid-cols-1 lg:grid-cols-[300px_1fr_320px] gap-4" style="height: calc(100vh - 150px);">
+        <!-- IZQUIERDA: lista -->
+        <div class="glass-card rounded-2xl p-3 flex flex-col overflow-hidden border border-[#343535]/50">
+          <input id="crmSearch" placeholder="Buscar conversación…" class="w-full bg-[#292a2a]/50 border border-[#343535] rounded-xl px-3 py-2 text-sm text-on-surface mb-3 outline-none focus:border-[#ffd700]/50" />
+          <div id="crmList" class="flex-1 overflow-y-auto flex flex-col gap-1 scroll" style="border:0;background:transparent;max-height:none;"></div>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div class="flex items-center gap-3 p-4 rounded-xl bg-[#1e2020]/60 border border-[#343535] hover:border-[#ffd700]/20 cursor-pointer transition-all">
-            <div class="relative flex-shrink-0">
-              <div class="w-12 h-12 rounded-full bg-gradient-to-tr from-[#ffd700] to-[#e9c400] text-[#3a3000] font-bold flex items-center justify-center shadow-[0_0_8px_rgba(255,215,0,0.2)]">BN</div>
-              <span class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-[#121414]"></span>
-            </div>
-            <div class="flex-1 min-w-0">
-              <div class="flex items-center justify-between"><h4 class="text-sm font-bold text-[#e3e2e2]">Bella Napoli</h4><span class="text-[10px] text-[#d0c6ab]/60 font-mono">10:42</span></div>
-              <p class="text-xs text-[#d0c6ab] truncate mt-1">"Buenas, les envié el comprobante de pago..."</p>
-              <div class="flex items-center gap-2 mt-1"><span class="text-[9px] bg-[#ffd700]/10 text-[#ffd700] rounded px-1">Cliente frecuente</span></div>
-            </div>
-            <span class="w-5 h-5 rounded-full bg-green-500 text-[#000] font-bold text-[9px] flex items-center justify-center">2</span>
+        <!-- CENTRO: hilo -->
+        <div class="glass-card rounded-2xl flex flex-col overflow-hidden border border-[#343535]/50">
+          <div id="crmThreadHeader" class="px-4 py-3 border-b border-[#343535]/50 font-bold text-[#ffd700] text-sm">Elegí una conversación</div>
+          <div id="crmThread" class="flex-1 overflow-y-auto p-4 flex flex-col gap-2 scroll" style="border:0;background:transparent;max-height:none;"></div>
+          <div class="p-3 border-t border-[#343535]/50 flex gap-2">
+            <input id="crmReply" placeholder="Escribe una respuesta…" disabled class="flex-1 bg-[#292a2a]/50 border border-[#343535] rounded-xl px-3 py-2 text-sm text-on-surface outline-none disabled:opacity-40" />
+            <button id="crmSendBtn" disabled class="px-4 py-2 rounded-xl bg-[#ffd700] text-[#3a3000] font-bold text-sm disabled:opacity-40">Enviar</button>
           </div>
-          <div class="flex items-center gap-3 p-4 rounded-xl bg-[#1e2020]/60 border border-[#343535] hover:border-[#ffd700]/20 cursor-pointer transition-all">
-            <div class="relative flex-shrink-0">
-              <div class="w-12 h-12 rounded-full bg-gradient-to-tr from-[#999077] to-[#c8c6c5] text-[#121414] font-bold flex items-center justify-center">LM</div>
-              <span class="absolute bottom-0 right-0 w-3 h-3 bg-gray-500 rounded-full border-2 border-[#121414]"></span>
-            </div>
-            <div class="flex-1 min-w-0">
-              <div class="flex items-center justify-between"><h4 class="text-sm font-bold text-[#e3e2e2]">Lo Miranda S.A.</h4><span class="text-[10px] text-[#d0c6ab]/60 font-mono">Ayer</span></div>
-              <p class="text-xs text-[#d0c6ab] truncate mt-1">"Pago de factura de insumos realizad..."</p>
-              <div class="flex items-center gap-2 mt-1"><span class="text-[9px] bg-[#343535] text-[#d0c6ab] rounded px-1">Proveedor</span></div>
-            </div>
-          </div>
-          <div class="flex items-center gap-3 p-4 rounded-xl bg-[#1e2020]/60 border border-[#343535] hover:border-[#ffd700]/20 cursor-pointer transition-all">
-            <div class="relative flex-shrink-0">
-              <div class="w-12 h-12 rounded-full bg-gradient-to-tr from-[#ffd700] to-[#999077] text-[#3a3000] font-bold flex items-center justify-center">R</div>
-              <span class="absolute bottom-0 right-0 w-3 h-3 bg-gray-500 rounded-full border-2 border-[#121414]"></span>
-            </div>
-            <div class="flex-1 min-w-0">
-              <div class="flex items-center justify-between"><h4 class="text-sm font-bold text-[#e3e2e2]">Rodrigo</h4><span class="text-[10px] text-[#d0c6ab]/60 font-mono">16 Jun</span></div>
-              <p class="text-xs text-[#d0c6ab] truncate mt-1">"Consulta sobre los precios del men..."</p>
-              <div class="flex items-center gap-2 mt-1"><span class="text-[9px] bg-[#343535] text-[#d0c6ab] rounded px-1">Prospecto</span></div>
-            </div>
-          </div>
+          <p id="crmReplyHint" class="text-[10px] text-[#d0c6ab]/60 px-3 pb-2"></p>
         </div>
-        <p class="text-xs text-[#d0c6ab]/50 mt-6 text-center">Módulo CRM completo — Próximamente disponible</p>
+        <!-- DERECHA: ficha -->
+        <div id="crmFicha" class="glass-card rounded-2xl p-4 overflow-y-auto text-sm text-[#d0c6ab] border border-[#343535]/50 scroll" style="max-height:none;">Sin contacto seleccionado.</div>
       </div>
     </section>
 
@@ -2554,7 +2527,7 @@
       try { window.dispatchEvent(new CustomEvent('panel:tab', { detail: tab })); } catch (_) {}
       if (tab === 'crm') {
         hideAllSections(); $('crmSection').classList.remove('hidden');
-        updateSidebarUi('crm', null); return;
+        updateSidebarUi('crm', null); crmInit(); return;
       }
       if (tab === 'agente') {
         hideAllSections(); $('agenteSection').classList.remove('hidden');
@@ -2670,6 +2643,139 @@
     renderChart(rows);
   };
   renderCalendar([]);
+
+  // ── CRM chat (3 paneles) ───────────────────────────────────────────────
+  function crmEsc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]; }); }
+  var crmConvos = [], crmActivo = null, crmInited = false, crmCaptB64 = null;
+  function crmInit() {
+    if (!crmInited) {
+      crmInited = true;
+      $('crmSearch').oninput = crmRenderList;
+      $('crmSendBtn').onclick = crmEnviarReply;
+      $('crmReply').onkeydown = function (e) { if (e.key === 'Enter') crmEnviarReply(); };
+    }
+    crmCargarConvos();
+  }
+  async function crmCargarConvos() {
+    try { var r = await apiFetch('/chat/conversaciones'); crmConvos = await r.json(); crmRenderList(); } catch (e) { $('crmList').innerHTML = '<p class="text-xs text-[#d0c6ab]/50 p-3">No se pudo cargar.</p>'; }
+  }
+  function crmRenderList() {
+    var q = ($('crmSearch').value || '').toLowerCase();
+    var html = (crmConvos || []).filter(function (c) { return (c.contact || '').toLowerCase().indexOf(q) >= 0; }).map(function (c) {
+      var ini = (c.contact || '?').slice(0, 2).toUpperCase();
+      var act = crmActivo && crmActivo.contact === c.contact && crmActivo.channel === c.channel;
+      return '<button class="text-left px-3 py-2 rounded-xl flex items-center gap-2 ' + (act ? 'bg-[#ffd700]/10 border border-[#ffd700]/20' : 'hover:bg-[#343535]/40') + '" onclick="crmAbrir(\'' + encodeURIComponent(c.channel) + '\',\'' + encodeURIComponent(c.contact) + '\')">'
+        + '<span class="w-9 h-9 rounded-full bg-[#343535] flex items-center justify-center text-xs font-bold text-[#ffd700] flex-shrink-0">' + crmEsc(ini) + '</span>'
+        + '<span class="flex-1 min-w-0"><span class="block text-sm font-semibold text-on-surface truncate">' + crmEsc(c.contact) + '</span><span class="block text-xs text-[#d0c6ab]/70 truncate">' + crmEsc(c.ultimo || '') + '</span></span>'
+        + '<span class="text-[9px] uppercase text-[#d0c6ab]/50 flex-shrink-0">' + crmEsc(c.channel) + '</span></button>';
+    }).join('');
+    $('crmList').innerHTML = html || '<p class="text-xs text-[#d0c6ab]/50 p-3">Sin conversaciones todavía.</p>';
+  }
+  window.crmAbrir = async function (channelEnc, contactEnc) {
+    var channel = decodeURIComponent(channelEnc), contact = decodeURIComponent(contactEnc);
+    crmActivo = { channel: channel, contact: contact };
+    crmRenderList();
+    $('crmThreadHeader').textContent = contact + ' · ' + channel;
+    try {
+      var r = await apiFetch('/chat/conversacion?channel=' + encodeURIComponent(channel) + '&contact=' + encodeURIComponent(contact));
+      var msgs = await r.json();
+      $('crmThread').innerHTML = crmRenderThread(msgs);
+      $('crmThread').scrollTop = $('crmThread').scrollHeight;
+    } catch (e) {}
+    var esWa = channel.toLowerCase() === 'whatsapp';
+    $('crmReply').disabled = !esWa; $('crmSendBtn').disabled = !esWa;
+    $('crmReplyHint').textContent = esWa ? '' : 'Responder disponible solo por WhatsApp.';
+    crmCargarFicha(channel, contact);
+  };
+  function crmRenderThread(msgs) {
+    var out = '', lastDay = '';
+    (msgs || []).forEach(function (m) {
+      var day = String(m.created_at || '').slice(0, 10);
+      if (day && day !== lastDay) { out += '<div class="text-center text-[10px] text-[#d0c6ab]/50 my-2">' + crmEsc(day) + '</div>'; lastDay = day; }
+      var mine = m.direccion === 'out';
+      out += '<div class="max-w-[78%] ' + (mine ? 'self-end bg-[#ffd700]/15 border border-[#ffd700]/20' : 'self-start bg-[#343535]/40') + ' rounded-2xl px-3 py-2 text-sm text-on-surface">' + crmEsc(m.text) + '</div>';
+    });
+    return out || '<p class="text-xs text-[#d0c6ab]/50">Sin mensajes.</p>';
+  }
+  async function crmCargarFicha(channel, contact) {
+    try { var r = await apiFetch('/chat/contacto?channel=' + encodeURIComponent(channel) + '&contact=' + encodeURIComponent(contact)); var f = await r.json(); $('crmFicha').innerHTML = crmFichaHtml(f, channel); } catch (e) {}
+  }
+  function crmFila(label, val) { return '<div class="mb-2"><div class="text-[10px] uppercase text-[#d0c6ab]/50">' + label + '</div><div class="text-on-surface">' + (val || '—') + '</div></div>'; }
+  function crmFichaHtml(f, channel) {
+    var ini = (f.nombre || '?').slice(0, 2).toUpperCase();
+    return '<div class="flex items-center gap-3 mb-4"><span class="w-12 h-12 rounded-full bg-[#343535] flex items-center justify-center text-lg font-bold text-[#ffd700]">' + crmEsc(ini) + '</span>'
+      + '<div><div class="font-bold text-on-surface">' + crmEsc(f.nombre || '') + '</div><div class="text-xs text-[#d0c6ab]/70">' + crmEsc(channel) + '</div></div></div>'
+      + '<div class="flex gap-2 mb-4"><button onclick="crmNuevoPedido()" class="flex-1 px-3 py-2 rounded-xl bg-[#ffd700] text-[#3a3000] text-xs font-bold">Pedido</button>'
+      + '<button onclick="crmCaptura()" class="flex-1 px-3 py-2 rounded-xl border border-[#343535] text-xs font-bold text-[#d0c6ab]">Captura</button></div>'
+      + crmFila('Teléfono', crmEsc(f.telefono)) + crmFila('Primer contacto', crmEsc((f.primerContacto || '').slice(0, 10))) + crmFila('Último contacto', crmEsc((f.ultimoContacto || '').slice(0, 10))) + crmFila('Mensajes', String(f.nMensajes || 0))
+      + '<div class="border-t border-[#343535]/50 my-3"></div>'
+      + '<label class="text-[10px] uppercase text-[#d0c6ab]/50">Email</label><input id="fEmail" value="' + crmEsc(f.email || '') + '" class="w-full bg-[#292a2a]/50 border border-[#343535] rounded-lg px-2 py-1 text-sm mb-2 text-on-surface outline-none" />'
+      + '<label class="text-[10px] uppercase text-[#d0c6ab]/50">Ubicación</label><input id="fUbic" value="' + crmEsc(f.ubicacion || '') + '" class="w-full bg-[#292a2a]/50 border border-[#343535] rounded-lg px-2 py-1 text-sm mb-2 text-on-surface outline-none" />'
+      + '<label class="text-[10px] uppercase text-[#d0c6ab]/50">Notas</label><textarea id="fNotas" rows="3" class="w-full bg-[#292a2a]/50 border border-[#343535] rounded-lg px-2 py-1 text-sm mb-2 text-on-surface outline-none">' + crmEsc(f.notas || '') + '</textarea>'
+      + '<button onclick="crmGuardarFicha()" class="w-full px-3 py-2 rounded-xl bg-[#ffd700] text-[#3a3000] text-xs font-bold">Guardar datos</button>';
+  }
+  window.crmGuardarFicha = async function () {
+    if (!crmActivo) return;
+    try { await apiFetch('/chat/contacto', { method: 'PATCH', body: JSON.stringify({ channel: crmActivo.channel, contact: crmActivo.contact, email: $('fEmail').value, ubicacion: $('fUbic').value, notas: $('fNotas').value }) }); alert('Datos guardados.'); } catch (e) { alert('No se pudo guardar.'); }
+  };
+  window.crmEnviarReply = async function () {
+    if (!crmActivo) return;
+    var txt = ($('crmReply').value || '').trim(); if (!txt) return;
+    try { await apiFetch('/chat/responder', { method: 'POST', body: JSON.stringify({ channel: crmActivo.channel, contact: crmActivo.contact, text: txt }) }); $('crmReply').value = ''; crmAbrir(encodeURIComponent(crmActivo.channel), encodeURIComponent(crmActivo.contact)); }
+    catch (e) { alert('No se pudo enviar.'); }
+  };
+  // Captura (vanilla, protocolo de evidencia)
+  function crmFileInput() {
+    var i = $('crmFileInput');
+    if (!i) { i = document.createElement('input'); i.type = 'file'; i.id = 'crmFileInput'; i.accept = 'image/*'; i.capture = 'environment'; i.style.display = 'none'; i.onchange = crmOnFile; document.body.appendChild(i); }
+    return i;
+  }
+  window.crmCaptura = function () { crmFileInput().click(); };
+  function crmOnFile(e) {
+    var file = e.target.files && e.target.files[0]; if (!file) return;
+    var rd = new FileReader();
+    rd.onload = function () { crmCaptB64 = rd.result; var pv = $('crmPedidoPreview'); if (pv) pv.innerHTML = '<img src="' + rd.result + '" class="max-h-40 rounded-lg border border-[#343535]" />'; };
+    rd.readAsDataURL(file);
+    e.target.value = '';
+  }
+  window.crmNuevoPedido = async function () {
+    if (!crmActivo) return;
+    crmCaptB64 = null;
+    var resumen = 'Cargando propuesta…';
+    crmAbrirModalPedido(resumen);
+    try {
+      var r = await apiFetch('/overlay/pedido/suggest', { method: 'POST', body: JSON.stringify({ channel: crmActivo.channel, contact: crmActivo.contact }) });
+      var sug = await r.json();
+      var txt = (sug && (sug.resumen || sug.texto)) ? (sug.resumen || sug.texto) : (sug && sug.items ? sug.items.map(function (it) { return '• ' + (it.nombre || it.descripcion || '') + (it.cantidad ? ' x' + it.cantidad : ''); }).join('\n') : JSON.stringify(sug, null, 2));
+      var ta = $('crmPedidoTexto'); if (ta) ta.value = txt || 'Sin propuesta automática. Escribe el pedido.';
+    } catch (e) { var ta = $('crmPedidoTexto'); if (ta) ta.value = 'Escribe el pedido (no hubo propuesta automática).'; }
+  };
+  function crmAbrirModalPedido() {
+    var m = $('crmPedidoModal');
+    if (!m) {
+      m = document.createElement('div'); m.id = 'crmPedidoModal';
+      m.style.cssText = 'position:fixed;inset:0;z-index:80;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;padding:16px;';
+      m.innerHTML = '<div style="background:#15171a;border:1px solid #343535;border-radius:16px;padding:20px;width:100%;max-width:460px;">'
+        + '<h3 style="margin:0 0 10px;font-weight:900;color:#ffd700;">Nuevo pedido</h3>'
+        + '<textarea id="crmPedidoTexto" rows="5" style="width:100%;background:rgba(41,42,42,.5);border:1px solid #343535;border-radius:10px;padding:10px;color:#e3e2e2;font-size:13px;outline:none;"></textarea>'
+        + '<div id="crmPedidoPreview" style="margin:10px 0;"></div>'
+        + '<div style="display:flex;gap:8px;margin-bottom:12px;"><button onclick="crmCaptura()" style="flex:1;padding:8px;border-radius:10px;border:1px solid #343535;background:transparent;color:#d0c6ab;font-weight:700;font-size:12px;">📷 Captura / foto / archivo</button></div>'
+        + '<div style="display:flex;gap:8px;justify-content:flex-end;"><button onclick="crmCerrarPedido()" style="padding:8px 14px;border-radius:10px;border:1px solid #343535;background:#fff0;color:#d0c6ab;font-weight:700;">Cancelar</button>'
+        + '<button onclick="crmConfirmarPedido()" style="padding:8px 14px;border-radius:10px;border:0;background:#ffd700;color:#3a3000;font-weight:900;">Enviar al cliente</button></div></div>';
+      document.body.appendChild(m);
+    }
+    $('crmPedidoPreview').innerHTML = ''; m.style.display = 'flex';
+  }
+  window.crmCerrarPedido = function () { var m = $('crmPedidoModal'); if (m) m.style.display = 'none'; };
+  window.crmConfirmarPedido = async function () {
+    if (!crmActivo) return;
+    var txt = ($('crmPedidoTexto').value || '').trim(); if (!txt) { alert('Escribe el pedido.'); return; }
+    var esWa = crmActivo.channel.toLowerCase() === 'whatsapp';
+    if (esWa) {
+      try { await apiFetch('/chat/responder', { method: 'POST', body: JSON.stringify({ channel: crmActivo.channel, contact: crmActivo.contact, text: 'Pedido:\n' + txt }) }); crmCerrarPedido(); crmAbrir(encodeURIComponent(crmActivo.channel), encodeURIComponent(crmActivo.contact)); }
+      catch (e) { alert('No se pudo enviar.'); }
+    } else { alert('Pedido preparado. El envío al cliente solo está disponible por WhatsApp.'); crmCerrarPedido(); }
+  };
 
   if (token()) showApp(); else showLogin();
 })();
