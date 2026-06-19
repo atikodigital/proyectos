@@ -66,6 +66,11 @@
     var m = String(s).match(/^(\d{4})-(\d{2})-(\d{2})/);
     return m ? (m[3] + '-' + m[2] + '-' + m[1]) : String(s).slice(0, 10);
   }
+  function fmtEstado(s) {
+    if (!s) return '';
+    var w = String(s).split('_')[0];
+    return w.charAt(0).toUpperCase() + w.slice(1);
+  }
   function expensesTableHtml(rows) {
     const list = rows || [];
     const thead = '<thead><tr>'
@@ -75,7 +80,7 @@
     const body = list.map(function (r) {
       const cells = COLS.map(function (c) { return '<td>' + escapeHtml(c[1] === 'fecha' ? fmtFecha(r.fecha) : r[c[1]]) + '</td>'; }).join('')
         + MONEY.map(function (c) { return '<td class="num">' + fmtClp(r[c[1]]) + '</td>'; }).join('')
-        + '<td>' + escapeHtml(r.estado) + '</td>'
+        + '<td>' + escapeHtml(fmtEstado(r.estado)) + '</td>'
         + '<td>' + pagoCell(r) + '</td>';
       return '<tr class="exp-row" data-id="' + escapeHtml(r.id) + '">' + cells + '</tr>';
     }).join('');
