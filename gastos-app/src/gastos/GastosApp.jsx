@@ -140,7 +140,7 @@ export default function GastosApp() {
         ) : tab === 'transaccional' ? (
           <div className="h-full"><VarasChat /></div>
         ) : (
-          <ContabilidadView initialTab="concil" />
+          <ContabilidadView initialTab="varas" />
         )}
         </div>
       </main>
