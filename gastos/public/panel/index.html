@@ -184,6 +184,13 @@
   table.exp { font-size: 12px; }
   table.exp th, table.exp td { padding: 7px 8px; font-size: 12px; }
   table.exp td:nth-child(8) { max-width: 130px; overflow: hidden; text-overflow: ellipsis; }
+  /* Tipo con color + badges de pago */
+  .tipo-gasto { color: #f87171; font-weight: 700; text-transform: capitalize; }
+  .tipo-ingreso { color: #34d399; font-weight: 700; text-transform: capitalize; }
+  .badge-pago { display: inline-block; padding: 3px 11px; border-radius: 999px; font-size: 11px; font-weight: 700; white-space: nowrap; }
+  .badge-pagado { background: rgba(16,185,129,0.18); color: #34d399; border: 1px solid rgba(16,185,129,0.4); }
+  .btn-porpagar { background: rgba(239,68,68,0.16); color: #f87171; border: 1px solid rgba(239,68,68,0.45); padding: 4px 11px; border-radius: 999px; font-size: 11px; font-weight: 700; white-space: nowrap; cursor: pointer; transition: background .15s; }
+  .btn-porpagar:hover { background: rgba(239,68,68,0.32); }
 
   table.exp tr.exp-row:hover td, table.tbl tbody tr:hover td {
     background: var(--surface-hover);

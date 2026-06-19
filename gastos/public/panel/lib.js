@@ -57,8 +57,8 @@
 
   function pagoCell(r) {
     if (r.tipo === 'ingreso') return '—';
-    if (r.estado_pago === 'pagada') return '✅ Pagada';
-    return '<button class="btn-ghost btn-pay" data-pay="' + escapeHtml(r.id) + '">Pagar</button>';
+    if (r.estado_pago === 'pagada') return '<span class="badge-pago badge-pagado">Pagado</span>';
+    return '<button class="btn-pay btn-porpagar" data-pay="' + escapeHtml(r.id) + '">Por pagar</button>';
   }
 
   function fmtFecha(s) {
@@ -78,7 +78,11 @@
       + MONEY.map(function (c) { return '<th class="num">' + c[0] + '</th>'; }).join('')
       + '<th>Estado</th><th>Pago</th></tr></thead>';
     const body = list.map(function (r) {
-      const cells = COLS.map(function (c) { return '<td>' + escapeHtml(c[1] === 'fecha' ? fmtFecha(r.fecha) : r[c[1]]) + '</td>'; }).join('')
+      const cells = COLS.map(function (c) {
+        if (c[1] === 'tipo') return '<td><span class="tipo-' + (r.tipo === 'ingreso' ? 'ingreso' : 'gasto') + '">' + escapeHtml(r.tipo) + '</span></td>';
+        if (c[1] === 'fecha') return '<td>' + escapeHtml(fmtFecha(r.fecha)) + '</td>';
+        return '<td>' + escapeHtml(r[c[1]]) + '</td>';
+      }).join('')
         + MONEY.map(function (c) { return '<td class="num">' + fmtClp(r[c[1]]) + '</td>'; }).join('')
         + '<td>' + escapeHtml(fmtEstado(r.estado)) + '</td>'
         + '<td>' + pagoCell(r) + '</td>';
