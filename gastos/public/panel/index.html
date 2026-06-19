@@ -858,6 +858,10 @@
 
 <!-- APP -->
 <div id="appView" class="hidden app-layout">
+  <!-- KALY: esfera de voz fija, siempre visible, esquina inferior izquierda -->
+  <div id="kalyFloat" style="position:fixed;left:18px;bottom:18px;z-index:70;display:flex;flex-direction:column;align-items:center;
+       background:rgba(13,14,15,0.92);border:1px solid #343535;border-radius:20px;padding:6px 8px;backdrop-filter:blur(6px);
+       box-shadow:0 8px 30px rgba(0,0,0,0.55);max-width:230px"></div>
   <!-- SIDEBAR -->
   <aside class="sidebar bg-[#121414] border-r border-[#343535]/50 flex flex-col h-screen overflow-hidden py-6 shadow-[4px_0_24px_rgba(0,0,0,0.5)]">
     <div class="px-6 mb-8 flex items-center gap-3">
@@ -1310,21 +1314,15 @@
             <div class="w-2 h-2 rounded-full bg-[#ffd700] animate-pulse"></div>
             <span class="text-xs text-[#d0c6ab] font-semibold">Habla por voz — toca una esfera</span>
           </div>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div class="rounded-xl bg-[#141516] border border-[#343535]/60 p-3">
-              <p class="text-center text-[11px] text-[#C9A24B] font-bold uppercase tracking-widest mb-1">VARAS</p>
-              <p class="text-center text-[10px] text-[#9a917a] mb-2">Controlador financiero — saldos, deudas, flujo, conciliación</p>
-              <div id="varasVozMount"></div>
-            </div>
-            <div class="rounded-xl bg-[#141516] border border-[#343535]/60 p-3">
-              <p class="text-center text-[11px] text-[#4F8FF7] font-bold uppercase tracking-widest mb-1">KALY</p>
-              <p class="text-center text-[10px] text-[#9a917a] mb-2">Asistente contable — registra movimientos, catálogo y memoria</p>
-              <div id="kalyVozMount"></div>
-            </div>
+          <div class="rounded-xl bg-[#141516] border border-[#343535]/60 p-3 max-w-md mx-auto">
+            <p class="text-center text-[11px] text-[#C9A24B] font-bold uppercase tracking-widest mb-1">VARAS</p>
+            <p class="text-center text-[10px] text-[#9a917a] mb-2">Controlador financiero — saldos, deudas, flujo, conciliación</p>
+            <div id="varasVozMount"></div>
           </div>
           <div class="text-center mt-3">
             <button onclick="document.querySelectorAll('.csub[data-libro=varas]')[0].click()" class="text-[11px] text-[#9a917a] underline hover:text-[#ffd700] transition-all">…o usa el chat de texto de VARAS</button>
           </div>
+          <p class="text-center text-[10px] text-[#9a917a] mt-3">💬 KALY está siempre disponible en la esfera azul fija abajo a la izquierda.</p>
         </div>
       </div>
     </section>
@@ -1558,12 +1556,13 @@
       }
     });
   }
-  function showApp() { 
-    $('loginView').classList.add('hidden'); 
-    $('appView').classList.remove('hidden'); 
-    if (!$('fPeriodo').value) $('fPeriodo').value = ymActual(); 
+  function showApp() {
+    $('loginView').classList.add('hidden');
+    $('appView').classList.remove('hidden');
+    if (!$('fPeriodo').value) $('fPeriodo').value = ymActual();
     updateSidebarUi('gastos', null);
-    loadGastos(); 
+    loadGastos();
+    try { window.dispatchEvent(new CustomEvent('panel:login')); } catch (_) {}
   }
 
   $('loginBtn').onclick = async function () {
@@ -2873,13 +2872,16 @@
   (function () {
     var v = document.getElementById('varasVozMount');
     var varasCtl = v ? mountVaras(v) : null;
-    var k = document.getElementById('kalyVozMount');
-    var kalyCtl = k ? mountKaly(k) : null;
-    // KALY saluda al abrir la pestaña Agente (igual que en la app); al salir, cierra ambas sesiones.
+    // KALY: esfera grande fija abajo-izquierda, siempre visible. Habla y escucha al tocarla.
+    var kf = document.getElementById('kalyFloat');
+    var kalyCtl = kf ? mountKaly(kf, { size: 132, compact: true, texto: false }) : null;
+    window.__kalyCtl = kalyCtl;
+    // VARAS (en la sección Agente) se cierra al salir de esa pestaña.
     window.addEventListener('panel:tab', function (e) {
-      if (e.detail === 'agente') { if (kalyCtl) kalyCtl.notifyVisible(); }
-      else { if (kalyCtl) kalyCtl.notifyHidden(); if (varasCtl) varasCtl.notifyHidden(); }
+      if (e.detail !== 'agente' && varasCtl) varasCtl.notifyHidden();
     });
+    // Saludo de KALY al entrar al panel (una vez al día / onboarding la 1ª vez).
+    window.addEventListener('panel:login', function () { if (kalyCtl) setTimeout(function () { kalyCtl.notifyVisible(); }, 600); });
   })();
 </script>
 </body>

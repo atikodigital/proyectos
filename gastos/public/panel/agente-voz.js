@@ -224,13 +224,15 @@ function makeAgent(el, opts) {
   const { titulo, color, voice, buildPrompt, instruccion, tools, execTool } = opts;
   const behavior = opts.behavior || {};
   const conTexto = !!opts.texto;
+  const size = opts.size || 120;
+  const lastMax = opts.compact ? 200 : 520;
   el.innerHTML = `
     <div style="display:flex;flex-direction:column;align-items:center;gap:8px;padding:8px">
-      <button class="agv-orb" type="button" style="width:120px;height:120px;border-radius:50%;border:none;cursor:pointer;
+      <button class="agv-orb" type="button" style="width:${size}px;height:${size}px;border-radius:50%;border:none;cursor:pointer;
         background:radial-gradient(circle at 50% 38%, ${color}, #1a1a1a 72%);box-shadow:0 0 28px ${color}55;
-        transition:transform .15s, box-shadow .25s;color:#fff;font-weight:800;font-size:13px"></button>
+        transition:transform .15s, box-shadow .25s;color:#fff;font-weight:800;font-size:${Math.round(size / 9)}px"></button>
       <div class="agv-state" style="font-size:12px;color:#d0c6ab;font-weight:600">${ESTADO_LABEL.off}</div>
-      <div class="agv-last" style="max-width:520px;text-align:center;font-size:13px;color:#e3e2e2;min-height:18px"></div>
+      <div class="agv-last" style="max-width:${lastMax}px;text-align:center;font-size:13px;color:#e3e2e2;min-height:18px"></div>
       <button class="agv-mute" type="button" style="display:none;font-size:11px;color:#9a917a;background:transparent;border:1px solid #343535;border-radius:999px;padding:4px 12px;cursor:pointer">🔊 Silenciar</button>
       ${conTexto ? `<div class="agv-textbar" style="display:flex;gap:6px;width:100%;max-width:320px;margin-top:2px">
         <input class="agv-input" type="text" placeholder="Escribe a ${titulo}…" style="flex:1;min-width:0;background:#0d0e0f;border:1px solid #343535;border-radius:8px;padding:6px 10px;color:#e3e2e2;font-size:12px;outline:none">
@@ -318,12 +320,14 @@ export function mountVaras(el) {
   });
 }
 
-export function mountKaly(el) {
+export function mountKaly(el, over = {}) {
   return makeAgent(el, {
     titulo: 'KALY', color: '#4F8FF7', voice: 'Charon',
     buildPrompt: buildKalyVoicePrompt, instruccion: instruccionInicialKaly,
     tools: KALY_TOOLS, execTool: execKalyTool,
-    texto: true,
+    texto: over.texto !== undefined ? over.texto : true,
+    size: over.size,
+    compact: over.compact,
     behavior: {
       auto: true,
       silenceMs: 5000,
