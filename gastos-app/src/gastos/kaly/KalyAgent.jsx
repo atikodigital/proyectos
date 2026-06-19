@@ -7,7 +7,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '../api';
 import KalyOrb from './KalyOrb.jsx';
-import { openLiveSession } from './live.js';
+import { openLiveSession, unlockAudio } from './live.js';
 import { TOOL_DECLARATIONS, executeTool } from './tools.js';
 import { buildSystemPrompt, instruccionInicial } from './prompt.js';
 import { decideAutoStart, esNegativa, hoyStr, SILENCE_MS, INACTIVITY_MS } from './logic.js';
@@ -185,10 +185,12 @@ export default function KalyAgent() {
   }, []);
 
   const handleTap = useCallback(() => {
+    unlockAudio(); // desbloquea el audio dentro del gesto, para que el saludo suene al tiro
     if (state === 'off') start('manual'); else stop();
   }, [state, start, stop]);
 
   const handleSendText = useCallback(async () => {
+    unlockAudio();
     const txt = inputText.trim();
     if (!txt) return;
     setInputText('');

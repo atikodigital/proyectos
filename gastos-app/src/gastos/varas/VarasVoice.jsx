@@ -8,7 +8,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '../api';
 import VarasOrb from './VarasOrb.jsx';
-import { openLiveSession } from '../kaly/live.js';
+import { openLiveSession, unlockAudio } from '../kaly/live.js';
 import { TOOL_DECLARATIONS, executeVarasVoiceTool } from './voice/tools.js';
 import { buildVarasVoicePrompt, instruccionInicialVoz } from './voice/prompt.js';
 
@@ -75,6 +75,7 @@ export default function VarasVoice() {
   }, []);
 
   const handleTap = useCallback(() => {
+    unlockAudio(); // desbloquea el audio dentro del gesto (Android WebView nace 'suspended')
     if (state === 'off') start('manual'); else stop();
   }, [state, start, stop]);
 

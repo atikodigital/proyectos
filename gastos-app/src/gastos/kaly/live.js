@@ -81,6 +81,44 @@ export function openLiveSession(opts) {
 // These only run on a real device (jsdom has no AudioContext / getUserMedia).
 // The openLiveSession caller passes audio:false in tests to skip them entirely.
 
+// AudioContext de reproducción COMPARTIDO y desbloqueado por gesto del usuario.
+// En WebView Android el AudioContext nace 'suspended' y solo se puede reanudar
+// dentro de un gesto. Si lo creáramos al recibir setupComplete (tras el handshake
+// WS, ya fuera del gesto), el saludo no sonaría hasta el siguiente toque. Por eso
+// usamos UNO solo, lo desbloqueamos en el primer gesto, y lo reutilizamos.
+let _playCtx = null;
+function _getPlayCtx() {
+  if (typeof window === 'undefined') return null;
+  if (!_playCtx) {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return null;
+    try { _playCtx = new AC(); } catch (_) { return null; }
+  }
+  return _playCtx;
+}
+
+// Desbloquea (reanuda) el audio. Seguro de llamar muchas veces. Llamar SIEMPRE
+// dentro de un gesto del usuario (tap en la esfera, enviar texto, etc.).
+export function unlockAudio() {
+  const ctx = _getPlayCtx();
+  if (!ctx) return;
+  if (ctx.state === 'suspended') { try { ctx.resume(); } catch (_) {} }
+  try {
+    const b = ctx.createBuffer(1, 1, 22050);
+    const s = ctx.createBufferSource();
+    s.buffer = b; s.connect(ctx.destination); s.start(0);
+  } catch (_) {}
+}
+
+// Red de seguridad: desbloquear en el PRIMER gesto del usuario en toda la app.
+if (typeof window !== 'undefined' && !window.__kalyAudioUnlockHooked) {
+  window.__kalyAudioUnlockHooked = true;
+  const onFirstGesture = () => { unlockAudio(); };
+  window.addEventListener('pointerdown', onFirstGesture, { passive: true });
+  window.addEventListener('touchstart', onFirstGesture, { passive: true });
+  window.addEventListener('click', onFirstGesture, { passive: true });
+}
+
 export async function startMic(send, onLevel) {
   try {
     // OJO Android/Bluetooth: pedir echoCancellation/noiseSuppression/AGC hace que el
@@ -144,8 +182,9 @@ export async function startMic(send, onLevel) {
 }
 
 export function createPlayer(onLevel, setState, isMuted) {
-  let ctx;
-  try { ctx = new AudioContext({ sampleRate: 24000 }); } catch (_) { return { push() {}, flush() {}, onDrain() {}, stop() {} }; }
+  const ctx = _getPlayCtx();
+  if (!ctx) { return { push() {}, flush() {}, onDrain() {}, stop() {} }; }
+  if (ctx.state === 'suspended') { try { ctx.resume(); } catch (_) {} }
 
   let cursor = ctx.currentTime;
   let pending = 0;
@@ -158,16 +197,6 @@ export function createPlayer(onLevel, setState, isMuted) {
       drainCb = null;
       cb();
     }
-  }
-
-  const resume = () => {
-    if (ctx && ctx.state === 'suspended') {
-      ctx.resume().catch(() => {});
-    }
-  };
-  if (typeof window !== 'undefined') {
-    window.addEventListener('click', resume);
-    window.addEventListener('touchstart', resume, { passive: true });
   }
 
   return {
@@ -234,17 +263,13 @@ export function createPlayer(onLevel, setState, isMuted) {
     },
 
     stop() {
-      if (typeof window !== 'undefined') {
-        window.removeEventListener('click', resume);
-        window.removeEventListener('touchstart', resume);
-      }
+      // No cerramos el AudioContext compartido; solo detenemos las fuentes activas.
       try {
         activeSources.forEach((s) => { try { s.stop(); } catch (_) {} });
         activeSources.clear();
         pending = 0;
         drainCb = null;
       } catch (_) {}
-      try { ctx.close(); } catch (_) {}
     },
   };
 }
