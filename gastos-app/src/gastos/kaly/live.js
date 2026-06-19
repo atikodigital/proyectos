@@ -4,7 +4,7 @@ export function openLiveSession(opts) {
   const { token, model, systemPrompt, tools, voice, onAudioLevel, onState, onUserTranscript, onToolCall, onClose, wsFactory, audio = true } = opts;
   // El token efímero se pasa como `key` (Gemini lo acepta en lugar de la API key real).
   const ws = (wsFactory || ((url) => new WebSocket(url)))(`${WS_HOST}?key=${encodeURIComponent(token)}`);
-  let closed = false; let micStop = null; let player = null; let muted = false;
+  let closed = false; let micStop = null; let player = null; let muted = false; let agentSpeaking = false;
   let sessionReady = false;
   const queue = [];
 
@@ -41,7 +41,7 @@ export function openLiveSession(opts) {
         const q = queue.shift();
         try { ws.send(JSON.stringify(q)); } catch (e) {}
       }
-      if (audio) micStop = await startMic(send, onAudioLevel).catch(() => null);
+      if (audio) micStop = await startMic(send, onAudioLevel, () => agentSpeaking).catch(() => null);
       if (audio) player = createPlayer(onAudioLevel, setState, () => muted);
       return;
     }
@@ -50,18 +50,21 @@ export function openLiveSession(opts) {
     if (!sc) return;
     if (sc.inputTranscription && sc.inputTranscription.text) onUserTranscript && onUserTranscript(sc.inputTranscription.text);
     if (sc.outputTranscription && sc.outputTranscription.text) opts.onAgentTranscript && opts.onAgentTranscript(sc.outputTranscription.text);
-    if (sc.interrupted) { if (player) player.flush(); setState('listening'); }
+    if (sc.interrupted) { if (player) player.flush(); agentSpeaking = false; setState('listening'); }
     if (sc.modelTurn && sc.modelTurn.parts) {
       let textContent = '';
       for (const p of sc.modelTurn.parts) {
-        if (p.inlineData && p.inlineData.data) { setState('speaking'); if (player) player.push(p.inlineData.data); }
+        if (p.inlineData && p.inlineData.data) { agentSpeaking = true; setState('speaking'); if (player) player.push(p.inlineData.data); }
         if (p.text) textContent += p.text;
       }
       if (textContent && opts.onAgentTranscript) {
         opts.onAgentTranscript(textContent);
       }
     }
-    if (sc.turnComplete) { if (player) player.onDrain(() => setState('listening')); else setState('listening'); }
+    if (sc.turnComplete) {
+      if (player) player.onDrain(() => { setState('listening'); setTimeout(() => { agentSpeaking = false; }, 250); });
+      else { agentSpeaking = false; setState('listening'); }
+    }
   };
 
   ws.onerror = () => setState('error');
@@ -147,7 +150,7 @@ if (typeof window !== 'undefined' && !window.__kalyAudioUnlockHooked) {
   window.addEventListener('click', onFirstGesture, { passive: true });
 }
 
-export async function startMic(send, onLevel) {
+export async function startMic(send, onLevel, isAgentSpeaking) {
   try {
     // OJO Android/Bluetooth: pedir echoCancellation/noiseSuppression/AGC hace que el
     // WebView entre en "modo comunicación" (como una llamada) y enrute el audio al
@@ -165,6 +168,9 @@ export async function startMic(send, onLevel) {
 
     processor.onaudioprocess = (e) => {
       try {
+        // Half-duplex: mic callado mientras el agente habla, para que su propia voz
+        // (recogida por el mic sin echoCancellation) no se interprete como interrupción.
+        if (isAgentSpeaking && isAgentSpeaking()) return;
         const float32 = e.inputBuffer.getChannelData(0);
         const len = float32.length;
 

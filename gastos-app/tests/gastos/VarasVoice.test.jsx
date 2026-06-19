@@ -15,6 +15,9 @@ jest.mock('../../src/gastos/kaly/live.js', () => ({
     lastSession = session;
     return session;
   }),
+  unlockAudio: jest.fn(),
+  playTestTone: jest.fn(),
+  audioDiag: jest.fn(() => ({ estado: 'running', sampleRate: 48000 })),
 }));
 
 jest.mock('../../src/gastos/varas/voice/tools.js', () => ({
