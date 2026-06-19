@@ -37,6 +37,7 @@ const { ejecutarAccion } = require('../varas/acciones');
 const { TOOLS_READ } = require('../varas/tools');
 const { buildAgentContext } = require('../agent/context');
 const { createEphemeralToken } = require('../agent/token');
+const { suggestOrder } = require('../pedidos/suggest');
 
 function parseFiltros(q = {}) {
   return {
@@ -74,6 +75,28 @@ function createPanelRouter({ db, sendText, varasGemini } = {}) {
     const { channel, contact, email, ubicacion, notas } = req.body || {};
     const out = await contactosRepo.upsertContacto(db, req.auth.companyId, channel, contact, { email, ubicacion, notas });
     return res.json(out);
+  });
+
+  router.get('/chat/conversaciones', async (req, res) => {
+    return res.json(await chatRepo.listConversaciones(db, req.auth.companyId));
+  });
+
+  router.get('/chat/conversacion', async (req, res) => {
+    return res.json(await chatRepo.listMensajes(db, req.auth.companyId, req.query.channel, req.query.contact));
+  });
+
+  router.post('/overlay/pedido/suggest', async (req, res) => {
+    try {
+      const { channel, contact, conversation } = req.body || {};
+      let convo = String(conversation || '').trim();
+      if (!convo) {
+        const msgs = await chatRepo.listMensajes(db, req.auth.companyId, channel, contact);
+        convo = msgs.map((m) => `${m.contact || contact}: ${m.text}`).join('\n');
+      }
+      if (!convo) return res.status(400).json({ error: 'sin_conversacion' });
+      const sug = await suggestOrder(convo);
+      return res.json(sug);
+    } catch (e) { console.error('[panel pedido suggest]', e.message); return res.status(500).json({ error: 'error_pedido' }); }
   });
 
   router.post('/chat/responder', async (req, res) => {
