@@ -47,6 +47,20 @@ const MEMORY_DDL = [
   "ALTER TABLE companies ADD COLUMN IF NOT EXISTS kaly_persona jsonb",
 ];
 
+const CONTACTOS_DDL = [
+  `CREATE TABLE IF NOT EXISTS contactos (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    company_id uuid NOT NULL,
+    channel text NOT NULL,
+    contact_key text NOT NULL,
+    email text,
+    ubicacion text,
+    notas text,
+    updated_at timestamptz NOT NULL DEFAULT now()
+  )`,
+  "CREATE UNIQUE INDEX IF NOT EXISTS idx_contactos_uniq ON contactos(company_id, channel, contact_key)",
+];
+
 // Índices de dedup (no únicos: el override permite una 2ª fila a propósito).
 const DEDUP_INDEXES = [
   "CREATE INDEX IF NOT EXISTS idx_expenses_dedup_doc ON expenses(company_id, rut_emisor, folio)",
@@ -71,6 +85,9 @@ async function migrate(db) {
     try { await db.query(stmt); } catch (e) { /* pg-mem: ya existen del schema */ }
   }
   for (const stmt of MEMORY_DDL) {
+    try { await db.query(stmt); } catch (e) { /* pg-mem / ya existe */ }
+  }
+  for (const stmt of CONTACTOS_DDL) {
     try { await db.query(stmt); } catch (e) { /* pg-mem / ya existe */ }
   }
   for (const stmt of DEDUP_INDEXES) {
