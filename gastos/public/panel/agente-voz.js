@@ -1,6 +1,7 @@
 // Agente de VOZ para el panel del dueño — clon del de la app, vía /api/panel.
 // VARAS (controlador financiero) con voz: misma sesión Gemini Live que la app.
 import { openLiveSession, unlockAudio } from './live.js';
+import { createKalyOrb } from './kaly-orb.js';
 
 const PANEL = '/api/panel';
 const TOKEN_KEY = 'atiko_gastos_panel_jwt';
@@ -226,11 +227,15 @@ function makeAgent(el, opts) {
   const conTexto = !!opts.texto;
   const size = opts.size || 120;
   const lastMax = opts.compact ? 200 : 520;
+  const orbKind = opts.orbKind || 'simple';
+  const orbHtml = orbKind === 'kaly'
+    ? `<div class="agv-orbslot"></div>`
+    : `<button class="agv-orb" type="button" style="width:${size}px;height:${size}px;border-radius:50%;border:none;cursor:pointer;
+        background:radial-gradient(circle at 50% 38%, ${color}, #1a1a1a 72%);box-shadow:0 0 28px ${color}55;
+        transition:transform .15s, box-shadow .25s;color:#fff;font-weight:800;font-size:${Math.round(size / 9)}px"></button>`;
   el.innerHTML = `
     <div style="display:flex;flex-direction:column;align-items:center;gap:8px;padding:8px">
-      <button class="agv-orb" type="button" style="width:${size}px;height:${size}px;border-radius:50%;border:none;cursor:pointer;
-        background:radial-gradient(circle at 50% 38%, ${color}, #1a1a1a 72%);box-shadow:0 0 28px ${color}55;
-        transition:transform .15s, box-shadow .25s;color:#fff;font-weight:800;font-size:${Math.round(size / 9)}px"></button>
+      ${orbHtml}
       <div class="agv-state" style="font-size:12px;color:#d0c6ab;font-weight:600">${ESTADO_LABEL.off}</div>
       <div class="agv-last" style="max-width:${lastMax}px;text-align:center;font-size:13px;color:#e3e2e2;min-height:18px"></div>
       <button class="agv-mute" type="button" style="display:none;font-size:11px;color:#9a917a;background:transparent;border:1px solid #343535;border-radius:999px;padding:4px 12px;cursor:pointer">🔊 Silenciar</button>
@@ -245,16 +250,24 @@ function makeAgent(el, opts) {
   const muteBtn = el.querySelector('.agv-mute');
   const inputEl = el.querySelector('.agv-input');
   const sendBtn = el.querySelector('.agv-send');
-  orb.textContent = titulo;
+  if (orb) orb.textContent = titulo;
   let session = null; let muted = false; let silenceTimer = null;
+
+  // Orbe animado estilo KALY (clon de hash.atikodigital.cl) cuando orbKind==='kaly'.
+  let kalyOrb = null;
+  function toggle() { unlockAudio(); if (!session) { lastEl.textContent = ''; start('manual'); } else stop(); }
+  if (orbKind === 'kaly') { kalyOrb = createKalyOrb(el.querySelector('.agv-orbslot'), { size, onTap: toggle }); }
 
   function clearSilence() { if (silenceTimer) { clearTimeout(silenceTimer); silenceTimer = null; } }
   function armSilence() { if (!behavior.silenceMs) return; clearSilence(); silenceTimer = setTimeout(() => { silenceTimer = null; stop(); }, behavior.silenceMs); }
 
   function setState(s) {
     stEl.textContent = ESTADO_LABEL[s] || s;
-    orb.style.transform = (s === 'speaking') ? 'scale(1.08)' : 'scale(1)';
-    orb.style.boxShadow = (s === 'speaking' || s === 'listening') ? `0 0 44px ${color}aa` : `0 0 28px ${color}55`;
+    if (kalyOrb) kalyOrb.setState(s);
+    if (orb) {
+      orb.style.transform = (s === 'speaking') ? 'scale(1.08)' : 'scale(1)';
+      orb.style.boxShadow = (s === 'speaking' || s === 'listening') ? `0 0 44px ${color}aa` : `0 0 28px ${color}55`;
+    }
     muteBtn.style.display = (s === 'off') ? 'none' : 'inline-block';
     if (s === 'off') lastEl.textContent = '';
     if (s === 'listening') armSilence(); else clearSilence();
@@ -274,6 +287,7 @@ function makeAgent(el, opts) {
       systemPrompt: buildPrompt(s.context || {}),
       tools, audio: true,
       onState: setState,
+      onAudioLevel: (_dir, rms) => { if (kalyOrb) kalyOrb.setLevel(Math.min(1, (rms || 0) * 6)); },
       onUserTranscript: (txt) => { clearSilence(); if (behavior.esNegativa && behavior.esNegativa(txt)) setTimeout(() => stop(), 2500); },
       onAgentTranscript: (txt) => { lastEl.textContent = (lastEl.textContent ? lastEl.textContent + ' ' : '') + txt; },
       onToolCall: async (fc) => { const out = await execTool(fc.name, fc.args || {}); if (session) session.sendToolResponse(fc.id, fc.name, out); },
@@ -284,7 +298,7 @@ function makeAgent(el, opts) {
   }
   function stop() { clearSilence(); if (session) { session.close(); session = null; } setState('off'); }
 
-  orb.onclick = () => { unlockAudio(); if (!session) { lastEl.textContent = ''; start('manual'); } else stop(); };
+  if (orb) orb.onclick = toggle;
   muteBtn.onclick = () => { muted = !muted; if (session && session.setMuted) session.setMuted(muted); muteBtn.textContent = muted ? '🔇 Activar voz' : '🔊 Silenciar'; };
 
   if (conTexto) {
@@ -325,6 +339,7 @@ export function mountKaly(el, over = {}) {
     titulo: 'KALY', color: '#4F8FF7', voice: 'Charon',
     buildPrompt: buildKalyVoicePrompt, instruccion: instruccionInicialKaly,
     tools: KALY_TOOLS, execTool: execKalyTool,
+    orbKind: 'kaly',
     texto: over.texto !== undefined ? over.texto : true,
     size: over.size,
     compact: over.compact,
