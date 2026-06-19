@@ -61,6 +61,11 @@
     return '<button class="btn-ghost btn-pay" data-pay="' + escapeHtml(r.id) + '">Marcar pagada</button>';
   }
 
+  function fmtFecha(s) {
+    if (!s) return '';
+    var m = String(s).match(/^(\d{4})-(\d{2})-(\d{2})/);
+    return m ? (m[3] + '-' + m[2] + '-' + m[1]) : String(s).slice(0, 10);
+  }
   function expensesTableHtml(rows) {
     const list = rows || [];
     const thead = '<thead><tr>'
@@ -68,7 +73,7 @@
       + MONEY.map(function (c) { return '<th class="num">' + c[0] + '</th>'; }).join('')
       + '<th>Estado</th><th>Pago</th></tr></thead>';
     const body = list.map(function (r) {
-      const cells = COLS.map(function (c) { return '<td>' + escapeHtml(r[c[1]]) + '</td>'; }).join('')
+      const cells = COLS.map(function (c) { return '<td>' + escapeHtml(c[1] === 'fecha' ? fmtFecha(r.fecha) : r[c[1]]) + '</td>'; }).join('')
         + MONEY.map(function (c) { return '<td class="num">' + fmtClp(r[c[1]]) + '</td>'; }).join('')
         + '<td>' + escapeHtml(r.estado) + '</td>'
         + '<td>' + pagoCell(r) + '</td>';
