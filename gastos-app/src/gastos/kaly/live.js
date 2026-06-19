@@ -110,6 +110,34 @@ export function unlockAudio() {
   } catch (_) {}
 }
 
+// Diagnóstico: estado del contexto de audio (para mostrar en pantalla).
+export function audioDiag() {
+  const ctx = _playCtx;
+  return { estado: ctx ? ctx.state : 'sin-contexto', sampleRate: ctx ? Math.round(ctx.sampleRate) : 0 };
+}
+
+// Reproduce un beep por el MISMO camino de audio que la voz de los agentes.
+// Si se escucha → la salida de audio funciona (el problema sería la sesión Gemini).
+// Si NO se escucha → el problema es la salida/volumen/ruteo del dispositivo.
+export function playTestTone() {
+  unlockAudio();
+  const ctx = _getPlayCtx();
+  if (!ctx) return 'sin-contexto';
+  try {
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = 660;
+    g.gain.value = 0.001;
+    osc.connect(g); g.connect(ctx.destination);
+    const t = ctx.currentTime;
+    g.gain.exponentialRampToValueAtTime(0.25, t + 0.05);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.7);
+    osc.start(t); osc.stop(t + 0.72);
+  } catch (_) {}
+  return ctx.state;
+}
+
 // Red de seguridad: desbloquear en el PRIMER gesto del usuario en toda la app.
 if (typeof window !== 'undefined' && !window.__kalyAudioUnlockHooked) {
   window.__kalyAudioUnlockHooked = true;
