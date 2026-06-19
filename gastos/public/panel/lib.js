@@ -58,7 +58,7 @@
   function pagoCell(r) {
     if (r.tipo === 'ingreso') return '—';
     if (r.estado_pago === 'pagada') return '✅ Pagada';
-    return '<button class="btn-ghost btn-pay" data-pay="' + escapeHtml(r.id) + '">Marcar pagada</button>';
+    return '<button class="btn-ghost btn-pay" data-pay="' + escapeHtml(r.id) + '">Pagar</button>';
   }
 
   function fmtFecha(s) {
