@@ -18,12 +18,12 @@ test('expensesTableHtml muestra columna Tipo, nombre de empleado y botón pagar'
   expect(html).toContain('Tipo');
   expect(html).toContain('Juan');
   expect(html).toContain('data-pay="a1"');
-  expect(html).toContain('Marcar pagada');
+  expect(html).toContain('Por pagar');
 });
 
 test('expensesTableHtml: gasto pagado no muestra botón; ingreso muestra raya', () => {
   const pagado = PanelLib.expensesTableHtml([{ id: 'a', tipo: 'gasto', estado_pago: 'pagada', total: 1000 }]);
-  expect(pagado).toContain('Pagada');
+  expect(pagado).toContain('Pagado');
   expect(pagado).not.toContain('data-pay');
   const ingreso = PanelLib.expensesTableHtml([{ id: 'b', tipo: 'ingreso', total: 5000 }]);
   expect(ingreso).not.toContain('data-pay');
@@ -43,7 +43,7 @@ test('expensesCarouselHtml arma tarjetas clickeables con tipo y total', () => {
   expect(html).toContain('class="movcard" data-id="a1"');
   expect(html).toContain('Sodimac');
   expect(html).toContain('INGRESO');
-  expect(html).toContain('Marcar pagada');
+  expect(html).toContain('Por pagar');
 });
 
 test('expensesCarouselHtml sin filas muestra mensaje', () => {
