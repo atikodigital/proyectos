@@ -21,3 +21,8 @@ test('redondea a entero y nunca negativo', () => {
   expect(Number.isInteger(r.neto)).toBe(true);
   expect(r.iva).toBeGreaterThanOrEqual(0);
 });
+
+test('factura exenta: IVA 0 y total = neto (no inventa 19%)', () => {
+  expect(computeTotals({ total: 300000, exento: true })).toEqual({ neto: 300000, iva: 0, total: 300000 });
+  expect(computeTotals({ neto: 185000, exento: true })).toEqual({ neto: 185000, iva: 0, total: 185000 });
+});

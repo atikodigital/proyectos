@@ -41,12 +41,24 @@ function pad(n) {
   return String(n).padStart(2, '0');
 }
 
+const MESES = {
+  enero: 1, febrero: 2, marzo: 3, abril: 4, mayo: 5, junio: 6,
+  julio: 7, agosto: 8, septiembre: 9, setiembre: 9, octubre: 10, noviembre: 11, diciembre: 12,
+};
+
 function parseFecha(s) {
-  const str = String(s || '').trim();
+  const str = String(s || '').trim().toLowerCase();
   let m = str.match(/^(\d{4})-(\d{2})-(\d{2})$/);
   if (m) return `${m[1]}-${m[2]}-${m[3]}`;
-  m = str.match(/^(\d{1,2})[/\-](\d{1,2})[/\-](\d{4})$/);
+  // D/M/YYYY (separadores / - .)
+  m = str.match(/^(\d{1,2})[/\-.](\d{1,2})[/\-.](\d{4})$/);
   if (m) return `${m[3]}-${pad(m[2])}-${pad(m[1])}`;
+  // D/M/YY → asume 20YY
+  m = str.match(/^(\d{1,2})[/\-.](\d{1,2})[/\-.](\d{2})$/);
+  if (m) return `20${m[3]}-${pad(m[2])}-${pad(m[1])}`;
+  // "4 de junio de 2026" o "4 de junio 2026"
+  m = str.match(/^(\d{1,2})\s+de\s+([a-zñáéíóú]+)\s+(?:de\s+)?(\d{4})$/);
+  if (m && MESES[m[2]]) return `${m[3]}-${pad(MESES[m[2]])}-${pad(m[1])}`;
   return null;
 }
 

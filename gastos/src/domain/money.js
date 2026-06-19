@@ -6,9 +6,15 @@ function toInt(n) {
 }
 
 // Reconcilia neto/iva/total en CLP entero. neto manda sobre iva cuando ambos + total existen.
-function computeTotals({ neto, iva, total } = {}) {
+// `exento`: documento sin IVA (factura/boleta exenta) → IVA = 0, total = neto, sin inventar 19%.
+function computeTotals({ neto, iva, total, exento = false } = {}) {
   let n = toInt(neto);
   let t = toInt(total);
+
+  if (exento) {
+    const base = t > 0 ? t : n;
+    return { neto: base, iva: 0, total: base };
+  }
 
   if (n > 0 && t > 0) {
     return { neto: n, iva: Math.max(0, t - n), total: t };

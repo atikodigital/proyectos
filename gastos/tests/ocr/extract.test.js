@@ -39,3 +39,28 @@ test('categoría inválida del modelo cae en Otros gastos', async () => {
   expect(r.categoria).toBe('Otros gastos');
   expect(r.cuenta_sii_codigo).toBe('4.3.150.1');
 });
+
+test('nota de crédito invierte el signo (resta en la contabilidad)', async () => {
+  documentAiExtract.mockResolvedValue({ neto: 80000, total: 95200 });
+  geminiExtract.mockResolvedValue({ tipo_documento: 'nota de crédito', rut_emisor: '90.876.000-K', proveedor: 'Soprole' });
+  const r = await extractExpense({ imageBuffer: Buffer.from('x') });
+  expect(r.es_nota_credito).toBe(true);
+  expect(r.neto).toBe(-80000);
+  expect(r.total).toBe(-95200);
+});
+
+test('marca rut_valido=false cuando el DV no cuadra', async () => {
+  documentAiExtract.mockResolvedValue({ total: 10000 });
+  geminiExtract.mockResolvedValue({ tipo_documento: 'factura', rut_emisor: '78.901.234-5' }); // DV correcto es 2
+  const r = await extractExpense({ imageBuffer: Buffer.from('x') });
+  expect(r.rut_valido).toBe(false);
+});
+
+test('factura exenta no inventa IVA', async () => {
+  documentAiExtract.mockResolvedValue({ total: 300000 });
+  geminiExtract.mockResolvedValue({ tipo_documento: 'factura exenta', rut_emisor: '76.086.428-5' });
+  const r = await extractExpense({ imageBuffer: Buffer.from('x') });
+  expect(r.exento).toBe(true);
+  expect(r.iva).toBe(0);
+  expect(r.total).toBe(300000);
+});

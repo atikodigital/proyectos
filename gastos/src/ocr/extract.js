@@ -2,7 +2,7 @@ const { documentAiExtract } = require('./documentai');
 const { geminiExtract } = require('./gemini');
 const { preprocessForOcr } = require('./preprocess');
 const { computeTotals } = require('../domain/money');
-const { normalizeRut, parseFecha } = require('../domain/normalize');
+const { normalizeRut, isValidRut, parseFecha } = require('../domain/normalize');
 const { isValidCategory, mapCategoryToSii } = require('../domain/categories');
 const { normalizeLineas } = require('../domain/lineas');
 
@@ -22,12 +22,23 @@ async function extractExpense({ imageBuffer, mimeType = 'image/jpeg' }) {
     geminiExtract(b64, mimeType).catch(() => ({})),
   ]);
 
+  // Tipo de documento → exento (sin IVA) / nota de crédito (resta).
+  const tipoDoc = String(gem.tipo_documento || 'otro').toLowerCase();
+  const esExento = /exent/.test(tipoDoc) || tipoDoc === '34';
+  const esNotaCredito = /cr[eé]dito/.test(tipoDoc) || tipoDoc === '61';
+
   // Montos: DocAI manda; si falta, Gemini.
   const totals = computeTotals({
     neto: pick(docai.neto, gem.neto) || 0,
     iva: pick(docai.iva, gem.iva) || 0,
     total: pick(docai.total, gem.total) || 0,
+    exento: esExento,
   });
+  // Nota de crédito: invierte el signo para que RESTE en la contabilidad.
+  const signo = esNotaCredito ? -1 : 1;
+  const montoNeto = signo * totals.neto;
+  const montoIva = signo * totals.iva;
+  const montoTotal = signo * totals.total;
 
   const proveedor = String(pick(docai.proveedor, gem.proveedor) || '').trim();
   const fecha = parseFecha(pick(docai.fecha, gem.fecha));
@@ -63,18 +74,23 @@ async function extractExpense({ imageBuffer, mimeType = 'image/jpeg' }) {
   const got = keys.filter((k) => k && String(k).trim() !== '').length;
   const confianza = Math.round((got / keys.length) * 100);
 
+  const rutNorm = gem.rut_emisor ? normalizeRut(gem.rut_emisor) : '';
+
   return {
     tipo,
-    tipo_documento: String(gem.tipo_documento || 'otro').toLowerCase(),
-    rut_emisor: gem.rut_emisor ? normalizeRut(gem.rut_emisor) : '',
+    tipo_documento: tipoDoc,
+    es_nota_credito: esNotaCredito,
+    exento: esExento,
+    rut_emisor: rutNorm,
+    rut_valido: rutNorm ? isValidRut(rutNorm) : null,
     folio: String(gem.folio || '').trim(),
     nro_operacion,
     direccion_emisor: direccion,
     proveedor,
     fecha,
-    neto: totals.neto,
-    iva: totals.iva,
-    total: totals.total,
+    neto: montoNeto,
+    iva: montoIva,
+    total: montoTotal,
     moneda: 'CLP',
     categoria,
     cuenta_sii_codigo: sii.codigo,
