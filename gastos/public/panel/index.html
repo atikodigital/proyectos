@@ -2754,10 +2754,24 @@
     m.innerHTML = '<div style="background:#15171a;border:1px solid #343535;border-radius:16px;padding:20px;width:100%;max-width:460px;">'
       + '<h3 style="margin:0 0 12px;font-weight:900;color:#ffd700;">Captura / foto / archivo</h3>'
       + crmCaptureToolbar('crmEvGridFicha')
-      + '<div style="display:flex;justify-content:flex-end;margin-top:16px;"><button onclick="crmEvCerrar()" style="padding:8px 16px;border-radius:10px;border:0;background:#ffd700;color:#3a3000;font-weight:900;cursor:pointer;">Listo</button></div></div>';
+      + '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;"><button onclick="crmEvEnviar()" style="padding:8px 16px;border-radius:10px;border:0;background:#16A34A;color:#fff;font-weight:900;cursor:pointer;">Enviar al cliente</button><button onclick="crmEvCerrar()" style="padding:8px 16px;border-radius:10px;border:1px solid #343535;background:#0000;color:#d0c6ab;font-weight:700;cursor:pointer;">Listo</button></div></div>';
     m.style.display = 'flex';
   };
   window.crmEvCerrar = function () { var m = $('crmEvModal'); if (m) m.style.display = 'none'; };
+  // Envía al cliente por WhatsApp todas las imágenes capturadas (los documentos no se envían).
+  window.crmEvEnviar = async function () {
+    if (!crmActivo) return;
+    if (crmActivo.channel.toLowerCase() !== 'whatsapp') { alert('Enviar imagen al cliente solo está disponible por WhatsApp.'); return; }
+    var imgs = crmEv.filter(function (p) { return !p.isDoc && p.previewUrl; });
+    if (!imgs.length) { alert('No hay imágenes para enviar (los documentos/PDF no se envían como imagen).'); return; }
+    for (var i = 0; i < imgs.length; i++) {
+      try { var r = await apiFetch('/chat/responder-imagen', { method: 'POST', body: JSON.stringify({ channel: crmActivo.channel, contact: crmActivo.contact, imageBase64: imgs[i].previewUrl, mimeType: 'image/jpeg' }) }); if (!r.ok) { alert('No se pudo enviar una imagen.'); return; } }
+      catch (e) { alert('No se pudo enviar una imagen.'); return; }
+    }
+    alert('Imagen(es) enviada(s) al cliente.');
+    if ($('crmEvModal')) crmEvCerrar();
+    crmAbrir(encodeURIComponent(crmActivo.channel), encodeURIComponent(crmActivo.contact));
+  };
 
   // ════════════════════════════════════════════════════════════════════
   //  PEDIDO POR CATÁLOGO — clon vanilla del PedidoBuilder del APK: elige
@@ -2894,7 +2908,7 @@
     var r = crmPed.result;
     var html = '<div style="font-weight:900;color:#ffd700;margin-bottom:8px;">Pedido listo</div>';
     html += '<textarea id="crmPedResultText" rows="9" oninput="crmPed.result.text=this.value" style="width:100%;box-sizing:border-box;border-radius:12px;padding:10px;border:1px solid #343535;background:rgba(41,42,42,.5);color:#e3e2e2;font-size:13px;outline:none;">' + crmEsc(r.text) + '</textarea>';
-    if (crmEv.length) html += '<div style="font-size:11px;opacity:.7;margin-top:8px;">Evidencia adjunta (' + crmEv.length + ')</div>' + crmEvGridHtml();
+    if (crmEv.length) html += '<div style="font-size:11px;opacity:.7;margin-top:8px;">Evidencia adjunta (' + crmEv.length + ')</div>' + crmEvGridHtml() + '<button onclick="crmEvEnviar()" style="width:100%;border:0;background:#0e7a34;color:#fff;font-weight:800;border-radius:10px;padding:9px;margin-top:8px;cursor:pointer;">📤 Enviar imágenes al cliente</button>';
     html += '<button onclick="crmPedEnviar()" style="width:100%;border:0;background:#16A34A;color:#fff;font-weight:900;border-radius:12px;padding:12px;margin-top:10px;cursor:pointer;">Enviar por WhatsApp</button>';
     if (r.id) html += '<button onclick="crmPedPdf()" style="width:100%;border:0;background:#ffffff14;color:#fff;font-weight:900;border-radius:12px;padding:12px;margin-top:8px;cursor:pointer;">📄 PDF</button>';
     html += '<button onclick="crmCerrarPedido()" style="width:100%;border:0;background:#0000;color:#d0c6ab;opacity:.7;padding:10px;margin-top:8px;cursor:pointer;">Cerrar</button>';

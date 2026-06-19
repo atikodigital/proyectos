@@ -48,8 +48,9 @@ function parseFiltros(q = {}) {
   };
 }
 
-function createPanelRouter({ db, sendText, varasGemini } = {}) {
+function createPanelRouter({ db, sendText, sendImage, varasGemini } = {}) {
   const _sendText = sendText || realWaClient.sendText;
+  const _sendImage = sendImage || realWaClient.sendImage;
   const _varasGemini = varasGemini || geminiChat;
   const router = express.Router();
 
@@ -113,6 +114,23 @@ function createPanelRouter({ db, sendText, varasGemini } = {}) {
       await _sendText({ to, body: String(text), token: wa.wa_token, phoneNumberId: wa.wa_phone_number_id });
     } catch (e) { return res.status(502).json({ error: 'envio_falla' }); }
     const m = await chatRepo.addMensaje(db, req.auth.companyId, { channel: 'whatsapp', contact, text, direccion: 'out', source: 'panel' });
+    return res.json(m);
+  });
+
+  // Envía una imagen capturada (foto/screenshot/archivo) al cliente por WhatsApp.
+  router.post('/chat/responder-imagen', async (req, res) => {
+    const { channel, contact, imageBase64, mimeType, caption } = req.body || {};
+    const b64 = String(imageBase64 || '').replace(/^data:[^,]+,/, '').trim();
+    if (!b64) return res.status(400).json({ error: 'sin_imagen' });
+    if (String(channel).toLowerCase() !== 'whatsapp') return res.status(400).json({ error: 'canal_no_soportado' });
+    const wa = await getCompanyWa(db, req.auth.companyId);
+    if (!wa || !wa.wa_phone_number_id || !wa.wa_token) return res.status(400).json({ error: 'whatsapp_no_configurado' });
+    const to = telefonoDeContacto(contact).replace(/[^0-9]/g, '');
+    if (!to) return res.status(400).json({ error: 'sin_telefono' });
+    try {
+      await _sendImage({ to, buffer: Buffer.from(b64, 'base64'), mimeType: mimeType || 'image/jpeg', caption: caption || '', token: wa.wa_token, phoneNumberId: wa.wa_phone_number_id });
+    } catch (e) { return res.status(502).json({ error: 'envio_falla' }); }
+    const m = await chatRepo.addMensaje(db, req.auth.companyId, { channel: 'whatsapp', contact, text: (caption && String(caption).trim()) ? caption : '📷 Imagen', direccion: 'out', source: 'panel' });
     return res.json(m);
   });
 
