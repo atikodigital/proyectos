@@ -7,7 +7,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '../api';
 import KalyOrb from './KalyOrb.jsx';
-import { openLiveSession, unlockAudio, playTestTone, audioDiag } from './live.js';
+import { openLiveSession, unlockAudio } from './live.js';
 import { TOOL_DECLARATIONS, executeTool } from './tools.js';
 import { buildSystemPrompt, instruccionInicial } from './prompt.js';
 import { decideAutoStart, esNegativa, hoyStr, SILENCE_MS, INACTIVITY_MS } from './logic.js';
@@ -26,7 +26,6 @@ export default function KalyAgent() {
   const [level, setLevel] = useState(0);
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
-  const [audioInfo, setAudioInfo] = useState('');
   const [muted, setMutedState] = useState(() => {
     try { return localStorage.getItem('kaly_muted') === '1'; } catch (_) { return false; }
   });
@@ -217,16 +216,8 @@ export default function KalyAgent() {
         >
           {muted ? '🔇' : '🔊'}
         </button>
-        <button
-          type="button"
-          onClick={() => { const st = playTestTone(); const d = audioDiag(); setAudioInfo(`audio: ${st} · ${d.sampleRate}Hz`); }}
-          className="shrink-0 text-[10px] font-bold px-2 h-8 rounded-full border bg-white text-slate-500 border-slate-200"
-        >
-          Probar voz 🔊
-        </button>
       </div>
 
-      {audioInfo ? <p className="text-[10px] text-slate-500 mt-1 font-mono">{audioInfo}</p> : null}
       {state === 'error' ? <p className="text-[10px] text-red-400 mt-1 font-bold">Kaly no disponible</p> : null}
       {muted ? (
         <p className="text-[10px] text-slate-500 mt-1 font-semibold text-center">🔇 En silencio — te respondo por texto. Toca 🔊 para la voz.</p>
