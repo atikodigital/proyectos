@@ -521,7 +521,7 @@
   /* ===== Hero shader de fondo ===== */
   #heroShader, #heroScrim { position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: 0; pointer-events: none; }
   #heroShader { display: block; }
-  #heroScrim { background: radial-gradient(130% 120% at 50% 0%, rgba(8,10,14,0.10) 0%, rgba(8,10,14,0.26) 55%, rgba(8,10,14,0.42) 100%); }
+  #heroScrim { background: radial-gradient(130% 120% at 50% 0%, rgba(8,10,14,0.04) 0%, rgba(8,10,14,0.14) 55%, rgba(8,10,14,0.24) 100%); }
   #loginView, #appView { position: relative; z-index: 1; }
   .sidebar { background: rgba(12,12,14,0.55) !important; backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
   .main-content { background: transparent !important; }
@@ -2674,12 +2674,12 @@
     '  float b = 0.5 + 0.5 * sin(q.y * 1.7 - t * 0.90 + 1.6);',
     '  float c = 0.5 + 0.5 * sin((q.x + q.y) * 1.2 + t * 0.70);',
     '  float o = 0.5 + 0.5 * sin(q.x * 1.05 - q.y * 1.35 + t * 1.30);',
-    '  vec3 col = vec3(0.01, 0.02, 0.05);',          // base casi negra azulada
-    '  col = mix(col, C3, smoothstep(0.15, 0.95, a));',
-    '  col = mix(col, C2, smoothstep(0.30, 1.00, b) * 0.95);',
-    '  col = mix(col, C1, smoothstep(0.45, 1.05, c) * 0.95);',
-    '  col = mix(col, C4, smoothstep(0.60, 1.05, o) * 0.80);', // acento naranja fluyendo
-    '  col = pow(col, vec3(0.82));',                 // gamma: más brillo/saturación
+    '  vec3 col = mix(C3, C2, smoothstep(0.0, 1.0, a));',      // base teal viva (NO negra)
+    '  col = mix(col, C1, smoothstep(0.28, 1.0, b) * 0.95);',  // realces cian brillante
+    '  col = mix(col, C1, smoothstep(0.45, 1.0, c) * 0.55);',
+    '  col = mix(col, C4, smoothstep(0.60, 1.02, o) * 0.78);', // acento naranja fluyendo
+    '  col += 0.07;',                                          // levanta el brillo general
+    '  col = pow(col, vec3(0.74));',                           // gamma: más claro y saturado
     '  gl_FragColor = vec4(col, 1.0);',
     '}'
   ].join('\n');
