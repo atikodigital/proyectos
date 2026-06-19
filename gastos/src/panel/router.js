@@ -3,6 +3,9 @@ const { getUserByEmail } = require('../users/repo');
 const { verifyPassword, hashPassword } = require('../auth/password');
 const { signToken } = require('../auth/jwt');
 const { requireAuth, requireKind } = require('../auth/middleware');
+const chatRepo = require('../chat/repo');
+const contactosRepo = require('../chat/contactos-repo');
+const { fichaDerivada } = require('../chat/ficha');
 const { listExpenses } = require('../expenses/query');
 const { markExpensePaid, getExpense, updateExpense, annulExpense, createExpense } = require('../expenses/repo');
 const { readImage, contentTypeFor } = require('../expenses/storage');
@@ -10,7 +13,9 @@ const { buildExpensesWorkbook } = require('./excel');
 const xc = require('./excel-contabilidad');
 const {
   createEmployee, listEmployees, updateEmployee, deactivateEmployee, getCompany, updateCompany, getCompanyWa,
+  getOwnerAgentPrefs, setOwnerAgentPrefs,
 } = require('../companies/repo');
+const memoryRepo = require('../agent/memory');
 const { cashflowSummary } = require('../expenses/summary');
 const { formatCashflowSummary } = require('../whatsapp/format');
 const realWaClient = require('../whatsapp/client');
@@ -56,6 +61,14 @@ function createPanelRouter({ db, sendText, varasGemini } = {}) {
   });
 
   router.use(requireAuth, requireKind('user'));
+
+  router.get('/chat/contacto', async (req, res) => {
+    const { channel, contact } = req.query;
+    const msgs = await chatRepo.listMensajes(db, req.auth.companyId, channel, contact);
+    const ficha = fichaDerivada(msgs);
+    const editable = await contactosRepo.getContacto(db, req.auth.companyId, channel, contact);
+    return res.json({ ...ficha, email: editable.email || null, ubicacion: editable.ubicacion || null, notas: editable.notas || null });
+  });
 
   router.get('/comunas', (req, res) => res.json(REGIONES_COMUNAS));
 
@@ -330,6 +343,30 @@ function createPanelRouter({ db, sendText, varasGemini } = {}) {
     }
   });
 
+  // ── Preferencias del agente para el dueño (nombre/trato/onboarding de KALY) ──
+  router.get('/agent/prefs', async (req, res) => {
+    return res.json(await getOwnerAgentPrefs(db, req.auth.companyId));
+  });
+  router.patch('/agent/prefs', async (req, res) => {
+    const prefs = await setOwnerAgentPrefs(db, req.auth.companyId, req.body || {});
+    return res.json({ agent_prefs: prefs });
+  });
+
+  // ── KALY memoria (hechos del negocio, scoped por empresa) ──
+  router.get('/kaly/memoria', async (req, res) => {
+    return res.json(await memoryRepo.listMemorias(db, req.auth.companyId));
+  });
+  router.post('/kaly/memoria', async (req, res) => {
+    const m = await memoryRepo.crearMemoria(db, req.auth.companyId, { ...(req.body || {}), origen: 'dueño' });
+    if (!m) return res.status(400).json({ error: 'contenido_vacio' });
+    return res.status(201).json({ accion: 'insertar', memoria: m });
+  });
+  router.delete('/kaly/memoria/:id', async (req, res) => {
+    const r = await memoryRepo.borrarMemoria(db, req.auth.companyId, req.params.id);
+    if (!r) return res.status(404).json({ error: 'no_existe' });
+    return res.json({ ok: true });
+  });
+
   // Sesión de voz para el dueño (mismo motor que la app): token efímero Gemini + contexto.
   router.post('/agent/session', async (req, res) => {
     let tok;
@@ -340,6 +377,11 @@ function createPanelRouter({ db, sendText, varasGemini } = {}) {
       catch (e) { return res.status(503).json({ error: 'live_no_disponible', detalle: e.message }); }
     }
     const context = await buildAgentContext(db, { companyId: req.auth.companyId, employeeId: null });
+    // El dueño no tiene employeeId: superponemos sus preferencias guardadas a nivel empresa.
+    const ownerPrefs = await getOwnerAgentPrefs(db, req.auth.companyId);
+    if (ownerPrefs.nombre) context.nombre = ownerPrefs.nombre;
+    if (ownerPrefs.trato) context.trato = ownerPrefs.trato;
+    if (ownerPrefs.onboarded_at) context.onboarded = true;
     return res.json({ ...tok, context });
   });
 
