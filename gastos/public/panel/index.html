@@ -1333,11 +1333,14 @@
           </div>
         </div>
         <div class="p-5 rounded-xl bg-[#0d0e0f] border border-[#ffd700]/10">
-          <div class="flex items-center gap-2 mb-3">
+          <div class="flex items-center gap-2 mb-3 justify-center">
             <div class="w-2 h-2 rounded-full bg-[#ffd700] animate-pulse"></div>
-            <span class="text-xs text-[#d0c6ab] font-semibold">Para acceder al Agente IA completo, usa el módulo VARAS en Contabilidad</span>
+            <span class="text-xs text-[#d0c6ab] font-semibold">Habla con VARAS por voz — toca la esfera</span>
           </div>
-          <button onclick="document.querySelectorAll('.csub[data-libro=varas]')[0].click()" class="bg-gradient-to-r from-[#ffd700] to-[#e9c400] text-[#3a3000] px-6 py-2.5 rounded-xl text-xs font-bold hover:shadow-[0_0_20px_rgba(255,215,0,0.4)] transition-all">Abrir Chat VARAS →</button>
+          <div id="varasVozMount"></div>
+          <div class="text-center mt-2">
+            <button onclick="document.querySelectorAll('.csub[data-libro=varas]')[0].click()" class="text-[11px] text-[#9a917a] underline hover:text-[#ffd700] transition-all">…o usa el chat de texto de VARAS</button>
+          </div>
         </div>
       </div>
     </section>
@@ -2746,6 +2749,13 @@
 
   if (reduce) { resize(); draw(4.0); } else { start(); }
 })();
+</script>
+<script type="module">
+  import { mountVaras } from './agente-voz.js';
+  (function () {
+    var el = document.getElementById('varasVozMount');
+    if (el) mountVaras(el);
+  })();
 </script>
 </body>
 </html>

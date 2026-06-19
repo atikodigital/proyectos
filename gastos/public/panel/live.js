@@ -1,0 +1,248 @@
+// Motor de voz Gemini Live para el PANEL (copia del de la app gastos-app/src/gastos/kaly/live.js).
+// JS puro (sin framework). Mantener en sync con la app si se cambia el protocolo/audio.
+const WS_HOST = 'wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent';
+
+export function openLiveSession(opts) {
+  const { token, model, systemPrompt, tools, voice, onAudioLevel, onState, onUserTranscript, onToolCall, onClose, wsFactory, audio = true } = opts;
+  const ws = (wsFactory || ((url) => new WebSocket(url)))(`${WS_HOST}?key=${encodeURIComponent(token)}`);
+  let closed = false; let micStop = null; let player = null; let muted = false; let agentSpeaking = false;
+  let sessionReady = false;
+  const queue = [];
+
+  const send = (obj) => {
+    if (obj.setup) {
+      try { ws.send(JSON.stringify(obj)); } catch (e) {}
+    } else if (sessionReady && ws.readyState === WebSocket.OPEN) {
+      try { ws.send(JSON.stringify(obj)); } catch (e) {}
+    } else {
+      queue.push(obj);
+    }
+  };
+  const setState = (s) => { if (onState) onState(s); };
+
+  ws.onopen = () => {
+    send({ setup: {
+      model: `models/${model}`,
+      generationConfig: { responseModalities: ['AUDIO'], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: voice || 'Charon' } }, languageCode: 'es-US' } },
+      systemInstruction: { parts: [{ text: systemPrompt }] },
+      tools: [{ functionDeclarations: tools }],
+      inputAudioTranscription: {},
+      outputAudioTranscription: {},
+    } });
+  };
+
+  ws.onmessage = async (ev) => {
+    let data = ev.data;
+    if (data instanceof Blob) data = await data.text();
+    let msg; try { msg = JSON.parse(data); } catch (e) { return; }
+    if (msg.setupComplete) {
+      setState('live');
+      sessionReady = true;
+      while (queue.length > 0) {
+        const q = queue.shift();
+        try { ws.send(JSON.stringify(q)); } catch (e) {}
+      }
+      if (audio) micStop = await startMic(send, onAudioLevel, () => agentSpeaking).catch(() => null);
+      if (audio) player = createPlayer(onAudioLevel, setState, () => muted);
+      return;
+    }
+    if (msg.toolCall && msg.toolCall.functionCalls) { for (const fc of msg.toolCall.functionCalls) onToolCall && onToolCall(fc); return; }
+    const sc = msg.serverContent;
+    if (!sc) return;
+    if (sc.inputTranscription && sc.inputTranscription.text) onUserTranscript && onUserTranscript(sc.inputTranscription.text);
+    if (sc.outputTranscription && sc.outputTranscription.text) opts.onAgentTranscript && opts.onAgentTranscript(sc.outputTranscription.text);
+    if (sc.interrupted) { if (player) player.flush(); agentSpeaking = false; setState('listening'); }
+    if (sc.modelTurn && sc.modelTurn.parts) {
+      let textContent = '';
+      for (const p of sc.modelTurn.parts) {
+        if (p.inlineData && p.inlineData.data) { agentSpeaking = true; setState('speaking'); if (player) player.push(p.inlineData.data); }
+        if (p.text) textContent += p.text;
+      }
+      if (textContent && opts.onAgentTranscript) {
+        opts.onAgentTranscript(textContent);
+      }
+    }
+    if (sc.turnComplete) {
+      if (player) player.onDrain(() => { setState('listening'); setTimeout(() => { agentSpeaking = false; }, 250); });
+      else { agentSpeaking = false; setState('listening'); }
+    }
+  };
+
+  ws.onerror = () => setState('error');
+  ws.onclose = () => { cleanup(); onClose && onClose(); };
+
+  function cleanup() { if (closed) return; closed = true; if (micStop) micStop(); if (player) player.stop(); }
+
+  return {
+    sendText(text) { send({ clientContent: { turns: [{ role: 'user', parts: [{ text }] }], turnComplete: true } }); },
+    sendToolResponse(id, name, response) { send({ toolResponse: { functionResponses: [{ id, name, response }] } }); },
+    close() { cleanup(); try { ws.close(); } catch (e) {} },
+    setMuted(m) { muted = !!m; },
+  };
+}
+
+// ── Audio: AudioContext compartido desbloqueado por gesto del usuario ───────────
+let _playCtx = null;
+function _getPlayCtx() {
+  if (typeof window === 'undefined') return null;
+  if (!_playCtx) {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return null;
+    try { _playCtx = new AC(); } catch (_) { return null; }
+  }
+  return _playCtx;
+}
+
+export function unlockAudio() {
+  const ctx = _getPlayCtx();
+  if (!ctx) return;
+  if (ctx.state === 'suspended') { try { ctx.resume(); } catch (_) {} }
+  try {
+    const b = ctx.createBuffer(1, 1, 22050);
+    const s = ctx.createBufferSource();
+    s.buffer = b; s.connect(ctx.destination); s.start(0);
+  } catch (_) {}
+}
+
+if (typeof window !== 'undefined' && !window.__panelAudioUnlockHooked) {
+  window.__panelAudioUnlockHooked = true;
+  const onFirstGesture = () => { unlockAudio(); };
+  window.addEventListener('pointerdown', onFirstGesture, { passive: true });
+  window.addEventListener('touchstart', onFirstGesture, { passive: true });
+  window.addEventListener('click', onFirstGesture, { passive: true });
+}
+
+export async function startMic(send, onLevel, isAgentSpeaking) {
+  try {
+    // echoCancellation/noiseSuppression/AGC en false → modo multimedia (A2DP/Bluetooth, volumen de media).
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: { channelCount: 1, echoCancellation: false, noiseSuppression: false, autoGainControl: false },
+    });
+    const ctx = new AudioContext({ sampleRate: 16000 });
+    const source = ctx.createMediaStreamSource(stream);
+    const processor = ctx.createScriptProcessor(4096, 1, 1);
+
+    processor.onaudioprocess = (e) => {
+      try {
+        // Half-duplex: mic callado mientras el agente habla (evita auto-interrupción).
+        if (isAgentSpeaking && isAgentSpeaking()) return;
+        const float32 = e.inputBuffer.getChannelData(0);
+        const len = float32.length;
+
+        const int16 = new Int16Array(len);
+        let sumSq = 0;
+        for (let i = 0; i < len; i++) {
+          const s = Math.max(-1, Math.min(1, float32[i]));
+          int16[i] = s < 0 ? s * 32768 : s * 32767;
+          sumSq += s * s;
+        }
+
+        const bytes = new Uint8Array(int16.buffer);
+        const CHUNK = 8192;
+        let binary = '';
+        for (let i = 0; i < bytes.length; i += CHUNK) {
+          binary += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
+        }
+        const data = btoa(binary);
+
+        send({ realtimeInput: { audio: { data, mimeType: 'audio/pcm;rate=16000' } } });
+
+        if (onLevel) {
+          const rms = Math.sqrt(sumSq / len);
+          onLevel('in', rms);
+        }
+      } catch (_) {}
+    };
+
+    source.connect(processor);
+    processor.connect(ctx.destination);
+
+    return function stop() {
+      try { processor.disconnect(); } catch (_) {}
+      try { source.disconnect(); } catch (_) {}
+      try { stream.getTracks().forEach((t) => t.stop()); } catch (_) {}
+      try { ctx.close(); } catch (_) {}
+    };
+  } catch (e) {
+    return () => {};
+  }
+}
+
+export function createPlayer(onLevel, setState, isMuted) {
+  const ctx = _getPlayCtx();
+  if (!ctx) { return { push() {}, flush() {}, onDrain() {}, stop() {} }; }
+  if (ctx.state === 'suspended') { try { ctx.resume(); } catch (_) {} }
+
+  let cursor = ctx.currentTime;
+  let pending = 0;
+  let drainCb = null;
+  const activeSources = new Set();
+
+  function checkDrain() {
+    if (pending === 0 && drainCb) {
+      const cb = drainCb;
+      drainCb = null;
+      cb();
+    }
+  }
+
+  return {
+    push(b64) {
+      if (isMuted && isMuted()) { return; }
+      if (ctx && ctx.state === 'suspended') { ctx.resume().catch(() => {}); }
+      try {
+        const binary = atob(b64);
+        const len = binary.length >> 1;
+        const dv = new DataView(new ArrayBuffer(binary.length));
+        for (let i = 0; i < binary.length; i++) dv.setUint8(i, binary.charCodeAt(i));
+
+        const float32 = new Float32Array(len);
+        let sumSq = 0;
+        for (let i = 0; i < len; i++) {
+          const s = dv.getInt16(i * 2, true) / 32768;
+          float32[i] = s;
+          sumSq += s * s;
+        }
+
+        const buffer = ctx.createBuffer(1, len, 24000);
+        buffer.copyToChannel(float32, 0);
+
+        const source = ctx.createBufferSource();
+        source.buffer = buffer;
+        source.connect(ctx.destination);
+
+        const at = Math.max(ctx.currentTime, cursor);
+        const duration = len / 24000;
+        source.start(at);
+        cursor = at + duration;
+        pending++;
+        activeSources.add(source);
+
+        if (onLevel) {
+          const rms = Math.sqrt(sumSq / Math.max(1, len));
+          onLevel('out', rms);
+        }
+
+        source.onended = () => { activeSources.delete(source); pending--; checkDrain(); };
+      } catch (_) {}
+    },
+    flush() {
+      try {
+        activeSources.forEach((s) => { try { s.stop(); } catch (_) {} });
+        activeSources.clear();
+        pending = 0;
+        cursor = ctx.currentTime;
+        drainCb = null;
+      } catch (_) {}
+    },
+    onDrain(cb) { drainCb = cb; checkDrain(); },
+    stop() {
+      try {
+        activeSources.forEach((s) => { try { s.stop(); } catch (_) {} });
+        activeSources.clear();
+        pending = 0;
+        drainCb = null;
+      } catch (_) {}
+    },
+  };
+}

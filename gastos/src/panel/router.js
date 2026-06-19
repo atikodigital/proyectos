@@ -30,6 +30,8 @@ const { responder } = require('../varas/chat');
 const { geminiChat } = require('../varas/gemini');
 const { ejecutarAccion } = require('../varas/acciones');
 const { TOOLS_READ } = require('../varas/tools');
+const { buildAgentContext } = require('../agent/context');
+const { createEphemeralToken } = require('../agent/token');
 
 function parseFiltros(q = {}) {
   return {
@@ -326,6 +328,19 @@ function createPanelRouter({ db, sendText, varasGemini } = {}) {
     } catch (e) {
       res.status(500).json({ error: 'fallo_tool' });
     }
+  });
+
+  // Sesión de voz para el dueño (mismo motor que la app): token efímero Gemini + contexto.
+  router.post('/agent/session', async (req, res) => {
+    let tok;
+    if (process.env.KALY_TOKEN_MODE === 'key') {
+      tok = { token: process.env.GEMINI_API_KEY, expireAt: null, model: process.env.GEMINI_LIVE_MODEL || 'gemini-2.5-flash-native-audio-preview-09-2025' };
+    } else {
+      try { tok = await createEphemeralToken({ apiKey: process.env.GEMINI_API_KEY }); }
+      catch (e) { return res.status(503).json({ error: 'live_no_disponible', detalle: e.message }); }
+    }
+    const context = await buildAgentContext(db, { companyId: req.auth.companyId, employeeId: null });
+    return res.json({ ...tok, context });
   });
 
   return router;
