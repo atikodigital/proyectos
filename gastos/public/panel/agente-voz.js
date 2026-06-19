@@ -116,8 +116,33 @@ ${resumenBloque}
 - Si el dueño dice "no", "nada" o "gracias", despídete en una frase y termina.
 - NUNCA ejecutes \`marcar_pagada\`, \`anular_movimiento\` ni \`enviar_resumen_whatsapp\` sin una confirmación verbal EXPLÍCITA en el turno inmediatamente anterior. Antes pregunta "¿Confirma, ${tratamiento}?" y espera el sí.`;
 }
-function instruccionInicialKaly() {
+function instruccionInicialKaly(motivo, ctx = {}) {
+  const saludoHora = ctx.saludoHora || 'dia';
+  const saludo = saludoHora === 'noche' ? 'buenas noches' : saludoHora === 'tarde' ? 'buenas tardes' : 'buenos días';
+  const nombreLabel = ctx.nombre ? ` ${ctx.nombre}` : '';
+  if (motivo === 'onboarding') {
+    return 'Realiza el onboarding completo ahora. Saluda, preséntate ("Soy Kaly, su asistente contable…") y pregunta SOLO el nombre: "¿Cuál es su nombre?". Deduce el trato del género del nombre y llama a guardar_preferencias con nombre y trato.';
+  }
+  if (motivo === 'saludo') {
+    return `Enciende el micrófono y di breve y cordial: 'Hola, ${saludo}${nombreLabel}, ¿en qué trabajaremos hoy?'`;
+  }
+  // 'manual'
   return 'El usuario tocó la esfera para hablar contigo. Si ya conoces su nombre, salúdalo cordialmente por su nombre y trato y pregúntale en qué trabajarán hoy. Si NO conoces su nombre, preséntate como Kaly y pregúntale su nombre para guardarlo. Tono cercano y breve.';
+}
+function esNegativaKaly(texto) {
+  const t = String(texto || '').toLowerCase().trim();
+  return /^(no|nada|no gracias|gracias|estoy bien|ninguna|nada m[aá]s|eso es todo|listo gracias)[.,!\s]*$/.test(t);
+}
+function decideMotivoKaly() {
+  let onboarded = false;
+  try { onboarded = localStorage.getItem('kaly_onboarded') === '1'; } catch (_) {}
+  if (!onboarded) return 'onboarding';
+  let last = '';
+  try { last = localStorage.getItem('kaly_last_greet') || ''; } catch (_) {}
+  const hoy = new Date().toISOString().slice(0, 10);
+  if (last === hoy) return null; // ya saludó hoy: no re-saludar al volver a la pestaña
+  try { localStorage.setItem('kaly_last_greet', hoy); } catch (_) {}
+  return 'saludo';
 }
 const KALY_TOOLS = [
   { name: 'guardar_preferencias', description: 'Guarda nombre y trato preferido del usuario en memoria permanente.', parameters: { type: 'OBJECT', properties: { nombre: { type: 'STRING' }, trato: { type: 'STRING', description: 'señor o señora' } } } },
@@ -141,6 +166,7 @@ async function execKalyTool(name, args = {}) {
   try {
     if (name === 'guardar_preferencias') {
       await pfetch('/agent/prefs', { method: 'PATCH', body: JSON.stringify({ nombre: args.nombre, trato: args.trato, onboarded: true }) });
+      try { localStorage.setItem('kaly_onboarded', '1'); } catch (_) {}
       return { ok: true };
     }
     if (name === 'obtener_resumen' || name === 'listar_movimientos') {
@@ -194,7 +220,10 @@ async function execKalyTool(name, args = {}) {
 // ── UI de la esfera (vanilla) ──────────────────────────────────────────────────
 const ESTADO_LABEL = { off: 'Toca para hablar', connecting: 'Conectando…', live: 'Escuchando…', listening: 'Escuchando…', speaking: 'Hablando…', error: 'No disponible' };
 
-function makeAgent(el, { titulo, color, voice, buildPrompt, instruccion, tools, execTool }) {
+function makeAgent(el, opts) {
+  const { titulo, color, voice, buildPrompt, instruccion, tools, execTool } = opts;
+  const behavior = opts.behavior || {};
+  const conTexto = !!opts.texto;
   el.innerHTML = `
     <div style="display:flex;flex-direction:column;align-items:center;gap:8px;padding:8px">
       <button class="agv-orb" type="button" style="width:120px;height:120px;border-radius:50%;border:none;cursor:pointer;
@@ -203,13 +232,22 @@ function makeAgent(el, { titulo, color, voice, buildPrompt, instruccion, tools, 
       <div class="agv-state" style="font-size:12px;color:#d0c6ab;font-weight:600">${ESTADO_LABEL.off}</div>
       <div class="agv-last" style="max-width:520px;text-align:center;font-size:13px;color:#e3e2e2;min-height:18px"></div>
       <button class="agv-mute" type="button" style="display:none;font-size:11px;color:#9a917a;background:transparent;border:1px solid #343535;border-radius:999px;padding:4px 12px;cursor:pointer">🔊 Silenciar</button>
+      ${conTexto ? `<div class="agv-textbar" style="display:flex;gap:6px;width:100%;max-width:320px;margin-top:2px">
+        <input class="agv-input" type="text" placeholder="Escribe a ${titulo}…" style="flex:1;min-width:0;background:#0d0e0f;border:1px solid #343535;border-radius:8px;padding:6px 10px;color:#e3e2e2;font-size:12px;outline:none">
+        <button class="agv-send" type="button" style="background:${color};border:none;border-radius:8px;padding:6px 12px;color:#fff;font-weight:800;font-size:12px;cursor:pointer">Enviar</button>
+      </div>` : ''}
     </div>`;
   const orb = el.querySelector('.agv-orb');
   const stEl = el.querySelector('.agv-state');
   const lastEl = el.querySelector('.agv-last');
   const muteBtn = el.querySelector('.agv-mute');
+  const inputEl = el.querySelector('.agv-input');
+  const sendBtn = el.querySelector('.agv-send');
   orb.textContent = titulo;
-  let session = null; let muted = false;
+  let session = null; let muted = false; let silenceTimer = null;
+
+  function clearSilence() { if (silenceTimer) { clearTimeout(silenceTimer); silenceTimer = null; } }
+  function armSilence() { if (!behavior.silenceMs) return; clearSilence(); silenceTimer = setTimeout(() => { silenceTimer = null; stop(); }, behavior.silenceMs); }
 
   function setState(s) {
     stEl.textContent = ESTADO_LABEL[s] || s;
@@ -217,33 +255,63 @@ function makeAgent(el, { titulo, color, voice, buildPrompt, instruccion, tools, 
     orb.style.boxShadow = (s === 'speaking' || s === 'listening') ? `0 0 44px ${color}aa` : `0 0 28px ${color}55`;
     muteBtn.style.display = (s === 'off') ? 'none' : 'inline-block';
     if (s === 'off') lastEl.textContent = '';
+    if (s === 'listening') armSilence(); else clearSilence();
   }
 
-  async function start() {
+  async function start(motivo) {
+    if (session) return;
     setState('connecting');
     let s;
     try { s = await pfetch('/agent/session', { method: 'POST', body: '{}' }); } catch (_) { setState('error'); return; }
     if (!s || !s.token) { setState('error'); lastEl.textContent = 'No se pudo iniciar la voz (sesión).'; return; }
+    if (behavior.onContext) { try { behavior.onContext(s.context || {}); } catch (_) {} }
+    let mot = motivo || 'manual';
+    if (mot === 'onboarding' && s.context && s.context.onboarded) mot = 'saludo';
     session = openLiveSession({
       token: s.token, model: s.model || LIVE_MODEL, voice,
       systemPrompt: buildPrompt(s.context || {}),
       tools, audio: true,
       onState: setState,
+      onUserTranscript: (txt) => { clearSilence(); if (behavior.esNegativa && behavior.esNegativa(txt)) setTimeout(() => stop(), 2500); },
       onAgentTranscript: (txt) => { lastEl.textContent = (lastEl.textContent ? lastEl.textContent + ' ' : '') + txt; },
       onToolCall: async (fc) => { const out = await execTool(fc.name, fc.args || {}); if (session) session.sendToolResponse(fc.id, fc.name, out); },
-      onClose: () => { session = null; setState('off'); },
+      onClose: () => { session = null; clearSilence(); setState('off'); },
     });
     if (muted && session.setMuted) session.setMuted(true);
-    session.sendText(instruccion());
+    session.sendText(instruccion(mot, s.context || {}));
   }
-  function stop() { if (session) { session.close(); session = null; } setState('off'); }
+  function stop() { clearSilence(); if (session) { session.close(); session = null; } setState('off'); }
 
-  orb.onclick = () => { unlockAudio(); if (!session) { lastEl.textContent = ''; start(); } else stop(); };
+  orb.onclick = () => { unlockAudio(); if (!session) { lastEl.textContent = ''; start('manual'); } else stop(); };
   muteBtn.onclick = () => { muted = !muted; if (session && session.setMuted) session.setMuted(muted); muteBtn.textContent = muted ? '🔇 Activar voz' : '🔊 Silenciar'; };
+
+  if (conTexto) {
+    const enviar = async () => {
+      unlockAudio();
+      const txt = (inputEl.value || '').trim();
+      if (!txt) return;
+      inputEl.value = '';
+      clearSilence();
+      if (!session) { await start('manual'); }
+      if (session) session.sendText(txt);
+    };
+    sendBtn.onclick = enviar;
+    inputEl.onkeydown = (e) => { if (e.key === 'Enter') enviar(); };
+  }
+
+  return {
+    start, stop,
+    notifyVisible() {
+      if (!behavior.auto || session) return;
+      const mot = behavior.decideMotivo ? behavior.decideMotivo() : null;
+      if (mot) { unlockAudio(); start(mot); }
+    },
+    notifyHidden() { stop(); },
+  };
 }
 
 export function mountVaras(el) {
-  makeAgent(el, {
+  return makeAgent(el, {
     titulo: 'VARAS', color: '#C9A24B', voice: 'Gacrux',
     buildPrompt: buildVarasVoicePrompt, instruccion: instruccionInicialVoz,
     tools: VARAS_TOOLS, execTool: execVarasTool,
@@ -251,9 +319,17 @@ export function mountVaras(el) {
 }
 
 export function mountKaly(el) {
-  makeAgent(el, {
+  return makeAgent(el, {
     titulo: 'KALY', color: '#4F8FF7', voice: 'Charon',
     buildPrompt: buildKalyVoicePrompt, instruccion: instruccionInicialKaly,
     tools: KALY_TOOLS, execTool: execKalyTool,
+    texto: true,
+    behavior: {
+      auto: true,
+      silenceMs: 5000,
+      esNegativa: esNegativaKaly,
+      decideMotivo: decideMotivoKaly,
+      onContext: (ctx) => { if (ctx && ctx.onboarded) { try { localStorage.setItem('kaly_onboarded', '1'); } catch (_) {} } },
+    },
   });
 }

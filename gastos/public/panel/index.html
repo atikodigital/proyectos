@@ -2551,6 +2551,7 @@
     var orig = b.onclick;
     b.onclick = function() {
       var tab = b.getAttribute('data-tab');
+      try { window.dispatchEvent(new CustomEvent('panel:tab', { detail: tab })); } catch (_) {}
       if (tab === 'crm') {
         hideAllSections(); $('crmSection').classList.remove('hidden');
         updateSidebarUi('crm', null); return;
@@ -2765,9 +2766,14 @@
   import { mountVaras, mountKaly } from './agente-voz.js';
   (function () {
     var v = document.getElementById('varasVozMount');
-    if (v) mountVaras(v);
+    var varasCtl = v ? mountVaras(v) : null;
     var k = document.getElementById('kalyVozMount');
-    if (k) mountKaly(k);
+    var kalyCtl = k ? mountKaly(k) : null;
+    // KALY saluda al abrir la pestaña Agente (igual que en la app); al salir, cierra ambas sesiones.
+    window.addEventListener('panel:tab', function (e) {
+      if (e.detail === 'agente') { if (kalyCtl) kalyCtl.notifyVisible(); }
+      else { if (kalyCtl) kalyCtl.notifyHidden(); if (varasCtl) varasCtl.notifyHidden(); }
+    });
   })();
 </script>
 </body>
