@@ -28,3 +28,14 @@ test('Cancelar llama onCancelar', () => {
   fireEvent.click(screen.getByText('Cancelar'));
   expect(onCancelar).toHaveBeenCalled();
 });
+
+test('sin agente el texto es neutral (no nombra a KALY)', () => {
+  render(<EvidenceCaptureOverlay motivo="la boleta" onCapturar={() => {}} onCancelar={() => {}} />);
+  expect(screen.queryByText(/KALY/i)).toBeNull();
+  expect(screen.getByText(/la boleta/i)).toBeInTheDocument();
+});
+
+test('con agente, lo nombra', () => {
+  render(<EvidenceCaptureOverlay motivo="la cartola" agente="VARAS" onCapturar={() => {}} onCancelar={() => {}} />);
+  expect(screen.getByText(/VARAS te pide/i)).toBeInTheDocument();
+});

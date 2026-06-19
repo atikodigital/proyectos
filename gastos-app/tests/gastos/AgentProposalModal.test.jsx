@@ -47,3 +47,13 @@ test('propuesta sin campos (solo acción) confirma con objeto vacío', () => {
   fireEvent.click(screen.getByText('Confirmar'));
   expect(onConfirmar).toHaveBeenCalledWith({});
 });
+
+test('enfoca el primer campo al abrir (foco inicial)', () => {
+  render(<AgentProposalModal propuesta={PROP} onConfirmar={() => {}} onCancelar={() => {}} />);
+  expect(screen.getByLabelText('Nombre')).toHaveFocus();
+});
+
+test('sin campos, el foco inicial cae en Confirmar', () => {
+  render(<AgentProposalModal propuesta={{ titulo: 'X', accion: 'x', campos: [] }} onConfirmar={() => {}} onCancelar={() => {}} />);
+  expect(screen.getByText('Confirmar')).toHaveFocus();
+});

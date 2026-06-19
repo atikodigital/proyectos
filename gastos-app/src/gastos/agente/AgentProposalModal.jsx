@@ -32,15 +32,16 @@ export default function AgentProposalModal({ propuesta, onConfirmar, onCancelar 
         <h3 style={{ margin: '0 0 4px', fontWeight: 900, color: ORO }}>{propuesta?.titulo}</h3>
         {propuesta?.nota ? <p style={{ margin: '0 0 12px', fontSize: 13, color: '#64748b' }}>{propuesta.nota}</p> : null}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10, margin: '12px 0' }}>
-          {campos.map((c) => (
+          {campos.map((c, i) => (
             <label key={c.key} style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12, color: '#475569', fontWeight: 700 }}>
               {c.label}
               {c.tipo === 'opciones' ? (
-                <select aria-label={c.label} value={valores[c.key]} onChange={(e) => set(c.key, e.target.value, c.tipo)} style={{ padding: 8, borderRadius: 8, border: '1px solid #cbd5e1' }}>
+                <select autoFocus={i === 0} aria-label={c.label} value={valores[c.key]} onChange={(e) => set(c.key, e.target.value, c.tipo)} style={{ padding: 8, borderRadius: 8, border: '1px solid #cbd5e1' }}>
                   {(c.opciones || []).map((o) => <option key={o} value={o}>{o}</option>)}
                 </select>
               ) : (
                 <input
+                  autoFocus={i === 0}
                   aria-label={c.label}
                   type={c.tipo === 'numero' ? 'number' : 'text'}
                   value={valores[c.key]}
@@ -53,7 +54,7 @@ export default function AgentProposalModal({ propuesta, onConfirmar, onCancelar 
         </div>
         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 8 }}>
           <button onClick={() => onCancelar?.()} style={{ padding: '8px 14px', borderRadius: 8, border: '1px solid #cbd5e1', background: '#fff', fontWeight: 700 }}>Cancelar</button>
-          <button onClick={() => onConfirmar?.({ ...valores })} style={{ padding: '8px 14px', borderRadius: 8, border: 0, background: ORO, color: '#fff', fontWeight: 900 }}>Confirmar</button>
+          <button autoFocus={campos.length === 0} onClick={() => onConfirmar?.({ ...valores })} style={{ padding: '8px 14px', borderRadius: 8, border: 0, background: ORO, color: '#fff', fontWeight: 900 }}>Confirmar</button>
         </div>
       </div>
     </div>
