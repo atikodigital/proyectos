@@ -20,7 +20,9 @@ const { cashflowSummary } = require('../expenses/summary');
 const { formatCashflowSummary } = require('../whatsapp/format');
 const realWaClient = require('../whatsapp/client');
 const { registerCatalogRoutes } = require('../catalog/routes');
+const catalogRepo = require('../catalog/repo');
 const pedidosRepo = require('../pedidos/repo');
+const { buildPedidoPdf } = require('../pedidos/pdf');
 const contaReportes = require('../contabilidad/reportes');
 const { REGIONES_COMUNAS } = require('../pedidos/comunas-chile');
 const matchRepo = require('../match/repo');
@@ -163,6 +165,60 @@ function createPanelRouter({ db, sendText, varasGemini } = {}) {
   });
   router.patch('/pedido-config', async (req, res) => {
     return res.json(await pedidosRepo.setPedidoConfig(db, req.auth.companyId, req.body || {}));
+  });
+
+  // Pedido por catálogo (mismo flujo que la app APK): arma líneas desde el
+  // catálogo, calcula precio/envío server-side y devuelve {pedido, text, waUrl}.
+  router.post('/pedido/from-catalog', async (req, res) => {
+    try {
+      const b = req.body || {};
+      const lineasIn = Array.isArray(b.lineas) ? b.lineas : [];
+      const items = [];
+      for (const ln of lineasIn) {
+        const prod = await catalogRepo.getProduct(db, req.auth.companyId, ln && ln.productId);
+        if (!prod) continue;
+        const sel = { opciones: (ln.opciones) || {}, extras: Array.isArray(ln.extras) ? ln.extras : [] };
+        items.push({
+          descripcion: catalogRepo.describeSelection(prod, sel),
+          cantidad: Math.max(1, parseInt(ln.cantidad, 10) || 1),
+          precio_unitario: catalogRepo.priceForSelection(prod, sel),
+        });
+      }
+      if (!items.length) return res.status(400).json({ error: 'sin_lineas' });
+      const cfg = await pedidosRepo.getPedidoConfig(db, req.auth.companyId);
+      let comuna = null, envio_costo = 0, envio_zona = null;
+      if (b.entrega === 'despacho' && b.comuna) {
+        const subtotalProductos = items.reduce((s, it) => s + it.cantidad * it.precio_unitario, 0);
+        const env = pedidosRepo.costoEnvio(cfg.delivery, b.comuna, subtotalProductos);
+        if (!env.ok) return res.status(400).json({ error: 'sin_despacho_comuna' });
+        comuna = b.comuna; envio_costo = env.costo; envio_zona = env.zona ? env.zona.nombre : null;
+      }
+      const contact = b.contact || {};
+      const ped = await pedidosRepo.createPedido(db, req.auth.companyId, {
+        channel: b.channel || 'whatsapp',
+        contact_name: contact.name, contact_phone: contact.phone,
+        items, impuesto_pct: cfg.iva_incluido ? 0 : 19,
+        entrega: b.entrega, direccion: b.direccion, nota: b.nota,
+        comuna, envio_costo, envio_zona,
+      });
+      const text = pedidosRepo.pedidoToText(ped, { pie: cfg.pie });
+      return res.status(201).json({ pedido: ped, text, waUrl: pedidosRepo.waLink(text, contact.phone) });
+    } catch (e) { console.error('[panel pedido from-catalog]', e.message); return res.status(500).json({ error: 'error_pedido' }); }
+  });
+
+  router.get('/pedido/:id/pdf', async (req, res) => {
+    try {
+      const ped = await pedidosRepo.getPedido(db, req.auth.companyId, req.params.id);
+      if (!ped) return res.status(404).json({ error: 'no_existe' });
+      const pie = await pedidosRepo.getCompanyPie(db, req.auth.companyId);
+      const buf = await buildPedidoPdf(ped, { pie });
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', 'inline; filename="cotizacion.pdf"');
+      return res.send(buf);
+    } catch (e) {
+      if (e.message && e.message.includes('uuid')) return res.status(404).json({ error: 'no_existe' });
+      console.error('[panel pedido pdf]', e.message); return res.status(500).json({ error: 'error_pdf' });
+    }
   });
 
   router.get('/expenses', async (req, res) => {

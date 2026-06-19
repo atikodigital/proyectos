@@ -2657,57 +2657,261 @@
     try { await apiFetch('/chat/responder', { method: 'POST', body: JSON.stringify({ channel: crmActivo.channel, contact: crmActivo.contact, text: txt }) }); $('crmReply').value = ''; crmAbrir(encodeURIComponent(crmActivo.channel), encodeURIComponent(crmActivo.contact)); }
     catch (e) { alert('No se pudo enviar.'); }
   };
-  // Captura (vanilla, protocolo de evidencia)
-  function crmFileInput() {
-    var i = $('crmFileInput');
-    if (!i) { i = document.createElement('input'); i.type = 'file'; i.id = 'crmFileInput'; i.accept = 'image/*'; i.capture = 'environment'; i.style.display = 'none'; i.onchange = crmOnFile; document.body.appendChild(i); }
+  // ════════════════════════════════════════════════════════════════════
+  //  EVIDENCIA — clon vanilla del EvidenceIntake del APK (KALY): Tomar foto
+  //  (cámara) · Subir archivo (imágenes/PDF, múltiples) · Captura de pantalla.
+  // ════════════════════════════════════════════════════════════════════
+  function crmClp(n) { return '$' + (Math.round(Number(n) || 0)).toLocaleString('es-CL'); }
+  function crmInt(v) { var n = Math.round(Number(v) || 0); return isFinite(n) ? n : 0; }
+  var crmEv = [], crmCamStream = null;
+  function crmEvId() { return 'ev_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7); }
+  function crmEvAdd(asset) { crmEv.push(asset); crmEvRenderAll(); }
+  window.crmEvRemove = function (id) { crmEv = crmEv.filter(function (x) { return x.id !== id; }); crmEvRenderAll(); };
+  function crmEvRenderAll() { ['crmEvGridFicha', 'crmEvGridPedido'].forEach(function (gid) { var g = $(gid); if (g) g.innerHTML = crmEvGridHtml(); }); }
+  function crmEvGridHtml() {
+    if (!crmEv.length) return '';
+    return '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;">' + crmEv.map(function (p) {
+      var inner = (p.isDoc || !p.previewUrl)
+        ? '<div style="width:72px;height:72px;border-radius:10px;background:#292a2a;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:9px;color:#d0c6ab;text-align:center;padding:4px;overflow:hidden;">📄<span style="margin-top:2px;">' + crmEsc((p.docName || 'Doc').slice(0, 16)) + '</span></div>'
+        : '<img src="' + p.previewUrl + '" style="width:72px;height:72px;object-fit:cover;border-radius:10px;border:1px solid #343535;" />';
+      return '<div style="position:relative;">' + inner + '<button onclick="crmEvRemove(\'' + p.id + '\')" style="position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;border:0;background:#ef4444;color:#fff;font-weight:900;cursor:pointer;line-height:1;">×</button></div>';
+    }).join('') + '</div>';
+  }
+  function crmCaptureToolbar(gridId) {
+    var b = 'padding:8px 6px;border-radius:10px;border:1px solid #343535;background:transparent;color:#d0c6ab;font-weight:700;font-size:11px;cursor:pointer;flex:1;';
+    return '<div style="display:flex;gap:6px;">'
+      + '<button onclick="crmEvFoto()" style="' + b + '">📷 Tomar foto</button>'
+      + '<button onclick="crmEvSubir()" style="' + b + 'border-color:#4D96FF;color:#9cc2ff;">⬆️ Subir archivo</button>'
+      + '<button onclick="crmEvPantalla()" style="' + b + '">🖥️ Captura pantalla</button>'
+      + '</div><div id="' + gridId + '">' + crmEvGridHtml() + '</div>';
+  }
+  // Subir archivo: imágenes y PDF, múltiples.
+  function crmEvFileInput() {
+    var i = $('crmEvFileInput');
+    if (!i) { i = document.createElement('input'); i.type = 'file'; i.id = 'crmEvFileInput'; i.accept = 'image/*,application/pdf'; i.multiple = true; i.style.display = 'none'; i.onchange = crmEvOnFiles; document.body.appendChild(i); }
     return i;
   }
-  window.crmCaptura = function () { crmFileInput().click(); };
-  function crmOnFile(e) {
-    var file = e.target.files && e.target.files[0]; if (!file) return;
-    var rd = new FileReader();
-    rd.onload = function () { crmCaptB64 = rd.result; var pv = $('crmPedidoPreview'); if (pv) pv.innerHTML = '<img src="' + rd.result + '" class="max-h-40 rounded-lg border border-[#343535]" />'; };
-    rd.readAsDataURL(file);
+  window.crmEvSubir = function () { crmEvFileInput().click(); };
+  function crmEvOnFiles(e) {
+    Array.prototype.slice.call(e.target.files || []).forEach(function (file) {
+      var isImg = file.type.indexOf('image/') === 0;
+      var rd = new FileReader();
+      rd.onload = function () { if (isImg) crmEvAdd({ id: crmEvId(), previewUrl: rd.result }); else crmEvAdd({ id: crmEvId(), isDoc: true, docName: file.name, previewUrl: '' }); };
+      rd.readAsDataURL(file);
+    });
     e.target.value = '';
+  }
+  // Captura de pantalla (web getDisplayMedia).
+  window.crmEvPantalla = async function () {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) { alert('Captura de pantalla no disponible en este navegador.'); return; }
+    try {
+      var stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
+      var track = stream.getVideoTracks()[0];
+      var video = document.createElement('video'); video.srcObject = new MediaStream([track]); await video.play();
+      await new Promise(function (r) { setTimeout(r, 200); });
+      var c = document.createElement('canvas'); c.width = video.videoWidth; c.height = video.videoHeight;
+      c.getContext('2d').drawImage(video, 0, 0, c.width, c.height);
+      crmEvAdd({ id: crmEvId(), previewUrl: c.toDataURL('image/jpeg', 0.85) });
+      track.stop();
+    } catch (e) { /* cancelado por el usuario */ }
+  };
+  // Tomar foto (cámara). Desktop: preview getUserMedia; móvil-web: input capture.
+  window.crmEvFoto = async function () {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      var i = document.createElement('input'); i.type = 'file'; i.accept = 'image/*'; i.capture = 'environment';
+      i.onchange = function (e) { var f = e.target.files && e.target.files[0]; if (!f) return; var rd = new FileReader(); rd.onload = function () { crmEvAdd({ id: crmEvId(), previewUrl: rd.result }); }; rd.readAsDataURL(f); };
+      i.click(); return;
+    }
+    try {
+      crmCamStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+      var m = crmCamModal(); var v = $('crmCamVideo'); v.srcObject = crmCamStream; await v.play().catch(function () {}); m.style.display = 'flex';
+    } catch (e) { alert('No se pudo abrir la cámara.'); }
+  };
+  function crmCamModal() {
+    var m = $('crmCamModal');
+    if (!m) {
+      m = document.createElement('div'); m.id = 'crmCamModal';
+      m.style.cssText = 'position:fixed;inset:0;z-index:90;background:rgba(0,0,0,.8);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;gap:12px;';
+      m.innerHTML = '<video id="crmCamVideo" playsinline muted style="max-width:100%;max-height:60vh;border-radius:14px;background:#000;"></video>'
+        + '<div style="display:flex;gap:10px;"><button onclick="crmCamShot()" style="padding:10px 18px;border-radius:12px;border:0;background:#ffd700;color:#3a3000;font-weight:900;cursor:pointer;">Capturar</button>'
+        + '<button onclick="crmCamClose()" style="padding:10px 18px;border-radius:12px;border:1px solid #555;background:#0000;color:#fff;font-weight:700;cursor:pointer;">Cerrar</button></div>';
+      document.body.appendChild(m);
+    }
+    return m;
+  }
+  window.crmCamShot = function () {
+    var v = $('crmCamVideo'); if (!v) return;
+    var c = document.createElement('canvas'); c.width = v.videoWidth; c.height = v.videoHeight;
+    c.getContext('2d').drawImage(v, 0, 0, c.width, c.height);
+    crmEvAdd({ id: crmEvId(), previewUrl: c.toDataURL('image/jpeg', 0.85) });
+    crmCamClose();
+  };
+  window.crmCamClose = function () { if (crmCamStream) { crmCamStream.getTracks().forEach(function (t) { t.stop(); }); crmCamStream = null; } var m = $('crmCamModal'); if (m) m.style.display = 'none'; };
+  // Botón "Captura" de la ficha → modal de evidencia independiente.
+  window.crmCaptura = function () {
+    var m = $('crmEvModal');
+    if (!m) { m = document.createElement('div'); m.id = 'crmEvModal'; m.style.cssText = 'position:fixed;inset:0;z-index:85;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:16px;'; document.body.appendChild(m); }
+    m.innerHTML = '<div style="background:#15171a;border:1px solid #343535;border-radius:16px;padding:20px;width:100%;max-width:460px;">'
+      + '<h3 style="margin:0 0 12px;font-weight:900;color:#ffd700;">Captura / foto / archivo</h3>'
+      + crmCaptureToolbar('crmEvGridFicha')
+      + '<div style="display:flex;justify-content:flex-end;margin-top:16px;"><button onclick="crmEvCerrar()" style="padding:8px 16px;border-radius:10px;border:0;background:#ffd700;color:#3a3000;font-weight:900;cursor:pointer;">Listo</button></div></div>';
+    m.style.display = 'flex';
+  };
+  window.crmEvCerrar = function () { var m = $('crmEvModal'); if (m) m.style.display = 'none'; };
+
+  // ════════════════════════════════════════════════════════════════════
+  //  PEDIDO POR CATÁLOGO — clon vanilla del PedidoBuilder del APK: elige
+  //  productos del catálogo → carrito → retiro/despacho → genera pedido
+  //  real (POST /pedido/from-catalog) → texto editable + WhatsApp + PDF.
+  // ════════════════════════════════════════════════════════════════════
+  var crmPed = null;
+  function crmLinePrice(prod, sel) {
+    var total = Math.max(0, crmInt(prod && prod.precio_base));
+    var op = (sel && sel.opciones) || {};
+    (prod && prod.variantes ? prod.variantes : []).forEach(function (g) {
+      var o = (g.opciones || []).find(function (x) { return x.id === op[g.id]; }); if (o) total += crmInt(o.delta);
+    });
+    var ex = Array.isArray(sel && sel.extras) ? sel.extras : [];
+    (prod && prod.extras ? prod.extras : []).forEach(function (e) { if (ex.indexOf(e.id) >= 0) total += Math.max(0, crmInt(e.precio)); });
+    return total;
+  }
+  function crmLineLabel(prod, sel) {
+    var nombre = String((prod && prod.nombre) || 'Producto').trim(), op = (sel && sel.opciones) || {}, partes = [];
+    (prod && prod.variantes ? prod.variantes : []).forEach(function (g) { var o = (g.opciones || []).find(function (x) { return x.id === op[g.id]; }); if (o) partes.push(o.nombre); });
+    var ex = Array.isArray(sel && sel.extras) ? sel.extras : [];
+    var extras = (prod && prod.extras ? prod.extras : []).filter(function (e) { return ex.indexOf(e.id) >= 0; }).map(function (e) { return e.nombre; });
+    var txt = nombre; if (partes.length) txt += ' (' + partes.join(', ') + ')'; if (extras.length) txt += ' + ' + extras.join(', '); return txt;
+  }
+  function crmNorm(s) { return String(s || '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/ñ/g, 'n'); }
+  function crmCostoEnvio(delivery, comuna, subtotal) {
+    var cfg = delivery || {}, zonas = Array.isArray(cfg.zonas) ? cfg.zonas : [], target = crmNorm(comuna);
+    var zona = zonas.find(function (z) { return (z.comunas || []).some(function (c) { return crmNorm(c) === target; }); });
+    if (!zona) return { ok: false };
+    if (cfg.gratis_desde != null && Number(subtotal) >= Number(cfg.gratis_desde)) return { ok: true, costo: 0, gratis: true, zona: zona };
+    return { ok: true, costo: Math.max(0, Math.round(Number(zona.costo) || 0)), gratis: false, zona: zona };
   }
   window.crmNuevoPedido = async function () {
     if (!crmActivo) return;
-    crmCaptB64 = null;
-    var resumen = 'Cargando propuesta…';
-    crmAbrirModalPedido(resumen);
+    crmEv = [];
+    crmPed = { productos: [], cfg: { iva_incluido: true }, comunas: [], lineas: [], entrega: 'retiro', direccion: '', comuna: '', sel: null, result: null, err: '', loading: true };
+    crmPedModalEl().style.display = 'flex'; crmPedRender();
     try {
-      var r = await apiFetch('/overlay/pedido/suggest', { method: 'POST', body: JSON.stringify({ channel: crmActivo.channel, contact: crmActivo.contact }) });
-      var sug = await r.json();
-      var txt = (sug && (sug.resumen || sug.texto)) ? (sug.resumen || sug.texto) : (sug && sug.items ? sug.items.map(function (it) { return '• ' + (it.nombre || it.descripcion || '') + (it.cantidad ? ' x' + it.cantidad : ''); }).join('\n') : JSON.stringify(sug, null, 2));
-      var ta = $('crmPedidoTexto'); if (ta) ta.value = txt || 'Sin propuesta automática. Escribe el pedido.';
-    } catch (e) { var ta = $('crmPedidoTexto'); if (ta) ta.value = 'Escribe el pedido (no hubo propuesta automática).'; }
+      var rp = await apiFetch('/products'); crmPed.productos = await rp.json();
+      apiFetch('/pedido-config').then(function (r) { return r.json(); }).then(function (c) { crmPed.cfg = c || crmPed.cfg; if (crmPed && crmPed.loading === false) crmPedRender(); }).catch(function () {});
+      apiFetch('/comunas').then(function (r) { return r.json(); }).then(function (c) { crmPed.comunas = Array.isArray(c) ? c : []; }).catch(function () {});
+    } catch (e) { crmPed.err = 'No se pudo cargar el catálogo.'; }
+    crmPed.loading = false; crmPedRender();
   };
-  function crmAbrirModalPedido() {
+  function crmPedModalEl() {
     var m = $('crmPedidoModal');
     if (!m) {
       m = document.createElement('div'); m.id = 'crmPedidoModal';
-      m.style.cssText = 'position:fixed;inset:0;z-index:80;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;padding:16px;';
-      m.innerHTML = '<div style="background:#15171a;border:1px solid #343535;border-radius:16px;padding:20px;width:100%;max-width:460px;">'
-        + '<h3 style="margin:0 0 10px;font-weight:900;color:#ffd700;">Nuevo pedido</h3>'
-        + '<textarea id="crmPedidoTexto" rows="5" style="width:100%;background:rgba(41,42,42,.5);border:1px solid #343535;border-radius:10px;padding:10px;color:#e3e2e2;font-size:13px;outline:none;"></textarea>'
-        + '<div id="crmPedidoPreview" style="margin:10px 0;"></div>'
-        + '<div style="display:flex;gap:8px;margin-bottom:12px;"><button onclick="crmCaptura()" style="flex:1;padding:8px;border-radius:10px;border:1px solid #343535;background:transparent;color:#d0c6ab;font-weight:700;font-size:12px;">📷 Captura / foto / archivo</button></div>'
-        + '<div style="display:flex;gap:8px;justify-content:flex-end;"><button onclick="crmCerrarPedido()" style="padding:8px 14px;border-radius:10px;border:1px solid #343535;background:#fff0;color:#d0c6ab;font-weight:700;">Cancelar</button>'
-        + '<button onclick="crmConfirmarPedido()" style="padding:8px 14px;border-radius:10px;border:0;background:#ffd700;color:#3a3000;font-weight:900;">Enviar al cliente</button></div></div>';
+      m.style.cssText = 'position:fixed;inset:0;z-index:80;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:16px;';
+      m.innerHTML = '<div style="background:#15171a;border:1px solid #343535;border-radius:16px;padding:20px;width:100%;max-width:480px;max-height:88vh;overflow:auto;"><div id="crmPedidoBody"></div></div>';
       document.body.appendChild(m);
     }
-    $('crmPedidoPreview').innerHTML = ''; m.style.display = 'flex';
+    return m;
   }
-  window.crmCerrarPedido = function () { var m = $('crmPedidoModal'); if (m) m.style.display = 'none'; };
-  window.crmConfirmarPedido = async function () {
-    if (!crmActivo) return;
-    var txt = ($('crmPedidoTexto').value || '').trim(); if (!txt) { alert('Escribe el pedido.'); return; }
-    var esWa = crmActivo.channel.toLowerCase() === 'whatsapp';
+  window.crmCerrarPedido = function () { var m = $('crmPedidoModal'); if (m) m.style.display = 'none'; crmPed = null; };
+  function crmPedSyncInputs() { var d = $('crmPedDir'); if (d) crmPed.direccion = d.value; var t = $('crmPedResultText'); if (t && crmPed.result) crmPed.result.text = t.value; }
+  function crmPedRender() {
+    var b = $('crmPedidoBody'); if (!b || !crmPed) return;
+    var head = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;"><h3 style="margin:0;font-weight:900;color:#ffd700;">Crear pedido</h3><button onclick="crmCerrarPedido()" style="border:0;background:#0000;color:#d0c6ab;font-size:18px;cursor:pointer;">✕</button></div>';
+    if (crmPed.loading) { b.innerHTML = head + '<p style="color:#d0c6ab;font-size:13px;">Cargando catálogo…</p>'; return; }
+    if (crmPed.result) { b.innerHTML = head + crmPedResultHtml(); return; }
+    if (crmPed.sel) { b.innerHTML = head + crmPedSelectorHtml(); return; }
+    b.innerHTML = head + crmPedCatalogHtml();
+  }
+  function crmPedCatalogHtml() {
+    var prods = crmPed.productos || [];
+    var lista = prods.length
+      ? prods.map(function (p, i) { return '<button onclick="crmPedSel(' + i + ')" style="text-align:left;border:0;background:#ffffff10;color:#e3e2e2;border-radius:10px;padding:10px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;"><span style="font-weight:700;">' + crmEsc(p.nombre) + '</span><span style="color:#ffd700;">›</span></button>'; }).join('')
+      : '<div style="opacity:.6;font-size:13px;">No hay productos. Cárgalos en "Productos".</div>';
+    var html = '<div style="font-size:11px;opacity:.7;margin-bottom:6px;">Elige del catálogo</div><div style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px;">' + lista + '</div>';
+    if (crmPed.lineas.length) {
+      var subtotal = crmPed.lineas.reduce(function (s, l) { return s + crmLinePrice(l.product, l.sel) * l.cantidad; }, 0);
+      var iva = crmPed.cfg.iva_incluido === false ? Math.round(subtotal * 0.19) : 0;
+      var env = (crmPed.entrega === 'despacho' && crmPed.comuna) ? crmCostoEnvio(crmPed.cfg.delivery, crmPed.comuna, subtotal) : null;
+      var envioCosto = env && env.ok ? env.costo : 0;
+      var total = subtotal + iva + envioCosto;
+      html += '<div style="font-size:11px;opacity:.7;margin-bottom:4px;">Carrito</div>';
+      html += crmPed.lineas.map(function (l, i) { return '<div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;"><span>' + crmEsc(crmLineLabel(l.product, l.sel)) + ' ×' + l.cantidad + '</span><button onclick="crmPedQuitar(' + i + ')" style="border:0;background:#0000;color:#ff6b6b;cursor:pointer;">quitar</button></div>'; }).join('');
+      var tg = function (k, lbl) { var on = crmPed.entrega === k; return '<button onclick="crmPedEntrega(\'' + k + '\')" style="flex:1;border:0;border-radius:8px;padding:8px;font-size:12px;cursor:pointer;background:' + (on ? '#ffd700' : '#ffffff14') + ';color:' + (on ? '#000' : '#fff') + ';">' + lbl + '</button>'; };
+      html += '<div style="display:flex;gap:6px;margin:8px 0;">' + tg('retiro', 'Retiro') + tg('despacho', 'Despacho') + '</div>';
+      if (crmPed.entrega === 'despacho') {
+        html += '<input id="crmPedDir" placeholder="Dirección" value="' + crmEsc(crmPed.direccion) + '" style="width:100%;box-sizing:border-box;border-radius:8px;padding:8px;margin-bottom:8px;border:1px solid #343535;background:rgba(41,42,42,.5);color:#e3e2e2;" />';
+        var opts = '<option value="">Comuna…</option>' + (crmPed.comunas || []).map(function (g) { return '<optgroup label="' + crmEsc(g.region) + '">' + (g.comunas || []).map(function (c) { return '<option value="' + crmEsc(c) + '"' + (c === crmPed.comuna ? ' selected' : '') + '>' + crmEsc(c) + '</option>'; }).join('') + '</optgroup>'; }).join('');
+        html += '<select onchange="crmPedComuna(this.value)" style="width:100%;box-sizing:border-box;border-radius:8px;padding:8px;margin-bottom:8px;border:1px solid #343535;background:rgba(41,42,42,.5);color:#e3e2e2;">' + opts + '</select>';
+        if (crmPed.comuna) { html += env && env.ok ? '<div style="font-size:12px;opacity:.8;margin-bottom:6px;">Envío: ' + (env.gratis ? 'Gratis' : crmClp(env.costo)) + '</div>' : '<div style="font-size:12px;color:#ff6b6b;margin-bottom:6px;">No tienes envío a esa comuna.</div>'; }
+      }
+      html += '<div style="display:flex;justify-content:space-between;align-items:center;border-top:.5px solid #ffffff22;padding-top:8px;"><span style="opacity:.7;">Total</span><b style="color:#ffd700;font-size:18px;">' + crmClp(total) + '</b></div>';
+      if (crmPed.err) html += '<div style="color:#ff6b6b;font-size:13px;">' + crmEsc(crmPed.err) + '</div>';
+      html += '<button onclick="crmPedGenerar()" style="width:100%;border:0;background:#ffd700;color:#000;font-weight:900;border-radius:12px;padding:12px;margin-top:8px;cursor:pointer;">Generar pedido</button>';
+    }
+    html += '<div style="border-top:1px solid #343535;margin:14px 0 10px;"></div><div style="font-size:11px;opacity:.7;margin-bottom:6px;">Adjuntar evidencia (opcional)</div>' + crmCaptureToolbar('crmEvGridPedido');
+    return html;
+  }
+  window.crmPedSel = function (i) { crmPedSyncInputs(); var p = crmPed.productos[i]; if (!p) return; var op = {}; (p.variantes || []).forEach(function (g) { if (g.opciones && g.opciones[0]) op[g.id] = g.opciones[0].id; }); crmPed.sel = { product: p, opciones: op, extras: [], cantidad: 1 }; crmPedRender(); };
+  window.crmPedQuitar = function (i) { crmPedSyncInputs(); crmPed.lineas.splice(i, 1); crmPedRender(); };
+  window.crmPedEntrega = function (k) { crmPedSyncInputs(); crmPed.entrega = k; crmPedRender(); };
+  window.crmPedComuna = function (v) { crmPedSyncInputs(); crmPed.comuna = v; crmPedRender(); };
+  function crmPedSelectorHtml() {
+    var s = crmPed.sel, p = s.product;
+    var html = '<h4 style="color:#ffd700;font-weight:900;margin:0 0 10px;">' + crmEsc(p.nombre) + '</h4>';
+    (p.variantes || []).forEach(function (g) {
+      html += '<div style="margin-bottom:8px;"><div style="font-size:11px;opacity:.7;margin-bottom:4px;">' + crmEsc(g.nombre) + '</div><div style="display:flex;gap:6px;flex-wrap:wrap;">'
+        + (g.opciones || []).map(function (o) { var on = s.opciones[g.id] === o.id; return '<button onclick="crmPedOpc(\'' + g.id + '\',\'' + o.id + '\')" style="padding:6px 10px;border-radius:8px;border:0;font-size:12px;cursor:pointer;background:' + (on ? '#ffd700' : '#ffffff14') + ';color:' + (on ? '#000' : '#fff') + ';">' + crmEsc(o.nombre) + (o.delta ? ' +' + crmClp(o.delta) : '') + '</button>'; }).join('')
+        + '</div></div>';
+    });
+    if ((p.extras || []).length) {
+      html += '<div style="font-size:11px;opacity:.7;margin:8px 0 4px;">Extras</div>';
+      html += (p.extras || []).map(function (e) { var on = s.extras.indexOf(e.id) >= 0; return '<label style="display:flex;gap:8px;font-size:13px;margin-bottom:4px;cursor:pointer;"><input type="checkbox"' + (on ? ' checked' : '') + ' onchange="crmPedExtra(\'' + e.id + '\')" /> ' + crmEsc(e.nombre) + ' +' + crmClp(e.precio) + '</label>'; }).join('');
+    }
+    html += '<div style="display:flex;align-items:center;justify-content:space-between;margin:10px 0;"><span style="font-size:12px;opacity:.7;">Cantidad</span><span style="display:flex;gap:10px;align-items:center;"><button onclick="crmPedCant(-1)" style="border:0;background:#ffffff14;color:#fff;border-radius:6px;width:28px;height:28px;cursor:pointer;">−</button><b>' + s.cantidad + '</b><button onclick="crmPedCant(1)" style="border:0;background:#ffffff14;color:#fff;border-radius:6px;width:28px;height:28px;cursor:pointer;">+</button></span></div>';
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;border-top:.5px solid #ffffff22;padding-top:8px;"><span style="font-size:12px;opacity:.7;">' + crmEsc(crmLineLabel(p, s)) + '</span><b style="color:#ffd700;">' + crmClp(crmLinePrice(p, s) * s.cantidad) + '</b></div>';
+    html += '<div style="display:flex;gap:8px;margin-top:10px;"><button onclick="crmPedVolver()" style="flex:1;border:0;background:#ffffff14;color:#fff;font-weight:800;border-radius:10px;padding:10px;cursor:pointer;">Volver</button><button onclick="crmPedAgregar()" style="flex:2;border:0;background:#ffd700;color:#000;font-weight:800;border-radius:10px;padding:10px;cursor:pointer;">Agregar al carrito</button></div>';
+    return html;
+  }
+  window.crmPedOpc = function (gid, oid) { crmPed.sel.opciones[gid] = oid; crmPedRender(); };
+  window.crmPedExtra = function (eid) { var ex = crmPed.sel.extras, i = ex.indexOf(eid); if (i >= 0) ex.splice(i, 1); else ex.push(eid); crmPedRender(); };
+  window.crmPedCant = function (d) { crmPed.sel.cantidad = Math.max(1, crmPed.sel.cantidad + d); crmPedRender(); };
+  window.crmPedVolver = function () { crmPed.sel = null; crmPedRender(); };
+  window.crmPedAgregar = function () { var s = crmPed.sel; crmPed.lineas.push({ product: s.product, productId: s.product.id, sel: { opciones: s.opciones, extras: s.extras }, opciones: s.opciones, extras: s.extras, cantidad: s.cantidad }); crmPed.sel = null; crmPedRender(); };
+  window.crmPedGenerar = async function () {
+    crmPedSyncInputs(); crmPed.err = '';
+    var tel = ''; try { var f = $('fEmail'); } catch (e) {}
+    try {
+      var body = { channel: crmActivo.channel, contact: { name: crmActivo.contact, phone: crmPedTelefono() }, lineas: crmPed.lineas.map(function (l) { return { productId: l.productId, opciones: l.opciones, extras: l.extras, cantidad: l.cantidad }; }), entrega: crmPed.entrega, direccion: crmPed.entrega === 'despacho' ? crmPed.direccion : null, comuna: crmPed.entrega === 'despacho' ? crmPed.comuna : null };
+      var r = await apiFetch('/pedido/from-catalog', { method: 'POST', body: JSON.stringify(body) });
+      if (!r.ok) { var er = await r.json().catch(function () { return {}; }); crmPed.err = er.error === 'sin_despacho_comuna' ? 'No hay despacho a esa comuna.' : 'No se pudo generar el pedido.'; crmPedRender(); return; }
+      var data = await r.json();
+      crmPed.result = { id: data.pedido && data.pedido.id, text: data.text || '', waUrl: data.waUrl || ('https://wa.me/?text=' + encodeURIComponent(data.text || '')) };
+      crmPedRender();
+    } catch (e) { crmPed.err = 'No se pudo generar el pedido.'; crmPedRender(); }
+  };
+  function crmPedTelefono() { var d = String(crmActivo && crmActivo.contact || '').replace(/[^\d+]/g, ''); return d.length >= 8 ? d : ''; }
+  function crmPedResultHtml() {
+    var r = crmPed.result;
+    var html = '<div style="font-weight:900;color:#ffd700;margin-bottom:8px;">Pedido listo</div>';
+    html += '<textarea id="crmPedResultText" rows="9" oninput="crmPed.result.text=this.value" style="width:100%;box-sizing:border-box;border-radius:12px;padding:10px;border:1px solid #343535;background:rgba(41,42,42,.5);color:#e3e2e2;font-size:13px;outline:none;">' + crmEsc(r.text) + '</textarea>';
+    if (crmEv.length) html += '<div style="font-size:11px;opacity:.7;margin-top:8px;">Evidencia adjunta (' + crmEv.length + ')</div>' + crmEvGridHtml();
+    html += '<button onclick="crmPedEnviar()" style="width:100%;border:0;background:#16A34A;color:#fff;font-weight:900;border-radius:12px;padding:12px;margin-top:10px;cursor:pointer;">Enviar por WhatsApp</button>';
+    if (r.id) html += '<button onclick="crmPedPdf()" style="width:100%;border:0;background:#ffffff14;color:#fff;font-weight:900;border-radius:12px;padding:12px;margin-top:8px;cursor:pointer;">📄 PDF</button>';
+    html += '<button onclick="crmCerrarPedido()" style="width:100%;border:0;background:#0000;color:#d0c6ab;opacity:.7;padding:10px;margin-top:8px;cursor:pointer;">Cerrar</button>';
+    return html;
+  }
+  window.crmPedEnviar = async function () {
+    var txt = (crmPed.result && crmPed.result.text || '').trim(); if (!txt) return;
+    var esWa = crmActivo && crmActivo.channel.toLowerCase() === 'whatsapp';
     if (esWa) {
-      try { await apiFetch('/chat/responder', { method: 'POST', body: JSON.stringify({ channel: crmActivo.channel, contact: crmActivo.contact, text: 'Pedido:\n' + txt }) }); crmCerrarPedido(); crmAbrir(encodeURIComponent(crmActivo.channel), encodeURIComponent(crmActivo.contact)); }
-      catch (e) { alert('No se pudo enviar.'); }
-    } else { alert('Pedido preparado. El envío al cliente solo está disponible por WhatsApp.'); crmCerrarPedido(); }
+      try { await apiFetch('/chat/responder', { method: 'POST', body: JSON.stringify({ channel: crmActivo.channel, contact: crmActivo.contact, text: txt }) }); var ch = crmActivo.channel, ct = crmActivo.contact; crmCerrarPedido(); crmAbrir(encodeURIComponent(ch), encodeURIComponent(ct)); }
+      catch (e) { alert('No se pudo enviar por WhatsApp.'); }
+    } else { try { window.open(crmPed.result.waUrl, '_blank'); } catch (e) { window.location.href = crmPed.result.waUrl; } }
+  };
+  window.crmPedPdf = async function () {
+    if (!crmPed.result || !crmPed.result.id) return;
+    try { var r = await apiFetch('/pedido/' + crmPed.result.id + '/pdf'); if (!r.ok) { alert('No se pudo abrir el PDF.'); return; } var blob = await r.blob(); var url = URL.createObjectURL(blob); window.open(url, '_blank'); }
+    catch (e) { alert('No se pudo abrir el PDF.'); }
   };
 
   if (token()) showApp(); else showLogin();
