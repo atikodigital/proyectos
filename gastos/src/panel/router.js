@@ -5,7 +5,7 @@ const { signToken } = require('../auth/jwt');
 const { requireAuth, requireKind } = require('../auth/middleware');
 const chatRepo = require('../chat/repo');
 const contactosRepo = require('../chat/contactos-repo');
-const { fichaDerivada } = require('../chat/ficha');
+const { fichaDerivada, telefonoDeContacto } = require('../chat/ficha');
 const { listExpenses } = require('../expenses/query');
 const { markExpensePaid, getExpense, updateExpense, annulExpense, createExpense } = require('../expenses/repo');
 const { readImage, contentTypeFor } = require('../expenses/storage');
@@ -74,6 +74,21 @@ function createPanelRouter({ db, sendText, varasGemini } = {}) {
     const { channel, contact, email, ubicacion, notas } = req.body || {};
     const out = await contactosRepo.upsertContacto(db, req.auth.companyId, channel, contact, { email, ubicacion, notas });
     return res.json(out);
+  });
+
+  router.post('/chat/responder', async (req, res) => {
+    const { channel, contact, text } = req.body || {};
+    if (!text || !String(text).trim()) return res.status(400).json({ error: 'sin_texto' });
+    if (String(channel).toLowerCase() !== 'whatsapp') return res.status(400).json({ error: 'canal_no_soportado' });
+    const wa = await getCompanyWa(db, req.auth.companyId);
+    if (!wa || !wa.wa_phone_number_id || !wa.wa_token) return res.status(400).json({ error: 'whatsapp_no_configurado' });
+    const to = telefonoDeContacto(contact).replace(/[^0-9]/g, '');
+    if (!to) return res.status(400).json({ error: 'sin_telefono' });
+    try {
+      await _sendText({ to, body: String(text), token: wa.wa_token, phoneNumberId: wa.wa_phone_number_id });
+    } catch (e) { return res.status(502).json({ error: 'envio_falla' }); }
+    const m = await chatRepo.addMensaje(db, req.auth.companyId, { channel: 'whatsapp', contact, text, direccion: 'out', source: 'panel' });
+    return res.json(m);
   });
 
   router.get('/comunas', (req, res) => res.json(REGIONES_COMUNAS));
