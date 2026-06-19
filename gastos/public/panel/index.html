@@ -2675,16 +2675,17 @@
     crmActivo = { channel: channel, contact: contact };
     crmRenderList();
     $('crmThreadHeader').textContent = contact + ' · ' + channel;
-    try {
-      var r = await apiFetch('/chat/conversacion?channel=' + encodeURIComponent(channel) + '&contact=' + encodeURIComponent(contact));
-      var msgs = await r.json();
-      $('crmThread').innerHTML = crmRenderThread(msgs);
-      $('crmThread').scrollTop = $('crmThread').scrollHeight;
-    } catch (e) {}
+    $('crmThread').innerHTML = '<p class="text-xs text-[#d0c6ab]/50 p-2">Cargando…</p>';
+    $('crmFicha').innerHTML = '<p class="text-xs text-[#d0c6ab]/50 p-2">Cargando ficha…</p>';
     var esWa = channel.toLowerCase() === 'whatsapp';
     $('crmReply').disabled = !esWa; $('crmSendBtn').disabled = !esWa;
     $('crmReplyHint').textContent = esWa ? '' : 'Responder disponible solo por WhatsApp.';
-    crmCargarFicha(channel, contact);
+    await crmCargarFicha(channel, contact);
+    try {
+      var r = await apiFetch('/chat/conversacion?channel=' + encodeURIComponent(channel) + '&contact=' + encodeURIComponent(contact));
+      var msgs = await r.json();
+      if (crmActivo && crmActivo.contact === contact) { $('crmThread').innerHTML = crmRenderThread(msgs); $('crmThread').scrollTop = $('crmThread').scrollHeight; }
+    } catch (e) { $('crmThread').innerHTML = '<p class="text-xs text-[#ffb4ab] p-2">No se pudo cargar la conversación.</p>'; }
   };
   function crmRenderThread(msgs) {
     var out = '', lastDay = '';
@@ -2697,7 +2698,11 @@
     return out || '<p class="text-xs text-[#d0c6ab]/50">Sin mensajes.</p>';
   }
   async function crmCargarFicha(channel, contact) {
-    try { var r = await apiFetch('/chat/contacto?channel=' + encodeURIComponent(channel) + '&contact=' + encodeURIComponent(contact)); var f = await r.json(); $('crmFicha').innerHTML = crmFichaHtml(f, channel); } catch (e) {}
+    try {
+      var r = await apiFetch('/chat/contacto?channel=' + encodeURIComponent(channel) + '&contact=' + encodeURIComponent(contact));
+      var f = await r.json();
+      if (crmActivo && crmActivo.contact === contact && crmActivo.channel === channel) $('crmFicha').innerHTML = crmFichaHtml(f, channel);
+    } catch (e) { $('crmFicha').innerHTML = '<p class="text-xs text-[#ffb4ab] p-2">No se pudo cargar la ficha.</p>'; }
   }
   function crmFila(label, val) { return '<div class="mb-2"><div class="text-[10px] uppercase text-[#d0c6ab]/50">' + label + '</div><div class="text-on-surface">' + (val || '—') + '</div></div>'; }
   function crmFichaHtml(f, channel) {
