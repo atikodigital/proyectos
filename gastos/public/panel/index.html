@@ -1333,12 +1333,23 @@
           </div>
         </div>
         <div class="p-5 rounded-xl bg-[#0d0e0f] border border-[#ffd700]/10">
-          <div class="flex items-center gap-2 mb-3 justify-center">
+          <div class="flex items-center gap-2 mb-4 justify-center">
             <div class="w-2 h-2 rounded-full bg-[#ffd700] animate-pulse"></div>
-            <span class="text-xs text-[#d0c6ab] font-semibold">Habla con VARAS por voz — toca la esfera</span>
+            <span class="text-xs text-[#d0c6ab] font-semibold">Habla por voz — toca una esfera</span>
           </div>
-          <div id="varasVozMount"></div>
-          <div class="text-center mt-2">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="rounded-xl bg-[#141516] border border-[#343535]/60 p-3">
+              <p class="text-center text-[11px] text-[#C9A24B] font-bold uppercase tracking-widest mb-1">VARAS</p>
+              <p class="text-center text-[10px] text-[#9a917a] mb-2">Controlador financiero — saldos, deudas, flujo, conciliación</p>
+              <div id="varasVozMount"></div>
+            </div>
+            <div class="rounded-xl bg-[#141516] border border-[#343535]/60 p-3">
+              <p class="text-center text-[11px] text-[#4F8FF7] font-bold uppercase tracking-widest mb-1">KALY</p>
+              <p class="text-center text-[10px] text-[#9a917a] mb-2">Asistente contable — registra movimientos, catálogo y memoria</p>
+              <div id="kalyVozMount"></div>
+            </div>
+          </div>
+          <div class="text-center mt-3">
             <button onclick="document.querySelectorAll('.csub[data-libro=varas]')[0].click()" class="text-[11px] text-[#9a917a] underline hover:text-[#ffd700] transition-all">…o usa el chat de texto de VARAS</button>
           </div>
         </div>
@@ -2751,10 +2762,12 @@
 })();
 </script>
 <script type="module">
-  import { mountVaras } from './agente-voz.js';
+  import { mountVaras, mountKaly } from './agente-voz.js';
   (function () {
-    var el = document.getElementById('varasVozMount');
-    if (el) mountVaras(el);
+    var v = document.getElementById('varasVozMount');
+    if (v) mountVaras(v);
+    var k = document.getElementById('kalyVozMount');
+    if (k) mountKaly(k);
   })();
 </script>
 </body>

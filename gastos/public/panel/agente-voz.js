@@ -62,6 +62,135 @@ async function execVarasTool(name, args) {
   } catch (e) { return { error: 'fallo_tool' }; }
 }
 
+// ── KALY: prompt + tools (espejo de gastos-app/src/gastos/kaly/*) ──────────────
+function fmtCLP(n) { if (n == null) return '$0'; return '$' + Number(n).toLocaleString('es-CL'); }
+function buildKalyVoicePrompt(context = {}) {
+  const { nombre = '', trato = '', empresaNombre = '', resumen = {}, memorias = [], persona = {} } = context;
+  const kalyNombre = (persona && persona.nombre) || 'Kaly';
+  const tratamiento = trato || '[trato]';
+  const nombreLabel = nombre ? `, ${nombre}` : '';
+  const empresa = empresaNombre ? `Empresa: **${empresaNombre}**.` : '';
+  const mem = (Array.isArray(memorias) ? memorias : []).filter((m) => m && m.contenido);
+  const bloqueMem = mem.length ? ('\n## Lo que sé de este negocio\n' + mem.map((m) => `- ${m.contenido}`).join('\n') + '\n') : '';
+  const resumenBloque = `## Datos del mes en curso
+- Ingresos: ${fmtCLP(resumen.ingresos)}
+- Gastos: ${fmtCLP(resumen.gastos)}
+- Saldo: ${fmtCLP(resumen.saldo)}
+- Pendientes de pago: ${fmtCLP(resumen.pendientesPago)}`;
+  return `# Identidad
+Eres ${kalyNombre}, agente de Inteligencia Artificial especializada en asistencia contable de la app Hash IA.
+${empresa}
+Tu función es automatizar el registro de ingresos, gastos y movimientos, administrar el catálogo de productos y recordar datos del negocio, minimizando el trabajo manual del dueño.
+
+# Tono y estilo
+- Cercana, clara y profesional.
+- Respuestas CONCISAS: 1 a 3 frases como máximo.
+- Idioma: SIEMPRE español de Chile. Montos en CLP con separador de miles (ej. $1.250.000).
+- Trata al usuario como "${tratamiento}${nombreLabel}".
+
+# Onboarding (primera interacción)
+- Si aún no conoces el nombre del dueño, salúdalo, preséntate ("Soy ${kalyNombre}, su asistente contable…") y pregunta SOLO el nombre. Deduce el trato (señor/señora) del género del nombre (José→señor, María→señora); solo si es ambiguo, pregúntalo. Guarda nombre y trato con \`guardar_preferencias\`.
+
+# Registro transaccional (NLP)
+Cuando el dueño te dicte un movimiento ("compré…", "pagué…", "vendí…"):
+1. Deduce dirección (compré/pagué/gasté → gasto; vendí/cobré/depositaron → ingreso).
+2. Si es afecto a IVA: Neto = Total / 1.19; IVA (19%) = Neto · 0.19.
+3. Antes de registrar, DI la validación del asiento (proveedor, neto, IVA, total, estado de pago) y pregunta "¿Confirma el registro?". Solo si confirma, llama \`crear_movimiento_manual\`.
+
+# Catálogo de productos por voz
+- \`agregar_producto\` (ej. "agrega torta a 18 mil"), \`editar_precio\`, \`editar_stock\`, \`listar_productos\`.
+- Precios en pesos chilenos ENTEROS; interpreta lenguaje natural ("18 mil"→18000, "dos lucas"→2000).
+- ACTÚA primero y CONFIRMA después en una frase. No inventes productos ni precios; si no se encuentra, pide el nombre exacto.
+- NO existe borrar producto por voz; si lo piden, indica que se hace a mano en la pantalla de Productos.
+
+# Memoria del negocio
+- Usa \`recordar\` cuando el dueño te diga un dato que valga la pena guardar (horarios, formas de pago, datos suyos) o te pida recordarlo; confírmalo en una frase.
+
+# Derivación a VARAS
+- Para preguntas CONTABLES (saldos, deudas, balance, flujo, conciliación, consumo de insumos), deriva a VARAS: "Para los números del negocio, VARAS le responde al instante."
+${bloqueMem}
+${resumenBloque}
+
+# Reglas de cierre y confirmación (OBLIGATORIAS)
+- Responde solo con datos reales de las herramientas. CERO invención de cifras.
+- Si el dueño dice "no", "nada" o "gracias", despídete en una frase y termina.
+- NUNCA ejecutes \`marcar_pagada\`, \`anular_movimiento\` ni \`enviar_resumen_whatsapp\` sin una confirmación verbal EXPLÍCITA en el turno inmediatamente anterior. Antes pregunta "¿Confirma, ${tratamiento}?" y espera el sí.`;
+}
+function instruccionInicialKaly() {
+  return 'El usuario tocó la esfera para hablar contigo. Si ya conoces su nombre, salúdalo cordialmente por su nombre y trato y pregúntale en qué trabajarán hoy. Si NO conoces su nombre, preséntate como Kaly y pregúntale su nombre para guardarlo. Tono cercano y breve.';
+}
+const KALY_TOOLS = [
+  { name: 'guardar_preferencias', description: 'Guarda nombre y trato preferido del usuario en memoria permanente.', parameters: { type: 'OBJECT', properties: { nombre: { type: 'STRING' }, trato: { type: 'STRING', description: 'señor o señora' } } } },
+  { name: 'obtener_resumen', description: 'Resumen del mes: ingresos, gastos, saldo.', parameters: { type: 'OBJECT', properties: {} } },
+  { name: 'listar_movimientos', description: 'Lista los últimos movimientos.', parameters: { type: 'OBJECT', properties: { limite: { type: 'NUMBER' } } } },
+  { name: 'marcar_pagada', description: 'Marca como pagado un gasto YA confirmado verbalmente.', parameters: { type: 'OBJECT', properties: { proveedor: { type: 'STRING' } } } },
+  { name: 'anular_movimiento', description: 'Anula un movimiento YA confirmado verbalmente.', parameters: { type: 'OBJECT', properties: { proveedor: { type: 'STRING' } } } },
+  { name: 'enviar_resumen_whatsapp', description: 'Envía el resumen de flujo de caja al WhatsApp del dueño (requiere confirmación verbal previa).', parameters: { type: 'OBJECT', properties: {} } },
+  { name: 'crear_movimiento_manual', description: 'Registra un gasto o ingreso manual sin imagen.', parameters: { type: 'OBJECT', properties: { tipo: { type: 'STRING' }, proveedor: { type: 'STRING' }, rut_emisor: { type: 'STRING' }, folio: { type: 'STRING' }, fecha: { type: 'STRING' }, neto: { type: 'NUMBER' }, iva: { type: 'NUMBER' }, total: { type: 'NUMBER' }, categoria: { type: 'STRING' }, estado_pago: { type: 'STRING' } }, required: ['tipo', 'total'] } },
+  { name: 'agregar_producto', description: 'Crea un producto nuevo en el catálogo. Confirma DESPUÉS de crearlo.', parameters: { type: 'OBJECT', properties: { nombre: { type: 'STRING' }, precio: { type: 'NUMBER' }, tipo: { type: 'STRING' } }, required: ['nombre', 'precio'] } },
+  { name: 'editar_precio', description: 'Cambia el precio de un producto que YA existe.', parameters: { type: 'OBJECT', properties: { nombre: { type: 'STRING' }, nuevo_precio: { type: 'NUMBER' } }, required: ['nombre', 'nuevo_precio'] } },
+  { name: 'editar_stock', description: 'Fija el stock de un producto que YA existe.', parameters: { type: 'OBJECT', properties: { nombre: { type: 'STRING' }, stock: { type: 'NUMBER' } }, required: ['nombre', 'stock'] } },
+  { name: 'listar_productos', description: 'Lista los productos del catálogo con precio y stock.', parameters: { type: 'OBJECT', properties: { limite: { type: 'NUMBER' } } } },
+  { name: 'recordar', description: 'Guarda un dato importante del negocio o del dueño para recordarlo en el futuro.', parameters: { type: 'OBJECT', properties: { contenido: { type: 'STRING' }, tipo: { type: 'STRING' } }, required: ['contenido'] } },
+];
+function kalyBuscar(rows, q) {
+  const s = String(q || '').toLowerCase();
+  return (rows || []).find((r) => String(r.proveedor || r.nombre || '').toLowerCase().includes(s)) || null;
+}
+async function execKalyTool(name, args = {}) {
+  try {
+    if (name === 'guardar_preferencias') {
+      await pfetch('/agent/prefs', { method: 'PATCH', body: JSON.stringify({ nombre: args.nombre, trato: args.trato, onboarded: true }) });
+      return { ok: true };
+    }
+    if (name === 'obtener_resumen' || name === 'listar_movimientos') {
+      const rows = await pfetch('/expenses');
+      const arr = Array.isArray(rows) ? rows : [];
+      if (name === 'listar_movimientos') return { movimientos: arr.slice(0, args.limite || 5).map((r) => ({ tipo: r.tipo, proveedor: r.proveedor, total: r.total, estado: r.estado, estado_pago: r.estado_pago })) };
+      let gastos = 0; let ingresos = 0;
+      for (const r of arr) { if (r.estado !== 'confirmado') continue; if (r.tipo === 'ingreso') ingresos += Number(r.total) || 0; else gastos += Number(r.total) || 0; }
+      return { ingresos, gastos, saldo: ingresos - gastos };
+    }
+    if (name === 'marcar_pagada' || name === 'anular_movimiento') {
+      const rows = await pfetch('/expenses');
+      const mov = kalyBuscar(rows, args.proveedor);
+      if (!mov) return { error: 'no_encontrado', detalle: 'No encontré un movimiento que coincida.' };
+      if (name === 'marcar_pagada') { const r = await pfetch(`/expenses/${mov.id}/pagar`, { method: 'PATCH' }); return { ok: true, proveedor: mov.proveedor, total: mov.total, estado_pago: r && r.estado_pago }; }
+      await pfetch(`/expenses/${mov.id}/anular`, { method: 'POST' });
+      return { ok: true, anulado: mov.proveedor, total: mov.total };
+    }
+    if (name === 'enviar_resumen_whatsapp') { const r = await pfetch('/whatsapp/resumen', { method: 'POST', body: '{}' }); if (r && r.error) return { error: r.error }; return { ok: true, enviado_a: r && r.to }; }
+    if (name === 'crear_movimiento_manual') {
+      const r = await pfetch('/expenses/manual', { method: 'POST', body: JSON.stringify(args) });
+      if (r && r.error) return { error: r.error };
+      return { ok: true, id: r.id, proveedor: r.proveedor, total: r.total };
+    }
+    if (name === 'agregar_producto') {
+      const r = await pfetch('/products', { method: 'POST', body: JSON.stringify({ nombre: args.nombre, precio_base: Math.max(0, Math.round(Number(args.precio) || 0)), tipo: args.tipo === 'servicio' ? 'servicio' : 'producto' }) });
+      if (r && r.error) return { error: r.error };
+      return { ok: true, nombre: r.nombre, precio: r.precio_base };
+    }
+    if (name === 'editar_precio' || name === 'editar_stock') {
+      const rows = await pfetch('/products?incluirPausados=1');
+      const prod = kalyBuscar(rows, args.nombre);
+      if (!prod) return { error: 'no_encontrado', detalle: 'No encontré ese producto en el catálogo.' };
+      if (name === 'editar_precio') { const r = await pfetch(`/products/${prod.id}`, { method: 'PATCH', body: JSON.stringify({ precio_base: Math.max(0, Math.round(Number(args.nuevo_precio) || 0)) }) }); return { ok: true, nombre: prod.nombre, precio: r.precio_base }; }
+      const r = await pfetch(`/products/${prod.id}`, { method: 'PATCH', body: JSON.stringify({ stock: Math.max(0, Math.round(Number(args.stock) || 0)) }) });
+      return { ok: true, nombre: prod.nombre, stock: r.stock };
+    }
+    if (name === 'listar_productos') {
+      const rows = await pfetch('/products?incluirPausados=1');
+      return { productos: (Array.isArray(rows) ? rows : []).slice(0, args.limite || 10).map((p) => ({ nombre: p.nombre, precio: p.precio_base, stock: p.stock, activo: p.activo })) };
+    }
+    if (name === 'recordar') {
+      const r = await pfetch('/kaly/memoria', { method: 'POST', body: JSON.stringify({ tipo: args.tipo, contenido: args.contenido }) });
+      if (r && r.error) return { error: r.error };
+      return { ok: true, contenido: r.memoria && r.memoria.contenido };
+    }
+    return { error: 'tool_desconocida' };
+  } catch (e) { return { error: 'fallo_operacion' }; }
+}
+
 // ── UI de la esfera (vanilla) ──────────────────────────────────────────────────
 const ESTADO_LABEL = { off: 'Toca para hablar', connecting: 'Conectando…', live: 'Escuchando…', listening: 'Escuchando…', speaking: 'Hablando…', error: 'No disponible' };
 
@@ -118,5 +247,13 @@ export function mountVaras(el) {
     titulo: 'VARAS', color: '#C9A24B', voice: 'Gacrux',
     buildPrompt: buildVarasVoicePrompt, instruccion: instruccionInicialVoz,
     tools: VARAS_TOOLS, execTool: execVarasTool,
+  });
+}
+
+export function mountKaly(el) {
+  makeAgent(el, {
+    titulo: 'KALY', color: '#4F8FF7', voice: 'Charon',
+    buildPrompt: buildKalyVoicePrompt, instruccion: instruccionInicialKaly,
+    tools: KALY_TOOLS, execTool: execKalyTool,
   });
 }

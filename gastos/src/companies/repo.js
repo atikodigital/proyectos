@@ -96,6 +96,31 @@ async function setAgentPrefs(db, employeeId, patch) {
   return r.rows[0] ? r.rows[0].agent_prefs : null;
 }
 
+// Preferencias del agente para el DUEÑO (panel): no tiene employeeId, se guardan
+// a nivel de empresa en companies.owner_agent_prefs (jsonb, migración perezosa).
+const _ownerPrefsReady = new WeakMap();
+async function ensureOwnerPrefs(db) {
+  if (_ownerPrefsReady.get(db)) return;
+  try { await db.query('ALTER TABLE companies ADD COLUMN IF NOT EXISTS owner_agent_prefs jsonb'); } catch (e) { /* ya existe */ }
+  _ownerPrefsReady.set(db, true);
+}
+async function getOwnerAgentPrefs(db, companyId) {
+  await ensureOwnerPrefs(db);
+  const r = await db.query('SELECT owner_agent_prefs FROM companies WHERE id=$1', [companyId]);
+  return (r.rows[0] && r.rows[0].owner_agent_prefs) || {};
+}
+async function setOwnerAgentPrefs(db, companyId, patch) {
+  await ensureOwnerPrefs(db);
+  const prev = await getOwnerAgentPrefs(db, companyId);
+  const next = { ...prev };
+  if (patch.nombre !== undefined) next.nombre = String(patch.nombre).slice(0, 60);
+  if (patch.trato !== undefined) next.trato = String(patch.trato).slice(0, 20);
+  if (patch.onboarded) next.onboarded_at = new Date().toISOString();
+  if (patch.proactividad !== undefined) next.proactividad = Boolean(patch.proactividad);
+  const r = await db.query('UPDATE companies SET owner_agent_prefs=$1 WHERE id=$2 RETURNING owner_agent_prefs', [JSON.stringify(next), companyId]);
+  return r.rows[0] ? r.rows[0].owner_agent_prefs : null;
+}
+
 async function getGiro(db, companyId) {
   const r = await db.query('SELECT giro FROM companies WHERE id=$1', [companyId]);
   return r.rows[0] ? (r.rows[0].giro || '') : '';
@@ -146,6 +171,6 @@ async function setOnboarded(db, companyId) {
 module.exports = {
   createCompany, createEmployee, getCompanyByPhoneNumberId, getEmployeeByPhone, getEmployeeByUsuario,
   listEmployees, updateEmployee, deactivateEmployee, getCompany, updateCompany, getCompanyWa,
-  getAgentPrefs, setAgentPrefs, getGiro, setGiro,
+  getAgentPrefs, setAgentPrefs, getOwnerAgentPrefs, setOwnerAgentPrefs, getGiro, setGiro,
   getCompanyProfile, setOnboarded, ensureCompanyOnboarding, setKalyPersona,
 };
