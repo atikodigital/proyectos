@@ -70,6 +70,12 @@ function createPanelRouter({ db, sendText, varasGemini } = {}) {
     return res.json({ ...ficha, email: editable.email || null, ubicacion: editable.ubicacion || null, notas: editable.notas || null });
   });
 
+  router.patch('/chat/contacto', async (req, res) => {
+    const { channel, contact, email, ubicacion, notas } = req.body || {};
+    const out = await contactosRepo.upsertContacto(db, req.auth.companyId, channel, contact, { email, ubicacion, notas });
+    return res.json(out);
+  });
+
   router.get('/comunas', (req, res) => res.json(REGIONES_COMUNAS));
 
   router.get('/contabilidad/diario', async (req, res) => {

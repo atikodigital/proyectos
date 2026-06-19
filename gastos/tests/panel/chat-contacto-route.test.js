@@ -54,4 +54,13 @@ describe('GET /api/panel/chat/contacto', () => {
     expect(res.body.telefono).toBe('56999');
     expect(res.body.email === null || res.body.email === undefined).toBe(true);
   });
+
+  test('PATCH guarda email/ubicacion/notas y GET los devuelve', async () => {
+    const db = await freshDb(); const { companyId } = await seedUser(db); const a = app(db); const t = await token(a);
+    await chatRepo.addMensaje(db, companyId, { channel: 'whatsapp', contact: '56999', text: 'hola' });
+    await request(a).patch('/api/panel/chat/contacto').set('Authorization', `Bearer ${t}`)
+      .send({ channel: 'whatsapp', contact: '56999', email: 'c@c.cl', ubicacion: 'Valpo', notas: 'paga al toque' }).expect(200);
+    const res = await request(a).get('/api/panel/chat/contacto?channel=whatsapp&contact=56999').set('Authorization', `Bearer ${t}`).expect(200);
+    expect(res.body.email).toBe('c@c.cl'); expect(res.body.ubicacion).toBe('Valpo'); expect(res.body.notas).toBe('paga al toque');
+  });
 });
