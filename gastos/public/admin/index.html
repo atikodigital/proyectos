@@ -358,8 +358,13 @@ async function abrirFicha(id) {
       '<div class="card"><h3>Resumen del mes</h3>Ingresos ' + fmtCLP(resu.ingresos) + ' · Gastos ' + fmtCLP(resu.gastos) + ' · Saldo ' + fmtCLP(resu.saldo) + ' · Conciliación ' + con + '</div>' +
       '<div class="card"><h3>Movimientos recientes</h3>' + movs + '</div>' +
       '<div class="card"><h3>Pedidos</h3>' + esc(ped) + '</div>' +
-      '<div class="card"><h3>Editar productos</h3>' +
-        '<label>Productos</label><div id="fe_productos" class="row" style="gap:12px">' + PRODUCTOS.map(p => chk('prod', p, e.productos)).join('') + '</div>' +
+      '<div class="card"><h3>Editar productos y contacto</h3>' +
+        '<div class="row" style="gap:10px">' +
+          '<div style="flex:1"><label>Nombre contacto</label><input id="fe_nombre" style="width:100%" value="' + esc(e.owner_nombre || '') + '"></div>' +
+          '<div style="flex:1"><label>Teléfono</label><input id="fe_telefono" style="width:100%" value="' + esc(e.owner_whatsapp || '') + '"></div>' +
+          '<div style="flex:1"><label>Email</label><input id="fe_email" style="width:100%" value="' + esc(e.owner_email || '') + '"></div>' +
+        '</div>' +
+        '<label style="margin-top:8px">Productos</label><div id="fe_productos" class="row" style="gap:12px">' + PRODUCTOS.map(p => chk('prod', p, e.productos)).join('') + '</div>' +
         '<label style="margin-top:6px">Canales (Chat/CRM)</label><div id="fe_canales" class="row" style="gap:12px">' + CANALES.map(c => chk('canal', c, e.canales)).join('') + '</div>' +
         '<label style="margin-top:6px"><input type="checkbox" id="fe_burbuja"' + (e.burbuja_activa ? ' checked' : '') + '> Burbuja flotante</label>' +
         '<input id="fe_burbuja_apps" style="width:100%" value="' + esc((e.burbuja_apps || []).join(', ')) + '" placeholder="apps de la burbuja: whatsapp, rappi, banco…">' +
@@ -380,6 +385,9 @@ async function guardarProductos(id) {
       canales: sel('#fe_canales input'),
       burbuja_activa: $('fe_burbuja').checked,
       burbuja_apps: $('fe_burbuja_apps').value.split(',').map(s => s.trim()).filter(Boolean),
+      owner_nombre: $('fe_nombre').value.trim(),
+      owner_whatsapp: $('fe_telefono').value.trim(),
+      owner_email: $('fe_email').value.trim(),
     }) });
     $('fe_msg').textContent = '✓ Guardado';
     cargar();

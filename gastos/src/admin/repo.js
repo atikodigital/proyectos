@@ -57,8 +57,15 @@ async function setProductos(db, companyId, patch = {}) {
     vals.push(JSON.stringify(_normalizeArr(patch.burbuja_apps)));
     sets.push(`burbuja_apps=$${vals.length}::jsonb`);
   }
+  // Datos de contacto editables del cliente
+  for (const campo of ['owner_whatsapp', 'owner_email', 'owner_nombre']) {
+    if (patch[campo] !== undefined) {
+      vals.push(String(patch[campo] || '').trim() || null);
+      sets.push(`${campo}=$${vals.length}`);
+    }
+  }
   if (!sets.length) return getProductos(db, companyId);
-  const r = await db.query(`UPDATE companies SET ${sets.join(', ')} WHERE id=$1 RETURNING id, productos, canales, burbuja_activa, burbuja_apps`, vals);
+  const r = await db.query(`UPDATE companies SET ${sets.join(', ')} WHERE id=$1 RETURNING id, productos, canales, burbuja_activa, burbuja_apps, owner_whatsapp, owner_email, owner_nombre`, vals);
   return r.rows[0] || null;
 }
 

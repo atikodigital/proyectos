@@ -41,3 +41,13 @@ test('crearCliente guarda teléfono y email de contacto y salen en la ficha', as
   expect(f.empresa.owner_whatsapp).toBe('+56 9 1234 5678');
   expect(f.empresa.owner_email).toBe('Contacto@DonVito.cl');
 });
+
+test('setProductos edita el contacto (teléfono/email/nombre) de un cliente existente', async () => {
+  const { db } = await setup();
+  const r = await repo.crearCliente(db, { nombreEmpresa: 'Don Vito' });
+  await repo.setProductos(db, r.empresa.id, { owner_whatsapp: '+56 9 9999 0000', owner_email: 'nuevo@vito.cl', owner_nombre: 'Vito Corleone' });
+  const f = await repo.getFichaCliente(db, r.empresa.id, 2026, 6);
+  expect(f.empresa.owner_whatsapp).toBe('+56 9 9999 0000');
+  expect(f.empresa.owner_email).toBe('nuevo@vito.cl');
+  expect(f.empresa.owner_nombre).toBe('Vito Corleone');
+});
