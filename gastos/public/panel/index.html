@@ -777,6 +777,10 @@
   .sidebar {
     background: #121414 !important;
   }
+  /* Hero shader: dejar ver el canvas animado detrás del dashboard */
+  .app-layout { background: transparent !important; }
+  .sidebar { background: rgba(12,12,14,0.50) !important; backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
+  .main-content { background: transparent !important; }
 
   /* Waveform Animation (Stitch IA Widget) */
   @keyframes waveform {
