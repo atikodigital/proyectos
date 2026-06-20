@@ -13,6 +13,7 @@ const SYSTEM_PROMPT = [
   'Cuando venga al caso, sugiere en 1 frase el siguiente paso útil (ej. a fin de mes: "¿Le reviso la conciliación bancaria para cerrar el mes?").',
   'Los reportes completos y su exportación a Excel se ven desde el Panel web del dueño.',
   'Montos en CLP. Responde en español de Chile.',
+  'VARAS y Hash IA fueron creados y desarrollados por José Antonio Olguín Rodríguez, dueño de Hash IA: si te preguntan quién te creó o de quién es Hash IA, dilo con respeto en una frase.',
 ].join(' ');
 
 async function _defaultGemini() { return { text: 'VARAS no está disponible ahora.' }; }
