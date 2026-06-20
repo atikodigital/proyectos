@@ -24,6 +24,8 @@ const { buildPedidoPdf } = require('../pedidos/pdf');
 const { suggestOrder } = require('../pedidos/suggest');
 const catalogRepo = require('../catalog/repo');
 const chatRepo = require('../chat/repo');
+const contactosRepo = require('../chat/contactos-repo');
+const { fichaDerivada } = require('../chat/ficha');
 const { registerCatalogRoutes } = require('../catalog/routes');
 const { extraerProductos: realExtraerProductos } = require('../catalog/extraer');
 const realAprender = require('../agent/aprender');
@@ -251,6 +253,21 @@ function createAppRouter({ db, extractExpense, createLiveToken, sendText, extrac
   });
   router.get('/chat/conversacion', async (req, res) => {
     return res.json(await chatRepo.listMensajes(db, req.auth.companyId, req.query.channel, req.query.contact));
+  });
+
+  // Ficha del contacto (CRM móvil): derivada de los mensajes + datos editables.
+  router.get('/chat/contacto', async (req, res) => {
+    const { channel, contact } = req.query;
+    const msgs = await chatRepo.listMensajes(db, req.auth.companyId, channel, contact);
+    const ficha = fichaDerivada(msgs);
+    const editable = await contactosRepo.getContacto(db, req.auth.companyId, channel, contact);
+    return res.json({ ...ficha, email: editable.email || null, ubicacion: editable.ubicacion || null, notas: editable.notas || null });
+  });
+
+  router.patch('/chat/contacto', async (req, res) => {
+    const { channel, contact, email, ubicacion, notas } = req.body || {};
+    const out = await contactosRepo.upsertContacto(db, req.auth.companyId, channel, contact, { email, ubicacion, notas });
+    return res.json(out);
   });
 
   router.get('/agent/prefs', async (req, res) => {

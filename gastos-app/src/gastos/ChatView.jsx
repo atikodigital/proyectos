@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { api } from './api';
 import PedidoBuilder from './pedido/PedidoBuilder';
 import ProductosView from './ProductosView.jsx';
+import EvidenceIntake from '../components/EvidenceIntake.jsx';
 
 const plugin = () => (window && window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.AtikoPedido) || null;
 const GOLD = '#C9A24B';
@@ -28,11 +29,75 @@ function waLinkLocal(text, contact) {
 }
 function abrir(url) { try { window.open(url, '_blank'); } catch (_e) { window.location.href = url; } }
 
+function Ficha({ conv, onCrearPedido }) {
+  const [ficha, setFicha] = useState(null);
+  const [err, setErr] = useState('');
+  const [email, setEmail] = useState('');
+  const [ubic, setUbic] = useState('');
+  const [notas, setNotas] = useState('');
+  const [guardando, setGuardando] = useState(false);
+  const [capturando, setCapturando] = useState(false);
+  const [evidencias, setEvidencias] = useState([]);
+
+  useEffect(() => {
+    let vivo = true;
+    api.chatContacto(conv.channel, conv.contact)
+      .then((f) => { if (!vivo) return; setFicha(f || {}); setEmail(f.email || ''); setUbic(f.ubicacion || ''); setNotas(f.notas || ''); })
+      .catch(() => { if (vivo) setErr('No se pudo cargar la ficha.'); });
+    return () => { vivo = false; };
+  }, [conv]);
+
+  async function guardar() {
+    setGuardando(true);
+    try { await api.chatContactoGuardar({ channel: conv.channel, contact: conv.contact, email, ubicacion: ubic, notas }); }
+    catch (e) { setErr('No se pudo guardar.'); }
+    setGuardando(false);
+  }
+
+  const fila = (lbl, val) => (
+    <div className="flex justify-between text-sm py-0.5"><span className="opacity-60">{lbl}</span><span className="font-semibold text-right">{val || '—'}</span></div>
+  );
+  const inp = 'w-full rounded-lg border px-2 py-1.5 text-sm mt-0.5';
+
+  if (err && !ficha) return <div className="px-4 py-3 text-sm text-red-600">{err}</div>;
+  if (!ficha) return <div className="px-4 py-3 text-sm opacity-60">Cargando ficha…</div>;
+  return (
+    <div className="px-4 py-3 border-b bg-black/[0.02] max-h-[55vh] overflow-y-auto">
+      <div className="grid gap-1 mb-3">
+        {fila('Teléfono', ficha.telefono)}
+        {fila('Canal', (CANALES[conv.channel] || CANALES.compartido).n)}
+        {fila('Primer contacto', (ficha.primerContacto || '').slice(0, 10))}
+        {fila('Último contacto', (ficha.ultimoContacto || '').slice(0, 10))}
+        {fila('Mensajes', String(ficha.nMensajes || 0))}
+      </div>
+      <label className="text-[11px] uppercase opacity-50">Email</label>
+      <input value={email} onChange={(e) => setEmail(e.target.value)} className={inp} placeholder="correo@cliente.cl" />
+      <label className="text-[11px] uppercase opacity-50 block mt-2">Ubicación</label>
+      <input value={ubic} onChange={(e) => setUbic(e.target.value)} className={inp} placeholder="Comuna / dirección" />
+      <label className="text-[11px] uppercase opacity-50 block mt-2">Notas</label>
+      <textarea value={notas} onChange={(e) => setNotas(e.target.value)} rows={2} className={inp} placeholder="Notas internas" />
+      {err ? <div className="text-xs text-red-600 mt-1">{err}</div> : null}
+      <button onClick={guardar} disabled={guardando} className="w-full rounded-xl font-black py-2 text-black mt-2 disabled:opacity-50" style={{ background: GOLD }}>{guardando ? 'Guardando…' : 'Guardar datos'}</button>
+      <div className="grid grid-cols-2 gap-2 mt-3">
+        <button onClick={onCrearPedido} className="rounded-xl font-black py-2.5 text-black" style={{ background: GOLD }}>🧾 Crear pedido</button>
+        <button onClick={() => setCapturando((v) => !v)} className="rounded-xl font-black py-2.5 border" style={{ borderColor: GOLD, color: GOLD }}>📷 Captura</button>
+      </div>
+      {capturando ? (
+        <div className="mt-3">
+          <EvidenceIntake value={evidencias} onChange={setEvidencias} showNativeCapture maxEvidence={6} />
+          {evidencias.length ? <p className="text-xs opacity-60 mt-1">{evidencias.length} adjunto(s). Quedan disponibles para el pedido.</p> : null}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function Conversacion({ conv, onBack }) {
   const [msgs, setMsgs] = useState(null);
   const [armando, setArmando] = useState(false);
   const [reply, setReply] = useState('');
   const [mias, setMias] = useState([]);
+  const [fichaOpen, setFichaOpen] = useState(false);
 
   useEffect(() => {
     api.chatMensajes(conv.channel, conv.contact).then((r) => setMsgs(Array.isArray(r) ? r : [])).catch(() => setMsgs([]));
@@ -51,8 +116,12 @@ function Conversacion({ conv, onBack }) {
     <div className="h-full flex flex-col">
       <div className="p-4 pb-2 shrink-0 flex items-center gap-2 border-b">
         <button onClick={onBack} className="text-base font-black" style={{ color: GOLD }}>←</button>
-        <div className="font-black truncate">{conv.contact || 'Sin nombre'}</div>
+        <button onClick={() => setFichaOpen((v) => !v)} className="flex-1 flex items-center gap-1 min-w-0 text-left">
+          <span className="font-black truncate">{conv.contact || 'Sin nombre'}</span>
+          <span className="text-xs" style={{ color: GOLD }}>{fichaOpen ? '▴' : '▾'}</span>
+        </button>
       </div>
+      {fichaOpen ? <Ficha conv={conv} onCrearPedido={() => setArmando(true)} /> : null}
       <div className="flex-1 min-h-0 overflow-y-auto p-4 grid gap-2 content-start">
         {msgs === null ? <div className="opacity-60 text-sm">Cargando…</div>
           : (msgs.length === 0 && mias.length === 0) ? <div className="opacity-60 text-sm">Sin mensajes capturados aún.</div>
