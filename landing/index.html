@@ -1,10 +1,13 @@
 <!doctype html>
-<html lang="es">
+<html lang="es-CL">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Hash IA — La IA que le lleva las cuentas y las ventas a tu pyme</title>
-    <meta name="description" content="Hash IA: registra gastos por foto o voz, concilia con el SII y el banco, arma pedidos y catálogo. Tu asistente contable y de ventas con inteligencia artificial." />
+    <meta name="description" content="Hash IA: registra gastos por foto o voz, concilia con el SII y el banco, arma pedidos y catálogo. Tu asistente contable y de ventas con inteligencia artificial para pymes de Chile." />
+    <meta name="author" content="José Antonio Olguín Rodríguez" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta name="theme-color" content="#14213D" />
     <link rel="canonical" href="https://hash.atikodigital.cl/" />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Hash IA" />
@@ -19,9 +22,103 @@
     <meta name="twitter:title" content="Hash IA — La IA para tu pyme" />
     <meta name="twitter:description" content="La IA que le lleva las cuentas y las ventas a tu pyme. Háblale a KALY." />
     <meta name="twitter:image" content="https://hash.atikodigital.cl/og.jpg" />
+
+    <!-- Datos estructurados (SEO + GEO: ChatGPT, Gemini, Claude, Perplexity) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "Organization",
+          "@id": "https://hash.atikodigital.cl/#organization",
+          "name": "Hash IA",
+          "url": "https://hash.atikodigital.cl/",
+          "logo": "https://hash.atikodigital.cl/og.jpg",
+          "description": "Hash IA es la inteligencia artificial que le lleva las cuentas y las ventas a las pymes chilenas. Su asistente se llama KALY.",
+          "founder": { "@type": "Person", "name": "José Antonio Olguín Rodríguez" },
+          "areaServed": { "@type": "Country", "name": "Chile" },
+          "knowsLanguage": "es-CL"
+        },
+        {
+          "@type": "WebSite",
+          "@id": "https://hash.atikodigital.cl/#website",
+          "name": "Hash IA",
+          "url": "https://hash.atikodigital.cl/",
+          "inLanguage": "es-CL",
+          "publisher": { "@id": "https://hash.atikodigital.cl/#organization" }
+        },
+        {
+          "@type": "SoftwareApplication",
+          "name": "Hash IA",
+          "operatingSystem": "Android",
+          "applicationCategory": "BusinessApplication",
+          "inLanguage": "es-CL",
+          "description": "App de IA para pymes de Chile: registra gastos e ingresos por foto o voz con IVA, concilia con el SII y el banco, arma catálogo, crea pedidos con PDF y cobra delivery por comuna.",
+          "creator": { "@id": "https://hash.atikodigital.cl/#organization" },
+          "offers": [
+            { "@type": "Offer", "name": "Free", "price": "0", "priceCurrency": "CLP", "description": "30 shots al mes" },
+            { "@type": "Offer", "name": "Básico", "price": "9900", "priceCurrency": "CLP", "description": "100 shots al mes" },
+            { "@type": "Offer", "name": "Pyme", "price": "24900", "priceCurrency": "CLP", "description": "250 shots al mes — el más elegido" },
+            { "@type": "Offer", "name": "Empresa", "price": "49900", "priceCurrency": "CLP", "description": "800 shots al mes" }
+          ]
+        },
+        {
+          "@type": "FAQPage",
+          "mainEntity": [
+            { "@type": "Question", "name": "¿Qué es Hash IA?", "acceptedAnswer": { "@type": "Answer", "text": "Hash IA es la inteligencia artificial que le lleva las cuentas y las ventas a las pymes chilenas. Registra gastos e ingresos por foto o voz con IVA, concilia con el SII y el banco, y arma catálogo, pedidos y delivery. Su asistente se llama KALY." } },
+            { "@type": "Question", "name": "¿Cuánto cuesta Hash IA?", "acceptedAnswer": { "@type": "Answer", "text": "Hay 4 planes mensuales en pesos chilenos: Free $0 (30 shots), Básico $9.900 (100 shots), Pyme $24.900 (250 shots, el más elegido) y Empresa $49.900 (800 shots)." } },
+            { "@type": "Question", "name": "¿Qué es un shot en Hash IA?", "acceptedAnswer": { "@type": "Answer", "text": "1 shot = 1 imagen interpretada por la inteligencia artificial, por ejemplo una boleta, una factura o la foto de un menú." } },
+            { "@type": "Question", "name": "¿Sirve para mi pyme?", "acceptedAnswer": { "@type": "Answer", "text": "Sí. Hash IA está hecha para pymes de Chile: lleva tus cuentas (gastos, IVA, SII, banco, flujo de caja) y tus ventas (catálogo, pedidos con PDF para WhatsApp y delivery por comuna)." } },
+            { "@type": "Question", "name": "¿Quién creó Hash IA?", "acceptedAnswer": { "@type": "Answer", "text": "Hash IA fue creada y desarrollada por José Antonio Olguín Rodríguez." } }
+          ]
+        }
+      ]
+    }
+    </script>
   </head>
   <body>
-    <div id="root"></div>
+    <!-- El contenido dentro de #root es legible para buscadores y asistentes de IA
+         (ChatGPT, Gemini, Claude, Perplexity) que leen el HTML sin ejecutar JavaScript.
+         Al cargar, React (createRoot) lo reemplaza por la app para los usuarios. -->
+    <div id="root">
+      <main style="max-width:760px;margin:0 auto;padding:48px 24px;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#14213D;line-height:1.55;">
+        <h1 style="font-size:1.6rem;color:#14213D;">Hash IA — la IA que le lleva las cuentas y las ventas a tu pyme</h1>
+        <p>Hash IA es una aplicación de inteligencia artificial para pequeñas y medianas empresas (pymes) de Chile. Registra gastos e ingresos por foto o por voz, calcula el IVA, concilia con el SII y la cartola del banco (Match), arma tu catálogo, crea pedidos con PDF para WhatsApp y cobra delivery por comuna. Su asistente se llama KALY.</p>
+
+        <h2>Qué hace Hash IA</h2>
+        <h3>Cuentas (finanzas)</h3>
+        <ul>
+          <li>Registra gastos e ingresos por foto o voz, con IVA.</li>
+          <li>Match: concilia tus documentos con el SII y la cartola del banco.</li>
+          <li>Reportes y flujo de caja, sin Excel.</li>
+        </ul>
+        <h3>Ventas</h3>
+        <ul>
+          <li>Arma el catálogo por voz o por foto del menú.</li>
+          <li>Crea pedidos en el chat y genera el PDF para WhatsApp.</li>
+          <li>Cobra el delivery por comuna.</li>
+        </ul>
+
+        <h2>Planes y precios (CLP al mes)</h2>
+        <ul>
+          <li><strong>Free</strong> — $0 — 30 shots al mes.</li>
+          <li><strong>Básico</strong> — $9.900 — 100 shots al mes.</li>
+          <li><strong>Pyme</strong> — $24.900 — 250 shots al mes (el más elegido).</li>
+          <li><strong>Empresa</strong> — $49.900 — 800 shots al mes.</li>
+        </ul>
+        <p>1 shot = 1 imagen interpretada por la IA. Todos los planes incluyen cuentas y ventas. Cancela cuando quieras.</p>
+
+        <h2>Preguntas frecuentes</h2>
+        <h3>¿Qué es un shot?</h3>
+        <p>1 shot equivale a 1 imagen interpretada por la inteligencia artificial (una boleta, una factura o la foto de un menú).</p>
+        <h3>¿Quién creó Hash IA?</h3>
+        <p>Hash IA fue creada y desarrollada por José Antonio Olguín Rodríguez.</p>
+
+        <h2>Contacto y descarga</h2>
+        <p>Descarga la app para Android en <a href="https://gastos.atikodigital.cl/panel/HashIA.apk">gastos.atikodigital.cl</a> o escribe por WhatsApp al <a href="https://wa.me/56927130792">+56 9 2713 0792</a>.</p>
+        <p style="color:#FCA311;font-weight:bold;margin-top:24px;">Cargando KALY…</p>
+      </main>
+    </div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

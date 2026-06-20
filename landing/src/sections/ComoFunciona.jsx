@@ -1,25 +1,47 @@
 import React from 'react';
+import { GlassCard } from '@/components/ui/glass-card';
+import { Camera, Sparkles, TrendingUp } from 'lucide-react';
 
 const PASOS = [
-  { n: '01', t: 'Saca una foto o háblale a KALY', d: 'Una boleta, el menú, o dile "agrega torta a 18 mil". Sin teclear formularios.' },
-  { n: '02', t: 'La IA registra y contabiliza', d: 'Lee el documento, calcula el IVA y deja todo ordenado y conciliado.' },
-  { n: '03', t: 'Ves reportes o armas pedidos', d: 'Flujo de caja al día, o crea el pedido y mándalo en PDF por WhatsApp.' },
+  { 
+    n: '01', 
+    t: '01. Saca foto o habla', 
+    d: 'Saca la foto de una boleta, el menú, o dile "agrega torta a 18 mil". Olvídate de los formularios.',
+    icon: Camera,
+    href: '#planes'
+  },
+  { 
+    n: '02', 
+    t: '02. IA procesa y registra', 
+    d: 'La IA lee el documento al instante, calcula el IVA y deja todo conciliado con el SII.',
+    icon: Sparkles,
+    href: '#planes'
+  },
+  { 
+    n: '03', 
+    t: '03. Reportes o pedidos', 
+    d: 'Revisa tu flujo de caja al día o genera el PDF del pedido listo para despachar por WhatsApp.',
+    icon: TrendingUp,
+    href: '#planes'
+  },
 ];
 
 export default function ComoFunciona() {
   return (
-    <section className="bg-hud-bg text-hud-text font-mono px-4 py-20 border-t border-hud-cyandim/10">
+    <section id="como-funciona-section" className="bg-transparent text-hud-text font-mono px-4 py-20 border-t border-hud-cyandim/10">
       <div className="text-center mb-12">
-        <h2 className="text-2xl md:text-3xl text-[#cfeaf3]">Cómo funciona</h2>
-        <p className="text-sm text-[#5ab8cc] mt-2">Tres pasos. Nada de Excel.</p>
+        <h2 className="text-2xl md:text-3xl text-white font-bold">Cómo funciona</h2>
+        <p className="text-sm text-[#E5E5E5] mt-2">Tres pasos interactivos. Cuentas al día sin planillas.</p>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+      <div className="flex flex-wrap items-center justify-center gap-8 max-w-5xl mx-auto">
         {PASOS.map((p) => (
-          <div key={p.n} className="rounded-2xl border border-hud-cyandim/30 bg-white/[0.03] p-6">
-            <div className="text-3xl text-hud-cyan">{p.n}</div>
-            <div className="mt-3 text-base text-[#cfeaf3]">{p.t}</div>
-            <div className="mt-2 text-sm text-[#5ab8cc]">{p.d}</div>
-          </div>
+          <GlassCard
+            key={p.n}
+            title={p.t}
+            description={p.d}
+            icon={p.icon}
+            href={p.href}
+          />
         ))}
       </div>
     </section>

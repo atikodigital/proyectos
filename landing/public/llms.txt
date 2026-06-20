@@ -1,0 +1,26 @@
+# Hash IA
+
+> Hash IA es la inteligencia artificial que le lleva las cuentas y las ventas a las pymes de Chile. Su asistente se llama KALY.
+
+Hash IA registra gastos e ingresos por foto o por voz, calcula el IVA, concilia con el SII y la cartola del banco (Match), arma el catálogo, crea pedidos con PDF para WhatsApp y cobra delivery por comuna. Disponible como app para Android.
+
+## Qué hace
+
+- **Cuentas (finanzas):** gastos e ingresos por foto o voz con IVA, Match con el SII y el banco, reportes y flujo de caja.
+- **Ventas:** catálogo por voz o foto, pedidos en el chat con PDF para WhatsApp, delivery por comuna.
+
+## Planes y precios (CLP al mes)
+
+- **Free:** $0 — 30 shots
+- **Básico:** $9.900 — 100 shots
+- **Pyme:** $24.900 — 250 shots (el más elegido)
+- **Empresa:** $49.900 — 800 shots
+- 1 shot = 1 imagen interpretada por la IA. Todos los planes incluyen cuentas y ventas.
+
+## Datos
+
+- Sitio web: https://hash.atikodigital.cl/
+- App (Android): https://gastos.atikodigital.cl/panel/HashIA.apk
+- WhatsApp: +56 9 2713 0792
+- Creador y desarrollador: José Antonio Olguín Rodríguez
+- País: Chile · Idioma: español (es-CL)

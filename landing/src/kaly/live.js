@@ -4,7 +4,7 @@
 const WS_HOST = 'wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent';
 
 export function openLiveSession(opts) {
-  const { token, model, systemPrompt, tools, voice, wsUrl, onAudioLevel, onState, onUserTranscript, onToolCall, onClose, wsFactory, audio = true } = opts;
+  const { token, model, systemPrompt, tools, voice, wsUrl, onAudioLevel, onState, onUserTranscript, onToolCall, onClose, wsFactory, audio = true, onReady } = opts;
   const url = wsUrl || `${WS_HOST}?key=${encodeURIComponent(token)}`;
   const ws = (wsFactory || ((u) => new WebSocket(u)))(url);
   let closed = false; let micStop = null; let player = null; let muted = false;
@@ -33,6 +33,13 @@ export function openLiveSession(opts) {
     } });
   };
 
+  const sessionInstance = {
+    sendText(text) { send({ clientContent: { turns: [{ role: 'user', parts: [{ text }] }], turnComplete: true } }); },
+    sendToolResponse(id, name, response) { send({ toolResponse: { functionResponses: [{ id, name, response }] } }); },
+    close() { cleanup(); try { ws.close(); } catch (e) {} },
+    setMuted(m) { muted = !!m; },
+  };
+
   ws.onmessage = async (ev) => {
     let data = ev.data;
     if (data instanceof Blob) data = await data.text();
@@ -46,6 +53,9 @@ export function openLiveSession(opts) {
       }
       if (audio) micStop = await startMic(send, onAudioLevel).catch(() => null);
       if (audio) player = createPlayer(onAudioLevel, setState, () => muted);
+      if (onReady) {
+        onReady(sessionInstance);
+      }
       return;
     }
     if (msg.toolCall && msg.toolCall.functionCalls) { for (const fc of msg.toolCall.functionCalls) onToolCall && onToolCall(fc); return; }
@@ -72,12 +82,7 @@ export function openLiveSession(opts) {
 
   function cleanup() { if (closed) return; closed = true; if (micStop) micStop(); if (player) player.stop(); }
 
-  return {
-    sendText(text) { send({ clientContent: { turns: [{ role: 'user', parts: [{ text }] }], turnComplete: true } }); },
-    sendToolResponse(id, name, response) { send({ toolResponse: { functionResponses: [{ id, name, response }] } }); },
-    close() { cleanup(); try { ws.close(); } catch (e) {} },
-    setMuted(m) { muted = !!m; },
-  };
+  return sessionInstance;
 }
 
 // ── Browser audio helpers ────────────────────────────────────────────────────
@@ -120,7 +125,21 @@ export async function startMic(send, onLevel) {
     source.connect(processor);
     processor.connect(ctx.destination);
 
+    const resume = () => {
+      if (ctx && ctx.state === 'suspended') {
+        ctx.resume().catch(() => {});
+      }
+    };
+    if (typeof window !== 'undefined') {
+      window.addEventListener('click', resume);
+      window.addEventListener('touchstart', resume, { passive: true });
+    }
+
     return function stop() {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('click', resume);
+        window.removeEventListener('touchstart', resume);
+      }
       try { processor.disconnect(); } catch (_) {}
       try { source.disconnect(); } catch (_) {}
       try { stream.getTracks().forEach((t) => t.stop()); } catch (_) {}

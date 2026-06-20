@@ -1,4 +1,5 @@
 import React from 'react';
+import ScrollBackground from './components/ui/scroll-background.jsx';
 import Hero from './kaly/Hero.jsx';
 import DosFamilias from './sections/DosFamilias.jsx';
 import ComoFunciona from './sections/ComoFunciona.jsx';
@@ -9,7 +10,8 @@ import Footer from './sections/Footer.jsx';
 
 export default function App() {
   return (
-    <div className="bg-hud-bg text-hud-text">
+    <div className="bg-black text-hud-text min-h-screen">
+      <ScrollBackground />
       <Hero />
       <DosFamilias />
       <ComoFunciona />

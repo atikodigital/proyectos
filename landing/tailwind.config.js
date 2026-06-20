@@ -3,9 +3,24 @@ export default {
   theme: {
     extend: {
       colors: {
-        hud: { bg: '#00060a', panel: '#010d14', cyan: '#19C3FF', cyandim: '#0a6e8c', gold: '#C9A24B', text: '#8ffcff' },
+        hud: { bg: '#14213D', panel: '#000000', cyan: '#FCA311', cyandim: '#FCA311', gold: '#FCA311', text: '#FFFFFF' },
       },
       fontFamily: { mono: ['"Share Tech Mono"', 'ui-monospace', 'monospace'] },
+      animation: {
+        spotlight: "spotlight 2s ease .75s 1 normal forwards",
+      },
+      keyframes: {
+        spotlight: {
+          "0%": {
+            opacity: 0,
+            transform: "translate(-72%, -62%) scale(0.5)",
+          },
+          "100%": {
+            opacity: 1,
+            transform: "translate(-50%,-40%) scale(1)",
+          },
+        },
+      },
     },
   },
   plugins: [],
