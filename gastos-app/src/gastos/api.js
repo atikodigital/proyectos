@@ -127,4 +127,30 @@ export const api = {
     try { window.open(url, '_blank'); } catch (_e) { window.location.href = url; }
     return true;
   },
+
+  // ── BSP / Onboarding (Hash IA como Tech Provider de WhatsApp) ───
+  async register({ nombre_negocio, nombre_owner, email, password, owner_whatsapp }) {
+    const data = await req('/api/onboarding/register', {
+      method: 'POST', auth: false,
+      body: { nombre_negocio, nombre_owner, email, password, owner_whatsapp },
+    });
+    if (data && data.token) setToken(data.token);
+    return data;
+  },
+  async loginOwner(email, password) {
+    // Login del owner (usuario tabla `users`, no tabla `employees`).
+    const data = await req('/api/panel/login', { method: 'POST', body: { email, password }, auth: false });
+    if (data && data.token) setToken(data.token);
+    return data;
+  },
+  bspStatus() { return req('/api/onboarding/bsp-status'); },
+  connectWhatsApp({ code, phone_number_id, waba_id, register, pin, label }) {
+    return req('/api/onboarding/connect/whatsapp', {
+      method: 'POST',
+      body: { code, phone_number_id, waba_id, register, pin, label },
+    });
+  },
+  connectFacebook({ userToken, code }) {
+    return req('/api/onboarding/connect/facebook', { method: 'POST', body: { userToken, code } });
+  },
 };

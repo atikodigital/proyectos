@@ -1,4 +1,5 @@
 const express = require('express');
+const sig = require('./signature');
 const { getCompanyByPhoneNumberId, getEmployeeByPhone } = require('../companies/repo');
 const { intakeFromImage } = require('../expenses/intake');
 const { getLatestPending, confirmExpense, updateExpense, rejectExpense, getExpense } = require('../expenses/repo');
@@ -28,6 +29,11 @@ function createWebhookRouter({ db, verifyToken, sendText, downloadMedia, extract
   });
 
   router.post('/', async (req, res) => {
+    // Verificación de firma HMAC-SHA256 (Meta usa APP_SECRET).
+    if (!sig.verify(req)) {
+      console.warn('[wa-webhook] Firma inválida — request rechazado');
+      return res.status(401).send('Invalid signature');
+    }
     // Procesamos y LUEGO respondemos 200 (síncrono): así es testeable con supertest
     // y, para el MVP, el trabajo (download+OCR+DB) cae bien dentro del timeout de Meta.
     // El dedup por wa_message_id (índice único) cubre un eventual reintento de Meta.

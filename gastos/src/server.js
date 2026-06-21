@@ -7,6 +7,8 @@ const { createWebhookRouter } = require('./whatsapp/webhook');
 const { createAppRouter } = require('./app/router');
 const { createPanelRouter } = require('./panel/router');
 const { createAdminRouter } = require('./admin/router');
+const { createOnboardingRouter } = require('./onboarding/router');
+const { createDataDeletionRouter } = require('./legal/data-deletion');
 const http = require('http');
 const { getPool } = require('./db/pool');
 const { createEphemeralToken } = require('./agent/token');
@@ -14,7 +16,15 @@ const { attachKalyProxy } = require('./agent/kaly-proxy');
 
 const app = express();
 app.use(cors());
-app.use(express.json({ limit: '15mb' }));
+// Capturar body raw como Buffer para verificación HMAC de webhooks Meta.
+app.use(express.json({
+  limit: '15mb',
+  verify: (req, _res, buf) => { req.rawBody = buf; },
+}));
+app.use(express.urlencoded({
+  extended: false,
+  verify: (req, _res, buf) => { if (!req.rawBody) req.rawBody = buf; },
+}));
 
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok', service: 'atiko-gastos' });
@@ -39,6 +49,8 @@ app.use('/api/whatsapp/webhook', createWebhookRouter({ db: getPool() }));
 app.use('/api/app', createAppRouter({ db: getPool() }));
 app.use('/api/panel', createPanelRouter({ db: getPool() }));
 app.use('/api/admin', createAdminRouter({ db: getPool() }));
+app.use('/api/onboarding', createOnboardingRouter({ db: getPool() }));
+app.use('/api/data-deletion', createDataDeletionRouter({ db: getPool() }));
 app.use('/panel', express.static(path.join(__dirname, '..', 'public', 'panel'), {
   setHeaders: (res) => res.setHeader('Cache-Control', 'no-cache'),
 }));
