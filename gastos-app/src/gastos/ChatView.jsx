@@ -38,6 +38,7 @@ function Ficha({ conv, onCrearPedido }) {
   const [guardando, setGuardando] = useState(false);
   const [capturando, setCapturando] = useState(false);
   const [evidencias, setEvidencias] = useState([]);
+  const [enviando, setEnviando] = useState(false);
 
   useEffect(() => {
     let vivo = true;
@@ -52,6 +53,21 @@ function Ficha({ conv, onCrearPedido }) {
     try { await api.chatContactoGuardar({ channel: conv.channel, contact: conv.contact, email, ubicacion: ubic, notas }); }
     catch (e) { setErr('No se pudo guardar.'); }
     setGuardando(false);
+  }
+
+  async function enviarEvidencia() {
+    setErr('');
+    if (String(conv.channel || '').toLowerCase() !== 'whatsapp') { setErr('Enviar imagen al cliente solo está disponible por WhatsApp.'); return; }
+    const imgs = (evidencias || []).filter((e) => e.imageBase64 && !e.isDoc);
+    if (!imgs.length) { setErr('No hay imágenes para enviar (los documentos no se envían como imagen).'); return; }
+    setEnviando(true);
+    try {
+      for (const im of imgs) {
+        await api.chatResponderImagen({ channel: conv.channel, contact: conv.contact, imageBase64: im.imageBase64, mimeType: im.imageMimeType || 'image/jpeg' });
+      }
+      setEvidencias([]);
+    } catch (e) { setErr('No se pudo enviar la imagen al cliente.'); }
+    setEnviando(false);
   }
 
   const fila = (lbl, val) => (
@@ -85,7 +101,12 @@ function Ficha({ conv, onCrearPedido }) {
       {capturando ? (
         <div className="mt-3">
           <EvidenceIntake value={evidencias} onChange={setEvidencias} showNativeCapture maxEvidence={6} />
-          {evidencias.length ? <p className="text-xs opacity-60 mt-1">{evidencias.length} adjunto(s). Quedan disponibles para el pedido.</p> : null}
+          {evidencias.length ? (
+            <>
+              <p className="text-xs opacity-60 mt-1">{evidencias.length} adjunto(s). Quedan disponibles para el pedido.</p>
+              <button onClick={enviarEvidencia} disabled={enviando} className="w-full rounded-xl font-black py-2 text-white mt-1 disabled:opacity-50" style={{ background: '#16A34A' }}>{enviando ? 'Enviando…' : '📤 Enviar imágenes al cliente'}</button>
+            </>
+          ) : null}
         </div>
       ) : null}
     </div>

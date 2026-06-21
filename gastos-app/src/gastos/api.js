@@ -77,6 +77,7 @@ export const api = {
   chatMensajes(channel, contact) { return req(`/api/app/chat/conversacion?channel=${encodeURIComponent(channel || '')}&contact=${encodeURIComponent(contact || '')}`); },
   chatContacto(channel, contact) { return req(`/api/app/chat/contacto?channel=${encodeURIComponent(channel || '')}&contact=${encodeURIComponent(contact || '')}`); },
   chatContactoGuardar({ channel, contact, email, ubicacion, notas }) { return req('/api/app/chat/contacto', { method: 'PATCH', body: { channel, contact, email, ubicacion, notas } }); },
+  chatResponderImagen({ channel, contact, imageBase64, mimeType, caption }) { return req('/api/app/chat/responder-imagen', { method: 'POST', body: { channel, contact, imageBase64, mimeType, caption } }); },
   pedidoDesdeConversacion(channel, contact, conversation) {
     return req('/api/app/overlay/pedido/suggest', { method: 'POST', body: { channel, contact: { name: contact }, conversation } });
   },

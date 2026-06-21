@@ -25,7 +25,7 @@ const { suggestOrder } = require('../pedidos/suggest');
 const catalogRepo = require('../catalog/repo');
 const chatRepo = require('../chat/repo');
 const contactosRepo = require('../chat/contactos-repo');
-const { fichaDerivada } = require('../chat/ficha');
+const { fichaDerivada, telefonoDeContacto } = require('../chat/ficha');
 const { registerCatalogRoutes } = require('../catalog/routes');
 const { extraerProductos: realExtraerProductos } = require('../catalog/extraer');
 const realAprender = require('../agent/aprender');
@@ -41,12 +41,13 @@ const { ejecutarAccion } = require('../varas/acciones');
 const { TOOLS_READ } = require('../varas/tools');
 const memoryRepo = require('../agent/memory');
 
-function createAppRouter({ db, extractExpense, createLiveToken, sendText, extractCartola, componer, extraerProductos, extractLibroSii, varasGemini, extraerHechos, juzgarHecho } = {}) {
+function createAppRouter({ db, extractExpense, createLiveToken, sendText, sendImage, extractCartola, componer, extraerProductos, extractLibroSii, varasGemini, extraerHechos, juzgarHecho } = {}) {
   const _extract = extractExpense || realExtract.extractExpense;
   const _extractCartola = extractCartola || ((b64, mime) => require('../ocr/cartola').geminiExtractCartola(b64, mime));
   const _extractLibroSii = extractLibroSii || ((b64, mime) => require('../ocr/libro-sii').geminiExtractLibroSii(b64, mime));
   const _liveToken = createLiveToken || (() => require('../agent/token').createEphemeralToken({ apiKey: process.env.GEMINI_API_KEY }));
   const _sendText = sendText || require('../whatsapp/client').sendText;
+  const _sendImage = sendImage || require('../whatsapp/client').sendImage;
   const _extraerProductos = extraerProductos || realExtraerProductos;
   const _extraerHechos = extraerHechos || realAprender.extraerHechos;
   const _juzgarHecho = juzgarHecho || realGestionar.juzgarHecho;
@@ -268,6 +269,23 @@ function createAppRouter({ db, extractExpense, createLiveToken, sendText, extrac
     const { channel, contact, email, ubicacion, notas } = req.body || {};
     const out = await contactosRepo.upsertContacto(db, req.auth.companyId, channel, contact, { email, ubicacion, notas });
     return res.json(out);
+  });
+
+  // Envía una imagen capturada (foto/screenshot/archivo) al cliente por WhatsApp.
+  router.post('/chat/responder-imagen', async (req, res) => {
+    const { channel, contact, imageBase64, mimeType, caption } = req.body || {};
+    const b64 = String(imageBase64 || '').replace(/^data:[^,]+,/, '').trim();
+    if (!b64) return res.status(400).json({ error: 'sin_imagen' });
+    if (String(channel).toLowerCase() !== 'whatsapp') return res.status(400).json({ error: 'canal_no_soportado' });
+    const wa = await getCompanyWa(db, req.auth.companyId);
+    if (!wa || !wa.wa_phone_number_id || !wa.wa_token) return res.status(400).json({ error: 'whatsapp_no_configurado' });
+    const to = telefonoDeContacto(contact).replace(/[^0-9]/g, '');
+    if (!to) return res.status(400).json({ error: 'sin_telefono' });
+    try {
+      await _sendImage({ to, buffer: Buffer.from(b64, 'base64'), mimeType: mimeType || 'image/jpeg', caption: caption || '', token: wa.wa_token, phoneNumberId: wa.wa_phone_number_id });
+    } catch (e) { return res.status(502).json({ error: 'envio_falla' }); }
+    const m = await chatRepo.addMensaje(db, req.auth.companyId, { channel: 'whatsapp', contact, text: (caption && String(caption).trim()) ? caption : '📷 Imagen', direccion: 'out', source: 'app' });
+    return res.json(m);
   });
 
   router.get('/agent/prefs', async (req, res) => {
