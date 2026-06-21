@@ -842,7 +842,7 @@
   <!-- KALY: esfera de voz fija, siempre visible, esquina inferior izquierda -->
   <div id="kalyFloat" style="position:fixed;left:18px;bottom:18px;z-index:70;display:flex;flex-direction:column;align-items:center;
        background:rgba(13,14,15,0.92);border:1px solid #343535;border-radius:20px;padding:6px 8px;backdrop-filter:blur(6px);
-       box-shadow:0 8px 30px rgba(0,0,0,0.55);max-width:200px"></div>
+       box-shadow:0 8px 30px rgba(0,0,0,0.55);max-width:270px"></div>
   <!-- SIDEBAR -->
   <aside class="sidebar bg-[#121414] border-r border-[#343535]/50 flex flex-col h-screen overflow-hidden py-6 shadow-[4px_0_24px_rgba(0,0,0,0.5)]">
     <div class="px-6 mb-8 flex items-center gap-3">
@@ -3026,7 +3026,7 @@
     var varasCtl = v ? mountVaras(v) : null;
     // KALY: esfera grande fija abajo-izquierda, siempre visible. Habla y escucha al tocarla.
     var kf = document.getElementById('kalyFloat');
-    var kalyCtl = kf ? mountKaly(kf, { size: 160, compact: true, texto: false }) : null;
+    var kalyCtl = kf ? mountKaly(kf, { size: 150, compact: true, texto: true }) : null;
     window.__kalyCtl = kalyCtl;
     // VARAS (en la sección Agente) se cierra al salir de esa pestaña.
     window.addEventListener('panel:tab', function (e) {

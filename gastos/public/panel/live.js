@@ -75,6 +75,13 @@ export function openLiveSession(opts) {
 
   return {
     sendText(text) { send({ clientContent: { turns: [{ role: 'user', parts: [{ text }] }], turnComplete: true } }); },
+    // Envía un documento (imagen/PDF) al agente como parte de un turno del usuario.
+    sendMedia(b64, mimeType, caption) {
+      const parts = [];
+      if (caption) parts.push({ text: caption });
+      parts.push({ inlineData: { mimeType: mimeType || 'image/jpeg', data: b64 } });
+      send({ clientContent: { turns: [{ role: 'user', parts }], turnComplete: true } });
+    },
     sendToolResponse(id, name, response) { send({ toolResponse: { functionResponses: [{ id, name, response }] } }); },
     close() { cleanup(); try { ws.close(); } catch (e) {} },
     setMuted(m) { muted = !!m; },

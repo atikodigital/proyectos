@@ -15,6 +15,35 @@ async function pfetch(path, opts = {}) {
   return r.json().catch(() => ({}));
 }
 
+// Lee un archivo a base64. Si es imagen, la redimensiona (máx 1280px, JPEG) para
+// no saturar el WebSocket. PDFs y otros se envían tal cual.
+function prepararArchivo(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('read'));
+    if (file.type && file.type.indexOf('image/') === 0) {
+      reader.onload = () => {
+        const img = new Image();
+        img.onload = () => {
+          const max = 1280;
+          let width = img.width; let height = img.height;
+          if (width > max || height > max) { const k = Math.min(max / width, max / height); width = Math.round(width * k); height = Math.round(height * k); }
+          const cv = document.createElement('canvas'); cv.width = width; cv.height = height;
+          cv.getContext('2d').drawImage(img, 0, 0, width, height);
+          const dataUrl = cv.toDataURL('image/jpeg', 0.82);
+          resolve({ b64: (dataUrl.split(',')[1] || ''), mime: 'image/jpeg' });
+        };
+        img.onerror = () => reject(new Error('img'));
+        img.src = String(reader.result || '');
+      };
+      reader.readAsDataURL(file);
+    } else {
+      reader.onload = () => { const s = String(reader.result || ''); resolve({ b64: (s.split(',')[1] || ''), mime: file.type || 'application/octet-stream' }); };
+      reader.readAsDataURL(file);
+    }
+  });
+}
+
 // ── VARAS: prompt + tools (espejo de gastos-app/src/gastos/varas/voice/*) ──────
 function buildVarasVoicePrompt(context = {}) {
   const empresaNombre = context && context.empresaNombre ? context.empresaNombre : '';
@@ -228,6 +257,8 @@ function makeAgent(el, opts) {
   const { titulo, color, voice, buildPrompt, instruccion, tools, execTool } = opts;
   const behavior = opts.behavior || {};
   const conTexto = !!opts.texto;
+  const conArchivos = !!opts.archivos;
+  const mostrarTranscripcion = opts.mostrarTranscripcion !== false;
   const size = opts.size || 120;
   const lastMax = opts.compact ? 200 : 520;
   const orbKind = opts.orbKind || 'simple';
@@ -242,9 +273,11 @@ function makeAgent(el, opts) {
       <div class="agv-state" style="font-size:12px;color:#d0c6ab;font-weight:600">${ESTADO_LABEL.off}</div>
       <div class="agv-last" style="max-width:${lastMax}px;text-align:center;font-size:13px;color:#e3e2e2;min-height:18px"></div>
       <button class="agv-mute" type="button" style="display:none;font-size:11px;color:#9a917a;background:transparent;border:1px solid #343535;border-radius:999px;padding:4px 12px;cursor:pointer">🔊 Silenciar</button>
-      ${conTexto ? `<div class="agv-textbar" style="display:flex;gap:6px;width:100%;max-width:320px;margin-top:2px">
+      ${conTexto ? `<div class="agv-textbar" style="display:flex;gap:5px;width:100%;max-width:320px;margin-top:2px;align-items:center">
+        ${conArchivos ? `<button class="agv-attach" type="button" title="Adjuntar foto, PDF o captura" style="flex:none;background:#0d0e0f;border:1px solid #343535;border-radius:8px;padding:6px 8px;color:#9a917a;font-size:14px;cursor:pointer;line-height:1">📎</button>
+        <input class="agv-file" type="file" accept="image/*,application/pdf" style="display:none">` : ''}
         <input class="agv-input" type="text" placeholder="Escribe a ${titulo}…" style="flex:1;min-width:0;background:#0d0e0f;border:1px solid #343535;border-radius:8px;padding:6px 10px;color:#e3e2e2;font-size:12px;outline:none">
-        <button class="agv-send" type="button" style="background:${color};border:none;border-radius:8px;padding:6px 12px;color:#fff;font-weight:800;font-size:12px;cursor:pointer">Enviar</button>
+        <button class="agv-send" type="button" title="Enviar" style="flex:none;background:${color};border:none;border-radius:8px;padding:6px 11px;color:#fff;font-weight:800;font-size:13px;cursor:pointer;line-height:1">➤</button>
       </div>` : ''}
     </div>`;
   const orb = el.querySelector('.agv-orb');
@@ -292,7 +325,7 @@ function makeAgent(el, opts) {
       onState: setState,
       onAudioLevel: (_dir, rms) => { if (kalyOrb) kalyOrb.setLevel(Math.min(1, (rms || 0) * 6)); },
       onUserTranscript: (txt) => { clearSilence(); if (behavior.esNegativa && behavior.esNegativa(txt)) setTimeout(() => stop(), 2500); },
-      onAgentTranscript: (txt) => { lastEl.textContent = (lastEl.textContent ? lastEl.textContent + ' ' : '') + txt; },
+      onAgentTranscript: (txt) => { if (mostrarTranscripcion) lastEl.textContent = (lastEl.textContent ? lastEl.textContent + ' ' : '') + txt; },
       onToolCall: async (fc) => { const out = await execTool(fc.name, fc.args || {}); if (session) session.sendToolResponse(fc.id, fc.name, out); },
       onClose: () => { session = null; clearSilence(); setState('off'); },
     });
@@ -316,6 +349,36 @@ function makeAgent(el, opts) {
     };
     sendBtn.onclick = enviar;
     inputEl.onkeydown = (e) => { if (e.key === 'Enter') enviar(); };
+  }
+
+  if (conArchivos) {
+    const attachBtn = el.querySelector('.agv-attach');
+    const fileEl = el.querySelector('.agv-file');
+    if (attachBtn && fileEl) {
+      attachBtn.onclick = () => { unlockAudio(); fileEl.click(); };
+      fileEl.onchange = async () => {
+        const file = fileEl.files && fileEl.files[0];
+        fileEl.value = '';
+        if (!file) return;
+        unlockAudio();
+        clearSilence();
+        const prevLabel = stEl.textContent;
+        stEl.textContent = 'Enviando documento…';
+        try {
+          const { b64, mime } = await prepararArchivo(file);
+          if (!session) { await start('manual'); }
+          if (session && session.sendMedia) {
+            const caption = file.type === 'application/pdf'
+              ? 'Te envío un PDF, por favor revísalo y dime qué es.'
+              : 'Te envío una imagen (foto/captura), por favor revísala y dime qué es.';
+            session.sendMedia(b64, mime, caption);
+          }
+        } catch (_) {
+          stEl.textContent = 'No pude leer el archivo';
+          setTimeout(() => { if (stEl.textContent === 'No pude leer el archivo') stEl.textContent = prevLabel; }, 2500);
+        }
+      };
+    }
   }
 
   return {
@@ -344,6 +407,8 @@ export function mountKaly(el, over = {}) {
     tools: KALY_TOOLS, execTool: execKalyTool,
     orbKind: 'kaly',
     texto: over.texto !== undefined ? over.texto : true,
+    archivos: true,
+    mostrarTranscripcion: false,
     size: over.size,
     compact: over.compact,
     behavior: {
