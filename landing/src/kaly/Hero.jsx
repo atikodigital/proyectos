@@ -184,6 +184,9 @@ export default function Hero() {
       onMouseLeave={handleMouseLeave}
       className="min-h-screen w-full bg-[#f8fafc] text-slate-800 font-mono flex flex-col items-center justify-between px-4 md:px-8 pt-2 pb-4 md:pb-8 relative overflow-hidden"
     >
+      {/* H1 para SEO/GEO: describe la página para Google y los asistentes de IA. */}
+      <h1 className="sr-only">Hash IA — app de inteligencia artificial para pymes de Chile: registra gastos por foto o voz, calcula el IVA, concilia con el SII y el banco, y arma catálogo, pedidos y delivery.</h1>
+
       {/* Luces de Fondo (Adaptadas a fondo blanco para visualización premium) */}
       <Spotlight
         className="-top-40 left-0 md:left-60 md:-top-20 z-10"

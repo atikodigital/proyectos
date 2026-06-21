@@ -9,9 +9,9 @@ import Hero from '../src/kaly/Hero.jsx';
 
 beforeAll(() => { window.HTMLCanvasElement.prototype.getContext = () => null; });
 
-test('Hero muestra la barra Hash IA y la caja de chat', () => {
+test('Hero tiene un h1 con Hash IA (SEO) y la caja de chat', () => {
   render(<Hero />);
-  expect(screen.getByText(/Hash IA/i)).toBeInTheDocument();
+  expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(/Hash IA/i);
   expect(screen.getByPlaceholderText(/Escr[ií]bele a KALY/i)).toBeInTheDocument();
 });
 
