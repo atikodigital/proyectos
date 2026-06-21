@@ -112,12 +112,17 @@ export function createKalyOrb(el, { size = 150, onTap } = {}) {
       <div class="korb-h1" style="position:absolute;border-radius:50%;filter:blur(${b1}px);width:${h1}px;height:${h1}px;background:radial-gradient(circle,#5ad7ff 0%,#0369a1 70%,transparent 100%);transition:opacity .25s,transform .1s ease-out"></div>
       <div class="korb-h2" style="position:absolute;border-radius:50%;filter:blur(${b2}px);width:${h2}px;height:${h2}px;background:radial-gradient(circle,#7ad6ff 0%,#0ea5e9 70%,transparent 100%);transition:transform .1s ease-out"></div>
       <svg class="korb-svg" width="${size}" height="${size}" viewBox="0 0 300 300" style="overflow:visible;position:relative;z-index:1"></svg>
+      <div class="korb-hit" style="position:absolute;inset:0;z-index:3;cursor:pointer;border-radius:50%"></div>
     </div>`;
   const wrap = el.querySelector('.korb-wrap');
   const svg = el.querySelector('.korb-svg');
   const halo1 = el.querySelector('.korb-h1');
   const halo2 = el.querySelector('.korb-h2');
-  if (onTap) wrap.onclick = onTap;
+  const hit = el.querySelector('.korb-hit');
+  // Capa de toque estable: el SVG se reconstruye ~30 veces/seg y eso puede "tragarse"
+  // el click (el nodo bajo el puntero se reemplaza entre mousedown y mouseup). Esta capa
+  // nunca cambia, así el toque siempre se registra.
+  if (onTap) hit.onclick = onTap;
 
   let state = 'off'; let level = 0; let smooth = 0; let raf = null; let t0 = null; let lastDraw = 0;
 
