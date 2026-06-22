@@ -9,7 +9,7 @@ async function createCompany(db, data) {
     cols.map((f) => data[f])
   );
   const company = r.rows[0];
-  try { await billingRepo.createFreeSubscription(db, company.id); } catch (e) { /* no romper alta */ }
+  try { await billingRepo.createFreeSubscription(db, company.id); } catch (e) { console.error('[billing] no se creó sub free para company', company.id, e.message); }
   return company;
 }
 

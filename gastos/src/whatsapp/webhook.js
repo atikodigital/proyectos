@@ -2,6 +2,7 @@ const express = require('express');
 const sig = require('./signature');
 const { getCompanyByPhoneNumberId, getEmployeeByPhone } = require('../companies/repo');
 const { intakeFromImage } = require('../expenses/intake');
+const { SinCreditosError } = require('../billing/creditos');
 const { getLatestPending, confirmExpense, updateExpense, rejectExpense, getExpense } = require('../expenses/repo');
 const { aplicarContabilidad } = require('../contabilidad/contabilizar');
 const { monthlySummary } = require('../expenses/summary');
@@ -64,12 +65,22 @@ function createWebhookRouter({ db, verifyToken, sendText, downloadMedia, extract
 
           if (msg.type === 'image' && msg.image?.id) {
             const media = await _download({ mediaId: msg.image.id, token: company.wa_token });
-            const { expense, duplicado, documento } = await intakeFromImage({
-              db, companyId: company.id, employeeId: employee.id,
-              imageBuffer: media.buffer, mimeType: media.mimeType, canal: 'whatsapp',
-              waMessageId: msg.id, fotoPath: null, extract: _extract,
-              waSenderName: senderName(msg.from), waSenderPhone: msg.from,
-            });
+            let intakeResult;
+            try {
+              intakeResult = await intakeFromImage({
+                db, companyId: company.id, employeeId: employee.id,
+                imageBuffer: media.buffer, mimeType: media.mimeType, canal: 'whatsapp',
+                waMessageId: msg.id, fotoPath: null, extract: _extract,
+                waSenderName: senderName(msg.from), waSenderPhone: msg.from,
+              });
+            } catch (e) {
+              if (e instanceof SinCreditosError) {
+                await reply('Te quedaste sin créditos este mes. Mejora tu plan o espera la renovación.');
+                continue;
+              }
+              throw e;
+            }
+            const { expense, duplicado, documento } = intakeResult;
             if (documento) {
               await reply('Detecté ' + (documento === 'cartola' ? 'una cartola bancaria' : 'un libro de compra/venta del SII') + ', señor. El módulo Match se activará aquí próximamente.');
               continue;

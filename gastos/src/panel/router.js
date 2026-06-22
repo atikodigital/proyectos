@@ -41,7 +41,7 @@ const { TOOLS_READ } = require('../varas/tools');
 const { buildAgentContext } = require('../agent/context');
 const { createEphemeralToken } = require('../agent/token');
 const { suggestOrder } = require('../pedidos/suggest');
-const { saldo: saldoCreditos } = require('../billing/creditos');
+const { saldo: saldoCreditos, SinCreditosError } = require('../billing/creditos');
 
 function parseFiltros(q = {}) {
   return {
@@ -473,6 +473,7 @@ function createPanelRouter({ db, sendText, sendImage, varasGemini } = {}) {
       if (!expense) return res.status(409).json({ error: 'duplicado', duplicado });
       return res.status(201).json({ expense, duplicado: duplicado || null });
     } catch (e) {
+      if (e instanceof SinCreditosError) return res.status(402).json({ error: 'sin_creditos', saldo: e.saldo });
       return res.status(502).json({ error: 'ocr_falla', detalle: e.message });
     }
   });
