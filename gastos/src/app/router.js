@@ -316,18 +316,43 @@ function createAppRouter({ db, extractExpense, createLiveToken, sendText, sendIm
     return res.json({ ...tok, context });
   });
 
-  // ── KALY memoria (hechos scoped por empresa) ──
+  // ── KALY memoria (hechos scoped por empresa + personal por empleado) ──
+  function ownerDelEmpleado(req) { return { kind: 'employee', id: req.auth.employeeId }; }
+
   router.get('/kaly/memoria', async (req, res) => {
-    return res.json(await memoryRepo.listMemorias(db, req.auth.companyId));
+    const owner = ownerDelEmpleado(req);
+    const todas = await memoryRepo.listMemorias(db, req.auth.companyId, { owner });
+    return res.json({
+      empresa: todas.filter((m) => m.owner_kind === 'company'),
+      personal: todas.filter((m) => m.owner_kind !== 'company'),
+    });
   });
+
   router.post('/kaly/memoria', async (req, res) => {
-    const origen = (req.body && req.body.origen) || 'dueño';
-    const r = await realGestionar.reconciliar(db, req.auth.companyId, { ...(req.body || {}), origen }, { juzgar: _juzgarHecho });
-    if (!r) return res.status(400).json({ error: 'contenido_vacio' });
-    return res.status(r.accion === 'duplicado' ? 200 : 201).json({ accion: r.accion, memoria: r.memoria });
+    const b = req.body || {};
+    const owner = ownerDelEmpleado(req);
+    const esPersonal = b.alcance === 'personal';
+    const m = await memoryRepo.crearMemoria(db, req.auth.companyId, {
+      tipo: b.tipo, contenido: b.contenido, origen: 'kaly',
+      owner_kind: esPersonal ? owner.kind : 'company',
+      owner_id: esPersonal ? owner.id : null,
+    });
+    if (!m) return res.status(400).json({ error: 'contenido_vacio' });
+    return res.status(201).json({ accion: 'insertar', memoria: m });
   });
+
+  router.delete('/kaly/memoria', async (req, res) => {
+    const owner = ownerDelEmpleado(req);
+    if (req.query.alcance === 'personal') {
+      const n = await memoryRepo.borrarMemoriasDe(db, req.auth.companyId, { ownerKind: owner.kind, ownerId: owner.id });
+      return res.json({ ok: true, borradas: n });
+    }
+    return res.status(400).json({ error: 'alcance_requerido' });
+  });
+
   router.delete('/kaly/memoria/:id', async (req, res) => {
-    const r = await memoryRepo.borrarMemoria(db, req.auth.companyId, req.params.id);
+    const owner = ownerDelEmpleado(req);
+    const r = await memoryRepo.borrarMemoria(db, req.auth.companyId, req.params.id, { owner });
     if (!r) return res.status(404).json({ error: 'no_existe' });
     return res.json({ ok: true });
   });

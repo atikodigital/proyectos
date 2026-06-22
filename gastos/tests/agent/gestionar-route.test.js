@@ -24,8 +24,10 @@ async function seed(db) {
 }
 async function token(a) { return (await request(a).post('/api/app/login').send({ usuario: 'juan', password: 'clave' })).body.token; }
 
-describe('POST /api/app/kaly/memoria con reconciliación', () => {
-  test('primer hecho (memoria vacía) → 201 accion insertar', async () => {
+// Adapted: POST /kaly/memoria now inserts directly (no reconciliar/LLM).
+// All POSTs return 201 accion: 'insertar'. GET returns { empresa, personal }.
+describe('POST /api/app/kaly/memoria (insert directo)', () => {
+  test('primer hecho → 201 accion insertar', async () => {
     const db = await freshDb(); await seed(db);
     const a = express(); a.use(express.json()); a.use('/api/app', createAppRouter({ db }));
     const t = await token(a);
@@ -34,32 +36,27 @@ describe('POST /api/app/kaly/memoria con reconciliación', () => {
     expect(res.body.accion).toBe('insertar');
   });
 
-  test('hecho que contradice uno existente → reemplaza (juez inyectado)', async () => {
-    const db = await freshDb(); const companyId = await seed(db);
-    await db.query("INSERT INTO kaly_memory(company_id, tipo, contenido, origen) VALUES($1,'negocio','Cierra a las 18h','dueño')", [companyId]);
-    const juzgarHecho = jest.fn().mockResolvedValue({ accion: 'reemplaza', indice: 1 });
-    const a = express(); a.use(express.json()); a.use('/api/app', createAppRouter({ db, juzgarHecho }));
+  test('dos hechos empresa → ambos guardados (sin dedup)', async () => {
+    const db = await freshDb(); await seed(db);
+    const a = express(); a.use(express.json()); a.use('/api/app', createAppRouter({ db }));
     const t = await token(a);
+    await request(a).post('/api/app/kaly/memoria').set('Authorization', `Bearer ${t}`).send({ tipo: 'negocio', contenido: 'Cierra a las 18h' });
     const res = await request(a).post('/api/app/kaly/memoria').set('Authorization', `Bearer ${t}`).send({ tipo: 'negocio', contenido: 'Cierra a las 20h' });
     expect(res.status).toBe(201);
-    expect(res.body.accion).toBe('reemplaza');
+    expect(res.body.accion).toBe('insertar');
     const lista = await request(a).get('/api/app/kaly/memoria').set('Authorization', `Bearer ${t}`);
-    expect(lista.body).toHaveLength(1);
-    expect(lista.body[0].contenido).toBe('Cierra a las 20h');
-    expect(juzgarHecho).toHaveBeenCalled();
+    expect(lista.body.empresa).toHaveLength(2);
   });
 
-  test('hecho duplicado → 200 accion duplicado, no crea fila', async () => {
-    const db = await freshDb(); const companyId = await seed(db);
-    await db.query("INSERT INTO kaly_memory(company_id, tipo, contenido, origen) VALUES($1,'negocio','Cierra domingos','dueño')", [companyId]);
-    const juzgarHecho = jest.fn().mockResolvedValue({ accion: 'duplicado', indice: 1 });
-    const a = express(); a.use(express.json()); a.use('/api/app', createAppRouter({ db, juzgarHecho }));
+  test('hecho personal → aparece en personal, no en empresa', async () => {
+    const db = await freshDb(); await seed(db);
+    const a = express(); a.use(express.json()); a.use('/api/app', createAppRouter({ db }));
     const t = await token(a);
-    const res = await request(a).post('/api/app/kaly/memoria').set('Authorization', `Bearer ${t}`).send({ tipo: 'negocio', contenido: 'No atiende los domingos' });
-    expect(res.status).toBe(200);
-    expect(res.body.accion).toBe('duplicado');
+    await request(a).post('/api/app/kaly/memoria').set('Authorization', `Bearer ${t}`).send({ tipo: 'negocio', contenido: 'mi nota', alcance: 'personal' });
     const lista = await request(a).get('/api/app/kaly/memoria').set('Authorization', `Bearer ${t}`);
-    expect(lista.body).toHaveLength(1);
+    expect(lista.body.empresa).toHaveLength(0);
+    expect(lista.body.personal).toHaveLength(1);
+    expect(lista.body.personal[0].contenido).toBe('mi nota');
   });
 
   test('contenido vacío → 400', async () => {

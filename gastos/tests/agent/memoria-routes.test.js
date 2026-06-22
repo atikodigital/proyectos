@@ -24,17 +24,21 @@ async function seed(db) {
 function app(db) { const a = express(); a.use(express.json()); a.use('/api/app', createAppRouter({ db })); return a; }
 async function token(a) { return (await request(a).post('/api/app/login').send({ usuario: 'juan', password: 'clave' })).body.token; }
 
-test('POST crea, GET lista, DELETE borra (scoped + auth)', async () => {
+// Adapted to new shape: POST always inserts directly (accion: 'insertar', 201),
+// GET returns { empresa: [...], personal: [...] } instead of flat array.
+test('POST crea, GET lista (empresa), DELETE borra (scoped + auth)', async () => {
   const db = await freshDb(); await seed(db); const a = app(db);
   const t = await token(a); const auth = (r) => r.set('Authorization', `Bearer ${t}`);
 
-  await auth(request(a).post('/api/app/kaly/memoria').send({ tipo: 'negocio', contenido: 'Cierra domingos' })).expect(201);
+  const post = await auth(request(a).post('/api/app/kaly/memoria').send({ tipo: 'negocio', contenido: 'Cierra domingos' })).expect(201);
+  expect(post.body.accion).toBe('insertar');
   const lista = await auth(request(a).get('/api/app/kaly/memoria')).expect(200);
-  expect(lista.body).toHaveLength(1);
-  expect(lista.body[0].contenido).toBe('Cierra domingos');
+  expect(lista.body.empresa).toHaveLength(1);
+  expect(lista.body.empresa[0].contenido).toBe('Cierra domingos');
 
-  await auth(request(a).delete(`/api/app/kaly/memoria/${lista.body[0].id}`)).expect(200);
-  expect((await auth(request(a).get('/api/app/kaly/memoria')).expect(200)).body).toHaveLength(0);
+  await auth(request(a).delete(`/api/app/kaly/memoria/${lista.body.empresa[0].id}`)).expect(200);
+  const lista2 = await auth(request(a).get('/api/app/kaly/memoria')).expect(200);
+  expect(lista2.body.empresa).toHaveLength(0);
 });
 
 test('kaly/memoria exige token', async () => {
