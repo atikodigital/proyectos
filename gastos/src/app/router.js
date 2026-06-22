@@ -289,11 +289,11 @@ function createAppRouter({ db, extractExpense, createLiveToken, sendText, sendIm
   });
 
   router.get('/agent/prefs', async (req, res) => {
-    return res.json(await getAgentPrefs(db, req.auth.employeeId));
+    return res.json(await getAgentPrefs(db, req.auth.employeeId, req.auth.companyId));
   });
 
   router.patch('/agent/prefs', async (req, res) => {
-    const prefs = await setAgentPrefs(db, req.auth.employeeId, req.body || {});
+    const prefs = await setAgentPrefs(db, req.auth.employeeId, req.auth.companyId, req.body || {});
     return res.json({ agent_prefs: prefs });
   });
 

@@ -32,7 +32,7 @@ describe('buildAgentContext + señales', () => {
   test('proactividad=false → senales vacías y flag false', async () => {
     const db = await freshDb();
     const { companyId, employeeId } = await seed(db);
-    await setAgentPrefs(db, employeeId, { proactividad: false });
+    await setAgentPrefs(db, employeeId, companyId, { proactividad: false });
     const ctx = await buildAgentContext(db, { companyId, employeeId });
     expect(ctx.senales).toEqual([]);
     expect(ctx.proactividad).toBe(false);

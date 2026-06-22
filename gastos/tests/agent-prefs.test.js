@@ -27,21 +27,21 @@ async function setup() {
 }
 
 test('PATCH /agent/prefs guarda nombre/trato/onboarded y se puede leer', async () => {
-  const { app, db, empId, token } = await setup();
+  const { app, db, cid, empId, token } = await setup();
   const res = await request(app).patch('/api/app/agent/prefs').set('Authorization', 'Bearer ' + token)
     .send({ nombre: 'José', trato: 'señor', onboarded: true });
   expect(res.status).toBe(200);
   expect(res.body.agent_prefs.nombre).toBe('José');
-  const prefs = await getAgentPrefs(db, empId);
+  const prefs = await getAgentPrefs(db, empId, cid);
   expect(prefs.trato).toBe('señor');
   expect(prefs.onboarded_at).toBeTruthy();
 });
 
 test('PATCH /agent/prefs es merge parcial (no borra lo previo)', async () => {
-  const { app, db, empId, token } = await setup();
+  const { app, db, cid, empId, token } = await setup();
   await request(app).patch('/api/app/agent/prefs').set('Authorization', 'Bearer ' + token).send({ nombre: 'José' });
   await request(app).patch('/api/app/agent/prefs').set('Authorization', 'Bearer ' + token).send({ trato: 'señor' });
-  const prefs = await getAgentPrefs(db, empId);
+  const prefs = await getAgentPrefs(db, empId, cid);
   expect(prefs.nombre).toBe('José');
   expect(prefs.trato).toBe('señor');
 });

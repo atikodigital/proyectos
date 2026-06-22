@@ -11,12 +11,12 @@ function saludoHora(now = new Date()) {
   return 'noche';
 }
 
-async function buildAgentContext(db, { companyId, employeeId, now = new Date() }) {
+async function buildAgentContext(db, { companyId, employeeId, owner = null, now = new Date() }) {
   const [prefs, company, profile, memorias] = await Promise.all([
-    getAgentPrefs(db, employeeId),
+    getAgentPrefs(db, employeeId, companyId),
     getCompany(db, companyId),
     getCompanyProfile(db, companyId),
-    listMemorias(db, companyId),
+    listMemorias(db, companyId, { owner }),
   ]);
   const s = await cashflowSummary(db, companyId, { year: now.getFullYear(), month: now.getMonth() + 1 });
   const pend = await db.query(

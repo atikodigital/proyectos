@@ -16,10 +16,11 @@ async function freshDb() {
 test('setAgentPrefs guarda proactividad boolean', async () => {
   const db = await freshDb();
   const c = await db.query("INSERT INTO companies(nombre) VALUES('X') RETURNING id");
-  const e = await db.query("INSERT INTO employees(company_id, nombre, usuario, password_hash) VALUES($1,'J','juan','h') RETURNING id", [c.rows[0].id]);
+  const cid = c.rows[0].id;
+  const e = await db.query("INSERT INTO employees(company_id, nombre, usuario, password_hash) VALUES($1,'J','juan','h') RETURNING id", [cid]);
   const id = e.rows[0].id;
-  await setAgentPrefs(db, id, { proactividad: false });
-  expect((await getAgentPrefs(db, id)).proactividad).toBe(false);
-  await setAgentPrefs(db, id, { proactividad: true });
-  expect((await getAgentPrefs(db, id)).proactividad).toBe(true);
+  await setAgentPrefs(db, id, cid, { proactividad: false });
+  expect((await getAgentPrefs(db, id, cid)).proactividad).toBe(false);
+  await setAgentPrefs(db, id, cid, { proactividad: true });
+  expect((await getAgentPrefs(db, id, cid)).proactividad).toBe(true);
 });

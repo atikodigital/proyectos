@@ -80,19 +80,20 @@ async function getCompanyWa(db, companyId) {
   return r.rows[0] || null;
 }
 
-async function getAgentPrefs(db, employeeId) {
-  const r = await db.query('SELECT agent_prefs FROM employees WHERE id=$1', [employeeId]);
+async function getAgentPrefs(db, employeeId, companyId) {
+  if (!employeeId) return {};
+  const r = await db.query('SELECT agent_prefs FROM employees WHERE id=$1 AND company_id=$2', [employeeId, companyId]);
   return (r.rows[0] && r.rows[0].agent_prefs) || {};
 }
 
-async function setAgentPrefs(db, employeeId, patch) {
-  const prev = await getAgentPrefs(db, employeeId);
+async function setAgentPrefs(db, employeeId, companyId, patch) {
+  const prev = await getAgentPrefs(db, employeeId, companyId);
   const next = { ...prev };
   if (patch.nombre !== undefined) next.nombre = String(patch.nombre).slice(0, 60);
   if (patch.trato !== undefined) next.trato = String(patch.trato).slice(0, 20);
   if (patch.onboarded) next.onboarded_at = new Date().toISOString();
   if (patch.proactividad !== undefined) next.proactividad = Boolean(patch.proactividad);
-  const r = await db.query('UPDATE employees SET agent_prefs=$1 WHERE id=$2 RETURNING agent_prefs', [JSON.stringify(next), employeeId]);
+  const r = await db.query('UPDATE employees SET agent_prefs=$1 WHERE id=$2 AND company_id=$3 RETURNING agent_prefs', [JSON.stringify(next), employeeId, companyId]);
   return r.rows[0] ? r.rows[0].agent_prefs : null;
 }
 
