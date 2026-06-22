@@ -1,3 +1,5 @@
+const billingRepo = require('../billing/repo');
+
 async function createCompany(db, data) {
   const cols = ['nombre', 'rut', 'wa_phone_number_id', 'wa_token', 'owner_nombre', 'owner_whatsapp', 'resumen_frecuencia']
     .filter((f) => data[f] !== undefined);
@@ -6,7 +8,9 @@ async function createCompany(db, data) {
     `INSERT INTO companies(${cols.join(', ')}) VALUES(${ph}) RETURNING *`,
     cols.map((f) => data[f])
   );
-  return r.rows[0];
+  const company = r.rows[0];
+  try { await billingRepo.createFreeSubscription(db, company.id); } catch (e) { /* no romper alta */ }
+  return company;
 }
 
 async function createEmployee(db, data) {
