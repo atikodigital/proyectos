@@ -307,7 +307,11 @@ function createAppRouter({ db, extractExpense, createLiveToken, sendText, sendIm
       try { tok = await _liveToken(); }
       catch (e) { return res.status(503).json({ error: 'live_no_disponible', detalle: e.message }); }
     }
-    const context = await buildAgentContext(db, { companyId: req.auth.companyId, employeeId: req.auth.employeeId });
+    const context = await buildAgentContext(db, {
+      companyId: req.auth.companyId,
+      employeeId: req.auth.employeeId,
+      owner: { kind: 'employee', id: req.auth.employeeId },
+    });
     console.log('[kaly] token live emitido para empleado', req.auth.employeeId);
     return res.json({ ...tok, context });
   });

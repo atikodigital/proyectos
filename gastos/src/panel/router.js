@@ -526,7 +526,11 @@ function createPanelRouter({ db, sendText, sendImage, varasGemini } = {}) {
       try { tok = await createEphemeralToken({ apiKey: process.env.GEMINI_API_KEY }); }
       catch (e) { return res.status(503).json({ error: 'live_no_disponible', detalle: e.message }); }
     }
-    const context = await buildAgentContext(db, { companyId: req.auth.companyId, employeeId: null });
+    const context = await buildAgentContext(db, {
+      companyId: req.auth.companyId,
+      employeeId: null,
+      owner: { kind: 'user', id: req.auth.userId },
+    });
     // El dueño no tiene employeeId: superponemos sus preferencias guardadas a nivel empresa.
     const ownerPrefs = await getOwnerAgentPrefs(db, req.auth.companyId);
     if (ownerPrefs.nombre) context.nombre = ownerPrefs.nombre;
