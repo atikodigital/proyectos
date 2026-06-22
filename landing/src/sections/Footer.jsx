@@ -12,6 +12,10 @@ export default function Footer() {
         <a href="https://www.facebook.com/profile.php?id=61563000547346" target="_blank" rel="noreferrer" className="hover:text-[#FCA311] transition-colors">Facebook</a>
         <a href="https://gastos.atikodigital.cl/panel/HashIA.apk" target="_blank" rel="noreferrer" className="hover:text-[#FCA311] transition-colors">Descargar app</a>
       </div>
+      <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 justify-center opacity-80">
+        <a href="/privacidad.html" className="hover:text-[#FCA311] transition-colors">Política de privacidad</a>
+        <a href="/terminos.html" className="hover:text-[#FCA311] transition-colors">Términos y condiciones</a>
+      </div>
       <div className="mt-4 opacity-60">© 2026 Atiko Digital</div>
     </footer>
   );

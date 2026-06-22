@@ -87,7 +87,7 @@ export default function RegisterScreen({ onRegistered, onBackToLogin }) {
       </button>
 
       <p className="text-xs opacity-50 mt-3 text-center">
-        Al crear tu cuenta aceptas los <a href="https://atikodigital.cl/terminos.html" target="_blank" rel="noopener noreferrer" className="underline">Términos</a> y la <a href="https://atikodigital.cl/privacidad.html" target="_blank" rel="noopener noreferrer" className="underline">Política de privacidad</a> de Atiko/Hash IA.
+        Al crear tu cuenta aceptas los <a href="https://hash.atikodigital.cl/terminos.html" target="_blank" rel="noopener noreferrer" className="underline">Términos</a> y la <a href="https://hash.atikodigital.cl/privacidad.html" target="_blank" rel="noopener noreferrer" className="underline">Política de privacidad</a> de Atiko/Hash IA.
       </p>
     </form>
   );
