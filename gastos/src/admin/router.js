@@ -2,6 +2,7 @@
 const express = require('express');
 const { signToken } = require('../auth/jwt');
 const { requireAuth, requireKind } = require('../auth/middleware');
+const { verifyTotp } = require('../auth/totp');
 const adminRepo = require('./repo');
 
 function createAdminRouter({ db } = {}) {
@@ -14,6 +15,11 @@ function createAdminRouter({ db } = {}) {
     if (!p) return res.status(503).json({ error: 'admin_no_configurado' });
     if (String(usuario || '').trim().toLowerCase() !== u || password !== p) {
       return res.status(401).json({ error: 'credenciales' });
+    }
+    // 2FA opt-in: si hay GASTOS_ADMIN_TOTP_SECRET, exige código TOTP válido (Google Authenticator).
+    const totpSecret = process.env.GASTOS_ADMIN_TOTP_SECRET;
+    if (totpSecret && !verifyTotp(totpSecret, req.body && req.body.totp)) {
+      return res.status(401).json({ error: 'totp_invalido' });
     }
     return res.json({ token: signToken({ kind: 'admin' }) });
   });

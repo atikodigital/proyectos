@@ -1,7 +1,13 @@
 const jwt = require('jsonwebtoken');
 
 function secret() {
-  return process.env.JWT_SECRET || 'dev-insecure-secret';
+  const s = process.env.JWT_SECRET;
+  if (s) return s;
+  // En producción NUNCA usar un secreto débil en silencio: fallar fuerte.
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('JWT_SECRET no configurado: es obligatorio en producción');
+  }
+  return 'dev-insecure-secret';
 }
 
 function signToken(payload, opts = {}) {
