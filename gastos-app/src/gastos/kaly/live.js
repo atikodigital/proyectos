@@ -1,7 +1,20 @@
+import { createVadGate } from './vad';
+
 const WS_HOST = 'wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent';
 
 export function openLiveSession(opts) {
   const { token, model, systemPrompt, tools, voice, onAudioLevel, onState, onUserTranscript, onToolCall, onClose, wsFactory, audio = true } = opts;
+  // Ahorro de costo: VAD (no manda silencio) + corte por inactividad.
+  const gate = createVadGate({ threshold: opts.vadThreshold || 0.012, hangoverMs: opts.vadHangoverMs || 800 });
+  const idleMs = opts.idleMs || 25000;
+  let lastActivity = Date.now();
+  let idleTimer = null;
+  const bump = () => { lastActivity = Date.now(); };
+  const startIdle = () => {
+    if (idleTimer || !audio) return;
+    idleTimer = setInterval(() => { if (Date.now() - lastActivity > idleMs) { try { ws.close(); } catch (e) {} } }, 4000);
+  };
+  const stopIdle = () => { if (idleTimer) { clearInterval(idleTimer); idleTimer = null; } };
   // El token efímero se pasa como `key` (Gemini lo acepta en lugar de la API key real).
   const ws = (wsFactory || ((url) => new WebSocket(url)))(`${WS_HOST}?key=${encodeURIComponent(token)}`);
   let closed = false; let micStop = null; let player = null; let muted = false; let agentSpeaking = false;
@@ -41,8 +54,9 @@ export function openLiveSession(opts) {
         const q = queue.shift();
         try { ws.send(JSON.stringify(q)); } catch (e) {}
       }
-      if (audio) micStop = await startMic(send, onAudioLevel, () => agentSpeaking).catch(() => null);
+      if (audio) micStop = await startMic(send, onAudioLevel, () => agentSpeaking, gate, bump).catch(() => null);
       if (audio) player = createPlayer(onAudioLevel, setState, () => muted);
+      startIdle();
       return;
     }
     if (msg.toolCall && msg.toolCall.functionCalls) { for (const fc of msg.toolCall.functionCalls) onToolCall && onToolCall(fc); return; }
@@ -54,7 +68,7 @@ export function openLiveSession(opts) {
     if (sc.modelTurn && sc.modelTurn.parts) {
       let textContent = '';
       for (const p of sc.modelTurn.parts) {
-        if (p.inlineData && p.inlineData.data) { agentSpeaking = true; setState('speaking'); if (player) player.push(p.inlineData.data); }
+        if (p.inlineData && p.inlineData.data) { agentSpeaking = true; bump(); setState('speaking'); if (player) player.push(p.inlineData.data); }
         if (p.text) textContent += p.text;
       }
       if (textContent && opts.onAgentTranscript) {
@@ -70,7 +84,7 @@ export function openLiveSession(opts) {
   ws.onerror = () => setState('error');
   ws.onclose = () => { cleanup(); onClose && onClose(); };
 
-  function cleanup() { if (closed) return; closed = true; if (micStop) micStop(); if (player) player.stop(); }
+  function cleanup() { if (closed) return; closed = true; stopIdle(); if (micStop) micStop(); if (player) player.stop(); }
 
   return {
     sendText(text) { send({ clientContent: { turns: [{ role: 'user', parts: [{ text }] }], turnComplete: true } }); },
@@ -150,7 +164,7 @@ if (typeof window !== 'undefined' && !window.__kalyAudioUnlockHooked) {
   window.addEventListener('click', onFirstGesture, { passive: true });
 }
 
-export async function startMic(send, onLevel, isAgentSpeaking) {
+export async function startMic(send, onLevel, isAgentSpeaking, gate, onVoiced) {
   try {
     // OJO Android/Bluetooth: pedir echoCancellation/noiseSuppression/AGC hace que el
     // WebView entre en "modo comunicación" (como una llamada) y enrute el audio al
@@ -183,21 +197,25 @@ export async function startMic(send, onLevel, isAgentSpeaking) {
           sumSq += s * s;
         }
 
-        // Int16Array → base64 via binary string (no Buffer)
-        const bytes = new Uint8Array(int16.buffer);
-        const CHUNK = 8192;
-        let binary = '';
-        for (let i = 0; i < bytes.length; i += CHUNK) {
-          binary += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
-        }
-        const data = btoa(binary);
+        // VAD: solo mandamos cuando hay voz (o dentro del hangover). Corta el silencio
+        // y el ruido de fondo → baja fuerte el costo, sin perder lo que el usuario dice.
+        const rms = Math.sqrt(sumSq / len);
+        const gated = gate ? gate.feed(rms, Date.now()) : { send: true, voiced: true };
+        if (gated.voiced && onVoiced) onVoiced();
 
-        send({ realtimeInput: { audio: { data, mimeType: 'audio/pcm;rate=16000' } } });
-
-        if (onLevel) {
-          const rms = Math.sqrt(sumSq / len);
-          onLevel('in', rms);
+        if (gated.send) {
+          // Int16Array → base64 via binary string (no Buffer)
+          const bytes = new Uint8Array(int16.buffer);
+          const CHUNK = 8192;
+          let binary = '';
+          for (let i = 0; i < bytes.length; i += CHUNK) {
+            binary += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
+          }
+          const data = btoa(binary);
+          send({ realtimeInput: { audio: { data, mimeType: 'audio/pcm;rate=16000' } } });
         }
+
+        if (onLevel) onLevel('in', rms);
       } catch (_) {}
     };
 

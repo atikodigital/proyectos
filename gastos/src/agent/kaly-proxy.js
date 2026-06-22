@@ -56,7 +56,9 @@ function pipe(client, upstream, { onClose } = {}) {
 }
 
 // Engancha el proxy al http.Server (maneja el 'upgrade' del path indicado).
-function attachKalyProxy(server, { apiKey, path = '/api/public/kaly-ws', maxMs = 5 * 60 * 1000, limiter = createLimiter(), WS = WebSocket } = {}) {
+// Demo pública = costo puro: tope de sesión corto (90s) + corte por inactividad (25s sin
+// tráfico en ninguna dirección). Junto al VAD del cliente, baja fuerte el gasto de la landing.
+function attachKalyProxy(server, { apiKey, path = '/api/public/kaly-ws', maxMs = 90 * 1000, idleMs = 25 * 1000, limiter = createLimiter(), WS = WebSocket } = {}) {
   const wss = new WebSocketServer({ noServer: true });
   server.on('upgrade', (req, socket, head) => {
     let pathname;
@@ -70,8 +72,14 @@ function attachKalyProxy(server, { apiKey, path = '/api/public/kaly-ws', maxMs =
       let released = false;
       const release = () => { if (released) return; released = true; limiter.release(ip); };
       pipe(client, upstream, { onClose: release });
-      const t = setTimeout(() => { try { client.close(); } catch (e) {} try { upstream.close(); } catch (e) {} }, maxMs);
-      client.on('close', () => clearTimeout(t));
+      const closeBoth = () => { try { client.close(); } catch (e) {} try { upstream.close(); } catch (e) {} };
+      const hard = setTimeout(closeBoth, maxMs);
+      // Idle: se resetea con tráfico en CUALQUIER sentido (audio del usuario o del agente).
+      let idle = setTimeout(closeBoth, idleMs);
+      const bump = () => { clearTimeout(idle); idle = setTimeout(closeBoth, idleMs); };
+      client.on('message', bump);
+      upstream.on('message', bump);
+      client.on('close', () => { clearTimeout(hard); clearTimeout(idle); });
     });
   });
   return wss;

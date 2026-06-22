@@ -1,6 +1,8 @@
 // Port web de openLiveSession (Gemini Live, WS BidiGenerateContent v1alpha).
 // La landing pública conecta vía opts.wsUrl (proxy del backend que pone la API key
 // server-side); en modo directo usa opts.token. El navegador NUNCA ve la API key.
+import { createVadGate } from './vad';
+
 const WS_HOST = 'wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent';
 
 export function openLiveSession(opts) {
@@ -10,6 +12,14 @@ export function openLiveSession(opts) {
   let closed = false; let micStop = null; let player = null; let muted = false;
   let sessionReady = false;
   const queue = [];
+  // Ahorro de costo: VAD (no manda silencio) + corte por inactividad.
+  const gate = createVadGate({ threshold: opts.vadThreshold || 0.01, hangoverMs: opts.vadHangoverMs || 800 });
+  const idleMs = opts.idleMs || 20000;
+  let lastActivity = Date.now();
+  let idleTimer = null;
+  const bump = () => { lastActivity = Date.now(); };
+  const startIdle = () => { if (idleTimer || !audio) return; idleTimer = setInterval(() => { if (Date.now() - lastActivity > idleMs) { try { ws.close(); } catch (e) {} } }, 4000); };
+  const stopIdle = () => { if (idleTimer) { clearInterval(idleTimer); idleTimer = null; } };
 
   const send = (obj) => {
     if (obj.setup) {
@@ -51,8 +61,9 @@ export function openLiveSession(opts) {
         const q = queue.shift();
         try { ws.send(JSON.stringify(q)); } catch (e) {}
       }
-      if (audio) micStop = await startMic(send, onAudioLevel).catch(() => null);
+      if (audio) micStop = await startMic(send, onAudioLevel, gate, bump).catch(() => null);
       if (audio) player = createPlayer(onAudioLevel, setState, () => muted);
+      startIdle();
       if (onReady) {
         onReady(sessionInstance);
       }
@@ -67,7 +78,7 @@ export function openLiveSession(opts) {
     if (sc.modelTurn && sc.modelTurn.parts) {
       let textContent = '';
       for (const p of sc.modelTurn.parts) {
-        if (p.inlineData && p.inlineData.data) { setState('speaking'); if (player) player.push(p.inlineData.data); }
+        if (p.inlineData && p.inlineData.data) { bump(); setState('speaking'); if (player) player.push(p.inlineData.data); }
         if (p.text) textContent += p.text;
       }
       if (textContent && opts.onAgentTranscript) {
@@ -80,14 +91,14 @@ export function openLiveSession(opts) {
   ws.onerror = () => setState('error');
   ws.onclose = () => { cleanup(); onClose && onClose(); };
 
-  function cleanup() { if (closed) return; closed = true; if (micStop) micStop(); if (player) player.stop(); }
+  function cleanup() { if (closed) return; closed = true; stopIdle(); if (micStop) micStop(); if (player) player.stop(); }
 
   return sessionInstance;
 }
 
 // ── Browser audio helpers ────────────────────────────────────────────────────
 
-export async function startMic(send, onLevel) {
+export async function startMic(send, onLevel, gate, onVoiced) {
   try {
     const stream = await navigator.mediaDevices.getUserMedia({
       audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true },
@@ -107,18 +118,21 @@ export async function startMic(send, onLevel) {
           int16[i] = s < 0 ? s * 32768 : s * 32767;
           sumSq += s * s;
         }
-        const bytes = new Uint8Array(int16.buffer);
-        const CHUNK = 8192;
-        let binary = '';
-        for (let i = 0; i < bytes.length; i += CHUNK) {
-          binary += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
+        // VAD: solo mandamos cuando hay voz (o dentro del hangover). Corta el silencio.
+        const rms = Math.sqrt(sumSq / len);
+        const gated = gate ? gate.feed(rms, Date.now()) : { send: true, voiced: true };
+        if (gated.voiced && onVoiced) onVoiced();
+        if (gated.send) {
+          const bytes = new Uint8Array(int16.buffer);
+          const CHUNK = 8192;
+          let binary = '';
+          for (let i = 0; i < bytes.length; i += CHUNK) {
+            binary += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
+          }
+          const data = btoa(binary);
+          send({ realtimeInput: { audio: { data, mimeType: 'audio/pcm;rate=16000' } } });
         }
-        const data = btoa(binary);
-        send({ realtimeInput: { audio: { data, mimeType: 'audio/pcm;rate=16000' } } });
-        if (onLevel) {
-          const rms = Math.sqrt(sumSq / len);
-          onLevel('in', rms);
-        }
+        if (onLevel) onLevel('in', rms);
       } catch (_) {}
     };
 
