@@ -781,7 +781,128 @@ git commit -m "feat(memoria): reconciliar propaga alcance (empresa/personal)"
 
 ---
 
-## Task 9: Test de aislamiento de sesión (nivel 3) end-to-end
+## Task 9: VARAS también guarda memoria (herramienta `recordar`)
+
+`recordar` solo guarda una nota — NO cobra ni mueve plata — así que actúa
+directo (no necesita la confirmación verbal que sí piden marcar_pagado,
+crear_asiento_manual, etc.). Mismo alcance empresa/personal que KALY.
+
+**Files:**
+- Modify: `gastos/src/varas/acciones.js` (acción `recordar` + `owner` en `ejecutarAccion`)
+- Modify: `gastos/src/panel/router.js` (handler `/varas/accion` pasa owner del dueño)
+- Modify: `gastos/src/app/router.js` (handler `/varas/accion` pasa owner del empleado)
+- Modify: `gastos-app/src/gastos/varas/voice/tools.js` (declaración + ACCION_NAMES)
+- Modify: `gastos/public/panel/agente-voz.js` (VARAS_TOOLS + VARAS_ACCIONES + prompt)
+- Test: `gastos/tests/agent/varas-recordar.test.js` (nuevo)
+
+- [ ] **Step 1: Escribir el test que falla**
+
+Crear `gastos/tests/agent/varas-recordar.test.js`:
+
+```js
+const { newDb } = require('pg-mem');
+const { migrate } = require('../../src/db/migrate');
+const { ejecutarAccion } = require('../../src/varas/acciones');
+const memory = require('../../src/agent/memory');
+
+async function freshDb() {
+  const mem = newDb();
+  mem.public.registerFunction({ name: 'gen_random_uuid', returns: 'uuid', impure: true, implementation: () => require('crypto').randomUUID() });
+  const db = new (mem.adapters.createPg().Pool)();
+  await migrate(db);
+  return db;
+}
+
+test('VARAS recordar guarda hecho de empresa por default', async () => {
+  const db = await freshDb();
+  const C = (await db.query("INSERT INTO companies(nombre) VALUES('X') RETURNING id")).rows[0].id;
+  const r = await ejecutarAccion(db, C, 'recordar', { contenido: 'el arriendo se paga el 5' }, { owner: { kind: 'user', id: 'u1' } });
+  expect(r.ok).toBe(true);
+  const emp = (await memory.listMemorias(db, C)).map((m) => m.contenido);
+  expect(emp).toContain('el arriendo se paga el 5');
+});
+
+test('VARAS recordar con alcance personal queda privado de la persona', async () => {
+  const db = await freshDb();
+  const C = (await db.query("INSERT INTO companies(nombre) VALUES('X') RETURNING id")).rows[0].id;
+  await ejecutarAccion(db, C, 'recordar', { contenido: 'me dicen don José', alcance: 'personal' }, { owner: { kind: 'user', id: 'U1' } });
+  const verU2 = (await memory.listMemorias(db, C, { owner: { kind: 'user', id: 'U2' } })).map((m) => m.contenido);
+  expect(verU2).not.toContain('me dicen don José');
+  const verU1 = (await memory.listMemorias(db, C, { owner: { kind: 'user', id: 'U1' } })).map((m) => m.contenido);
+  expect(verU1).toContain('me dicen don José');
+});
+```
+
+- [ ] **Step 2: Correr y verificar que falla**
+
+Run: `cd gastos && npx jest tests/agent/varas-recordar.test.js`
+Expected: FAIL (`ejecutarAccion` devuelve `accion_desconocida` para `recordar`).
+
+- [ ] **Step 3: Implementar**
+
+En `gastos/src/varas/acciones.js`, agregar la función `_recordar` y enrutarla en `ejecutarAccion` (que ahora recibe `owner` en options):
+
+```js
+async function _recordar(db, companyId, args, owner) {
+  const { crearMemoria } = require('../agent/memory');
+  const esPersonal = args.alcance === 'personal';
+  const m = await crearMemoria(db, companyId, {
+    tipo: args.tipo, contenido: args.contenido, origen: 'kaly',
+    owner_kind: esPersonal && owner ? owner.kind : 'company',
+    owner_id: esPersonal && owner ? owner.id : null,
+  });
+  if (!m) return { ok: false, error: 'contenido_vacio' };
+  return { ok: true, contenido: m.contenido };
+}
+
+async function ejecutarAccion(db, companyId, tipo, args = {}, { sendText, owner } = {}) {
+  const _send = sendText || require('../whatsapp/client').sendText;
+  if (tipo === 'marcar_pagado') return _marcarPagado(db, companyId, args);
+  if (tipo === 'crear_asiento_manual') return _crearAsiento(db, companyId, args);
+  if (tipo === 'enviar_resumen_whatsapp') return _resumenWhatsapp(db, companyId, args, _send);
+  if (tipo === 'crear_movimiento') return _crearMovimiento(db, companyId, args);
+  if (tipo === 'recordar') return _recordar(db, companyId, args, owner);
+  return { ok: false, error: 'accion_desconocida' };
+}
+```
+
+En `gastos/src/panel/router.js`, el handler `POST /varas/accion` debe pasar el owner del dueño:
+
+```js
+router.post('/varas/accion', async (req, res) => {
+  const b = req.body || {};
+  res.json(await ejecutarAccion(db, req.auth.companyId, b.tipo, b.args || {}, { sendText: _sendText, owner: { kind: 'user', id: req.auth.userId } }));
+});
+```
+
+En `gastos/src/app/router.js`, ubicar el handler `POST /varas/accion` (busca `ejecutarAccion(`) y agregar el owner del empleado a las options: `{ sendText: ..., owner: { kind: 'employee', id: req.auth.employeeId } }`.
+
+En `gastos-app/src/gastos/varas/voice/tools.js`: agregar a `TOOL_DECLARATIONS` la herramienta y a `ACCION_NAMES` el nombre:
+
+```js
+// dentro de TOOL_DECLARATIONS:
+{ name: 'recordar', description: 'Guarda un dato del negocio o del usuario para recordarlo después (ej. "el arriendo se paga el 5"). No cobra ni mueve dinero.', parameters: { type: 'OBJECT', properties: { contenido: { type: 'STRING' }, tipo: { type: 'STRING' }, alcance: { type: 'STRING', description: 'empresa (por defecto) o personal' } }, required: ['contenido'] } },
+// y:
+export const ACCION_NAMES = new Set(['marcar_pagado', 'crear_asiento_manual', 'enviar_resumen_whatsapp', 'recordar']);
+```
+
+En `gastos/public/panel/agente-voz.js`: agregar la misma declaración al array `VARAS_TOOLS`, añadir `'recordar'` al set `VARAS_ACCIONES`, y en `buildVarasVoicePrompt` agregar una línea indicando que puede usar `recordar` para guardar datos del negocio (sin pedir confirmación, porque no cuesta dinero).
+
+- [ ] **Step 4: Correr y verificar que pasa**
+
+Run: `cd gastos && npx jest tests/agent/varas-recordar.test.js && node --check gastos/public/panel/agente-voz.js`
+Expected: PASS y `agente-voz.js` sin errores de sintaxis.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add gastos/src/varas/acciones.js gastos/src/panel/router.js gastos/src/app/router.js gastos-app/src/gastos/varas/voice/tools.js gastos/public/panel/agente-voz.js gastos/tests/agent/varas-recordar.test.js
+git commit -m "feat(memoria): VARAS tambien guarda memoria (recordar) con alcance"
+```
+
+---
+
+## Task 10: Test de aislamiento de sesión (nivel 3) end-to-end
 
 **Files:**
 - Test: `gastos/tests/panel/session-aislamiento.test.js` (nuevo)
@@ -844,7 +965,7 @@ git commit -m "test(memoria): aislamiento de sesion entre cuentas (nivel 3)"
 
 ---
 
-## Task 10: Suite completa + despliegue
+## Task 11: Suite completa + despliegue
 
 **Files:** ninguno (verificación + deploy)
 
