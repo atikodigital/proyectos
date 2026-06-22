@@ -40,7 +40,7 @@ const { geminiChat } = require('../varas/gemini');
 const { ejecutarAccion } = require('../varas/acciones');
 const { TOOLS_READ } = require('../varas/tools');
 const memoryRepo = require('../agent/memory');
-const { saldo: saldoCreditos } = require('../billing/creditos');
+const { saldo: saldoCreditos, consumirCredito, SinCreditosError } = require('../billing/creditos');
 
 function createAppRouter({ db, extractExpense, createLiveToken, sendText, sendImage, extractCartola, componer, extraerProductos, extractLibroSii, varasGemini, extraerHechos, juzgarHecho } = {}) {
   const _extract = extractExpense || realExtract.extractExpense;
@@ -129,9 +129,15 @@ function createAppRouter({ db, extractExpense, createLiveToken, sendText, sendIm
     const { imageBase64, mimeType } = req.body || {};
     if (!imageBase64) return res.status(400).json({ error: 'falta_imagen' });
     try {
+      // Cobra 1 crédito 'imagen' antes del OCR. Si no hay saldo, lanza SinCreditosError.
+      await consumirCredito(db, req.auth.companyId, { tipo: 'imagen', cantidad: 1, meta: { origen: 'catalogo' } });
       const r = await _extraerProductos(imageBase64, mimeType || 'image/jpeg');
       return res.json({ productos: (r && r.productos) || [] });
-    } catch (e) { console.error('[catalog extraer]', e.message); return res.status(502).json({ error: 'ocr_falla' }); }
+    } catch (e) {
+      if (e instanceof SinCreditosError) return res.status(402).json({ error: 'sin_creditos', saldo: e.saldo });
+      console.error('[catalog extraer]', e.message);
+      return res.status(502).json({ error: 'ocr_falla' });
+    }
   });
 
   router.post('/products/bulk', async (req, res) => {
