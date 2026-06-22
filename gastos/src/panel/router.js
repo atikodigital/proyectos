@@ -1,5 +1,5 @@
 const express = require('express');
-const { getUserByEmail } = require('../users/repo');
+const { getUserByEmail, getUserById, setUserPassword } = require('../users/repo');
 const { verifyPassword, hashPassword } = require('../auth/password');
 const { signToken } = require('../auth/jwt');
 const { requireAuth, requireKind } = require('../auth/middleware');
@@ -79,6 +79,19 @@ function createPanelRouter({ db, sendText, sendImage, varasGemini } = {}) {
     const { channel, contact, email, ubicacion, notas } = req.body || {};
     const out = await contactosRepo.upsertContacto(db, req.auth.companyId, channel, contact, { email, ubicacion, notas });
     return res.json(out);
+  });
+
+  // Cambiar la propia contraseña del panel (requiere la clave actual). El usuario
+  // elige la nueva en el navegador; el backend nunca la guarda en claro.
+  router.post('/cambiar-clave', async (req, res) => {
+    const { actual, nueva } = req.body || {};
+    if (!nueva || String(nueva).length < 8) return res.status(400).json({ error: 'clave_min8' });
+    const user = await getUserById(db, req.auth.userId);
+    if (!user || !(await verifyPassword(String(actual || ''), user.password_hash))) {
+      return res.status(401).json({ error: 'clave_actual_incorrecta' });
+    }
+    await setUserPassword(db, req.auth.userId, await hashPassword(String(nueva)));
+    return res.json({ ok: true });
   });
 
   router.get('/chat/conversaciones', async (req, res) => {

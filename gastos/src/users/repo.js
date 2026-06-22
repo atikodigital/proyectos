@@ -10,4 +10,13 @@ async function getUserByEmail(db, email) {
   return r.rows[0] || null;
 }
 
-module.exports = { createUser, getUserByEmail };
+async function getUserById(db, id) {
+  const r = await db.query('SELECT * FROM users WHERE id=$1', [id]);
+  return r.rows[0] || null;
+}
+
+async function setUserPassword(db, id, passwordHash) {
+  await db.query('UPDATE users SET password_hash=$2 WHERE id=$1', [id, passwordHash]);
+}
+
+module.exports = { createUser, getUserByEmail, getUserById, setUserPassword };

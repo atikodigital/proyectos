@@ -907,6 +907,10 @@
       <p class="text-center text-[9px] text-[#C9A24B] font-bold uppercase tracking-widest mb-1">VARAS · Contabilidad</p>
       <div id="varasSidebar"></div>
       <div class="h-[1px] w-full bg-gradient-to-r from-transparent via-[#343535] to-transparent my-2"></div>
+      <button id="cambiarClaveBtn" class="text-[#d0c6ab] hover:text-[#ffd700] hover:bg-[#343535]/30 transition-all duration-300 flex items-center gap-3 px-4 py-2 rounded-xl w-full text-left">
+        <span class="material-symbols-outlined text-[20px]">key</span>
+        <span class="text-sm">Cambiar contraseña</span>
+      </button>
       <button id="logoutBtn" class="text-[#d0c6ab] hover:text-[#ffd700] hover:bg-[#343535]/30 transition-all duration-300 flex items-center gap-3 px-4 py-2 rounded-xl w-full text-left">
         <span class="material-symbols-outlined text-[20px]">logout</span>
         <span class="text-sm">Salir</span>
@@ -1517,6 +1521,41 @@
     } catch (e) { $('loginErr').textContent = 'Correo o contraseña incorrectos.'; }
   };
   $('logoutBtn').onclick = function () { clearToken(); showLogin(); };
+  // Cambiar contraseña (el usuario tipea su clave; el backend la hashea, nunca se ve).
+  $('cambiarClaveBtn').onclick = function () {
+    var m = $('cambiarClaveModal');
+    if (!m) {
+      m = document.createElement('div'); m.id = 'cambiarClaveModal';
+      m.style.cssText = 'position:fixed;inset:0;z-index:90;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:16px;';
+      m.innerHTML = '<div style="background:#15171a;border:1px solid #343535;border-radius:16px;padding:20px;width:100%;max-width:380px;">'
+        + '<h3 style="margin:0 0 12px;font-weight:900;color:#ffd700;">🔑 Cambiar contraseña</h3>'
+        + '<label style="font-size:11px;text-transform:uppercase;color:#d0c6ab;opacity:.6;">Contraseña actual</label>'
+        + '<input id="ccActual" type="password" style="width:100%;box-sizing:border-box;margin:4px 0 10px;border-radius:8px;padding:9px;border:1px solid #343535;background:rgba(41,42,42,.5);color:#e3e2e2;" />'
+        + '<label style="font-size:11px;text-transform:uppercase;color:#d0c6ab;opacity:.6;">Contraseña nueva (mín 8)</label>'
+        + '<input id="ccNueva" type="password" style="width:100%;box-sizing:border-box;margin:4px 0 10px;border-radius:8px;padding:9px;border:1px solid #343535;background:rgba(41,42,42,.5);color:#e3e2e2;" />'
+        + '<label style="font-size:11px;text-transform:uppercase;color:#d0c6ab;opacity:.6;">Repetir nueva</label>'
+        + '<input id="ccNueva2" type="password" style="width:100%;box-sizing:border-box;margin:4px 0 6px;border-radius:8px;padding:9px;border:1px solid #343535;background:rgba(41,42,42,.5);color:#e3e2e2;" />'
+        + '<p id="ccMsg" style="font-size:13px;min-height:18px;margin:4px 0;"></p>'
+        + '<div style="display:flex;gap:8px;justify-content:flex-end;">'
+        + '<button onclick="document.getElementById(\'cambiarClaveModal\').style.display=\'none\'" style="padding:8px 14px;border-radius:10px;border:1px solid #343535;background:#0000;color:#d0c6ab;font-weight:700;cursor:pointer;">Cancelar</button>'
+        + '<button id="ccGuardar" style="padding:8px 14px;border-radius:10px;border:0;background:#ffd700;color:#3a3000;font-weight:900;cursor:pointer;">Guardar</button></div></div>';
+      document.body.appendChild(m);
+      $('ccGuardar').onclick = async function () {
+        var actual = $('ccActual').value, nueva = $('ccNueva').value, n2 = $('ccNueva2').value;
+        $('ccMsg').style.color = '#ffb4ab';
+        if (nueva.length < 8) { $('ccMsg').textContent = 'La nueva debe tener al menos 8 caracteres.'; return; }
+        if (nueva !== n2) { $('ccMsg').textContent = 'Las contraseñas nuevas no coinciden.'; return; }
+        try {
+          var r = await apiFetch('/cambiar-clave', { method: 'POST', body: JSON.stringify({ actual: actual, nueva: nueva }) });
+          if (!r.ok) { var er = await r.json().catch(function () { return {}; }); $('ccMsg').textContent = er.error === 'clave_actual_incorrecta' ? 'La contraseña actual es incorrecta.' : 'No se pudo cambiar.'; return; }
+          $('ccMsg').style.color = '#86efac'; $('ccMsg').textContent = '✅ Contraseña actualizada.';
+          $('ccActual').value = ''; $('ccNueva').value = ''; $('ccNueva2').value = '';
+          setTimeout(function () { $('cambiarClaveModal').style.display = 'none'; }, 1200);
+        } catch (e) { $('ccMsg').textContent = 'No se pudo cambiar.'; }
+      };
+    }
+    $('ccMsg').textContent = ''; m.style.display = 'flex';
+  };
   $('togglePass').onclick = function () {
     var p = $('password');
     var show = p.type === 'password';
