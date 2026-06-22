@@ -50,3 +50,28 @@ test('listMemorias sin owner devuelve solo memoria de empresa (uso legacy/auto-a
   const lista = (await memory.listMemorias(db, C)).map((m) => m.contenido);
   expect(lista).toEqual(['empresa']);
 });
+
+test('borrarMemoria con owner: P2 no puede borrar lo privado de P1', async () => {
+  const db = await freshDb();
+  const C = require('crypto').randomUUID();
+  const P1 = require('crypto').randomUUID();
+  const P2 = require('crypto').randomUUID();
+  const m = await memory.crearMemoria(db, C, { contenido: 'privado P1', owner_kind: 'user', owner_id: P1 });
+  const noBorra = await memory.borrarMemoria(db, C, m.id, { owner: { kind: 'user', id: P2 } });
+  expect(noBorra).toBe(null);
+  const siBorra = await memory.borrarMemoria(db, C, m.id, { owner: { kind: 'user', id: P1 } });
+  expect(siBorra && siBorra.id).toBe(m.id);
+});
+
+test('borrarMemoriasDe limpia toda la memoria personal de la persona', async () => {
+  const db = await freshDb();
+  const C = require('crypto').randomUUID();
+  const P1 = require('crypto').randomUUID();
+  await memory.crearMemoria(db, C, { contenido: 'a', owner_kind: 'user', owner_id: P1 });
+  await memory.crearMemoria(db, C, { contenido: 'b', owner_kind: 'user', owner_id: P1 });
+  await memory.crearMemoria(db, C, { contenido: 'empresa', tipo: 'negocio' });
+  const n = await memory.borrarMemoriasDe(db, C, { ownerKind: 'user', ownerId: P1 });
+  expect(n).toBe(2);
+  const quedan = (await memory.listMemorias(db, C, { owner: { kind: 'user', id: P1 } })).map((m) => m.contenido);
+  expect(quedan).toEqual(['empresa']);
+});

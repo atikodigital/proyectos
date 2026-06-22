@@ -53,9 +53,29 @@ async function listMemorias(db, companyId, { limite = 50, owner = null } = {}) {
   );
   return r.rows;
 }
-async function borrarMemoria(db, companyId, id) {
+// Borra (soft-delete) por id. Si se pasa owner, solo borra si la fila es de
+// empresa, o es personal y pertenece a esa persona.
+async function borrarMemoria(db, companyId, id, { owner = null } = {}) {
+  if (owner && owner.kind && owner.id) {
+    const r = await db.query(
+      "UPDATE kaly_memory SET activo=false, updated_at=now() WHERE id=$1 AND company_id=$2 AND (owner_kind='company' OR (owner_kind=$3 AND owner_id=$4)) RETURNING id",
+      [id, companyId, owner.kind, owner.id]
+    );
+    return r.rows[0] || null;
+  }
   const r = await db.query("UPDATE kaly_memory SET activo=false, updated_at=now() WHERE id=$1 AND company_id=$2 RETURNING id", [id, companyId]);
   return r.rows[0] || null;
 }
 
-module.exports = { normalizeMemoria, formatMemoriaBlock, TIPOS, crearMemoria, listMemorias, borrarMemoria };
+// Limpia toda la memoria de un alcance. ownerKind='company' limpia la de empresa
+// (owner_id se ignora). Devuelve cuántas filas se desactivaron.
+async function borrarMemoriasDe(db, companyId, { ownerKind, ownerId }) {
+  if (ownerKind === 'company') {
+    const r = await db.query("UPDATE kaly_memory SET activo=false, updated_at=now() WHERE company_id=$1 AND owner_kind='company' AND activo=true RETURNING id", [companyId]);
+    return r.rows.length;
+  }
+  const r = await db.query("UPDATE kaly_memory SET activo=false, updated_at=now() WHERE company_id=$1 AND owner_kind=$2 AND owner_id=$3 AND activo=true RETURNING id", [companyId, ownerKind, ownerId]);
+  return r.rows.length;
+}
+
+module.exports = { normalizeMemoria, formatMemoriaBlock, TIPOS, crearMemoria, listMemorias, borrarMemoria, borrarMemoriasDe };
