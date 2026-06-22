@@ -2,10 +2,17 @@
 require('dotenv').config();
 const { Client } = require('ssh2');
 const REMOTE = '/root/atiko-gastos';
+// Credenciales del dueño NUNCA hardcodeadas: se leen de variables de entorno (.env, gitignored).
+const OWNER_EMAIL = process.env.PANEL_OWNER_EMAIL;
+const OWNER_PASSWORD = process.env.PANEL_OWNER_PASSWORD;
+if (!OWNER_EMAIL || !OWNER_PASSWORD) {
+  console.error('Falta PANEL_OWNER_EMAIL / PANEL_OWNER_PASSWORD en el .env');
+  process.exit(1);
+}
 const JS = [
   'const axios=require("axios");',
   '(async()=>{',
-  '  const L=await axios.post("http://localhost:3100/api/panel/login",{email:"joseantonio.olguinr@gmail.com",password:"3108olguin"});',
+  '  const L=await axios.post("http://localhost:3100/api/panel/login",' + JSON.stringify({ email: OWNER_EMAIL, password: OWNER_PASSWORD }) + ');',
   '  const t=L.data.token;',
   '  const R=await axios.post("http://localhost:3100/api/panel/whatsapp/resumen",{},{headers:{Authorization:"Bearer "+t}});',
   '  console.log("RESUMEN_OK",JSON.stringify(R.data));',

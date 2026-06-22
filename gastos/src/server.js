@@ -2,7 +2,9 @@ require('dotenv').config();
 require('express-async-errors');
 const path = require('path');
 const cors = require('cors');
+const helmet = require('helmet');
 const express = require('express');
+const { createRateLimiter } = require('./middleware/rate-limit');
 const { createWebhookRouter } = require('./whatsapp/webhook');
 const { createAppRouter } = require('./app/router');
 const { createPanelRouter } = require('./panel/router');
@@ -15,6 +17,10 @@ const { createEphemeralToken } = require('./agent/token');
 const { attachKalyProxy } = require('./agent/kaly-proxy');
 
 const app = express();
+// Cabeceras de seguridad (HSTS, nosniff, anti-clickjacking, etc.). Desactivamos las
+// políticas que romperían el panel (CSP con CDNs/inline) y la carga cross-origin de la
+// APK/landing (COEP/CORP).
+app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false, crossOriginResourcePolicy: false }));
 app.use(cors());
 // Capturar body raw como Buffer para verificación HMAC de webhooks Meta.
 app.use(express.json({
@@ -44,6 +50,13 @@ app.get('/api/public/kaly-token', async (req, res) => {
     return res.json(tok);
   } catch (e) { console.error('[kaly-token]', e.message); return res.status(502).json({ error: 'token_falla' }); }
 });
+
+// Rate limiting anti-fuerza-bruta / DoS en los endpoints sensibles (login + registro).
+// Por IP, ventana deslizante en memoria. Suficiente para reintentos legítimos, corta abuso.
+const loginLimiter = createRateLimiter({ windowMs: 10 * 60 * 1000, max: 12 });
+const registerLimiter = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 6 });
+app.use(['/api/panel/login', '/api/app/login', '/api/admin/login'], loginLimiter);
+app.use('/api/onboarding/register', registerLimiter);
 
 app.use('/api/whatsapp/webhook', createWebhookRouter({ db: getPool() }));
 app.use('/api/app', createAppRouter({ db: getPool() }));
