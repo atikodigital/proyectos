@@ -931,6 +931,7 @@
           <div class="text-[#e3e2e2] font-semibold text-xs leading-none" id="headerWelcomeUser">Dueño</div>
           <div class="text-[10px] font-mono text-[#d0c6ab] mt-1" id="headerDate"></div>
         </div>
+        <span id="saldoCreditos" class="text-[10px] font-mono text-[#d0c6ab]"></span>
         <div class="h-8 w-[1px] bg-[#343535]"></div>
         <button id="headerNewExpenseBtn" class="bg-gradient-to-r from-[#ffd700] to-[#e9c400] text-[#3a3000] hover:shadow-[0_0_20px_rgba(255,215,0,0.4)] transition-all px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1">
           <span class="material-symbols-outlined text-[16px]">add</span> Nuevo Movimiento
@@ -1498,12 +1499,25 @@
       }
     });
   }
+  async function loadSaldoCreditos() {
+    try {
+      var res = await apiFetch('/suscripcion');
+      if (!res.ok) return;
+      var s = await res.json();
+      var el = $('saldoCreditos');
+      if (!el) return;
+      var sinCreditos = s.estado !== 'activa' || s.restante === 0;
+      el.textContent = 'Créditos: ' + s.restante + '/' + s.limite;
+      el.style.color = sinCreditos ? '#ffb4ab' : '#d0c6ab';
+    } catch (e) {}
+  }
   function showApp() {
     $('loginView').classList.add('hidden');
     $('appView').classList.remove('hidden');
     if (!$('fPeriodo').value) $('fPeriodo').value = ymActual();
     updateSidebarUi('gastos', null);
     loadGastos();
+    loadSaldoCreditos();
     try { window.dispatchEvent(new CustomEvent('panel:login')); } catch (_) {}
   }
 
