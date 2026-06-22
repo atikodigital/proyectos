@@ -28,15 +28,27 @@ async function crearMemoria(db, companyId, input) {
   if (!n) return null;
   const ORIGENES = ['kaly', 'dueño', 'auto'];
   const origen = input && ORIGENES.includes(input.origen) ? input.origen : 'kaly';
+  const KINDS = ['company', 'user', 'employee'];
+  const owner_kind = input && KINDS.includes(input.owner_kind) ? input.owner_kind : 'company';
+  const owner_id = owner_kind === 'company' ? null : (input && input.owner_id) || null;
   const r = await db.query(
-    "INSERT INTO kaly_memory(company_id, tipo, contenido, origen) VALUES($1,$2,$3,$4) RETURNING id, tipo, contenido, origen, created_at",
-    [companyId, n.tipo, n.contenido, origen]
+    "INSERT INTO kaly_memory(company_id, tipo, contenido, origen, owner_kind, owner_id) VALUES($1,$2,$3,$4,$5,$6) RETURNING id, tipo, contenido, origen, owner_kind, owner_id, created_at",
+    [companyId, n.tipo, n.contenido, origen, owner_kind, owner_id]
   );
   return r.rows[0];
 }
-async function listMemorias(db, companyId, { limite = 50 } = {}) {
+
+// owner: { kind, id } opcional. Sin owner → solo memoria de empresa.
+async function listMemorias(db, companyId, { limite = 50, owner = null } = {}) {
+  if (owner && owner.kind && owner.id) {
+    const r = await db.query(
+      "SELECT id, tipo, contenido, origen, owner_kind, created_at FROM kaly_memory WHERE company_id=$1 AND activo=true AND (owner_kind='company' OR (owner_kind=$2 AND owner_id=$3)) ORDER BY created_at DESC LIMIT $4",
+      [companyId, owner.kind, owner.id, limite]
+    );
+    return r.rows;
+  }
   const r = await db.query(
-    "SELECT id, tipo, contenido, origen, created_at FROM kaly_memory WHERE company_id=$1 AND activo=true ORDER BY created_at DESC LIMIT $2",
+    "SELECT id, tipo, contenido, origen, owner_kind, created_at FROM kaly_memory WHERE company_id=$1 AND activo=true AND owner_kind='company' ORDER BY created_at DESC LIMIT $2",
     [companyId, limite]
   );
   return r.rows;

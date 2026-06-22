@@ -48,7 +48,7 @@ const MEMORY_DDL = [
   "ALTER TABLE companies ADD COLUMN IF NOT EXISTS kaly_persona jsonb",
   // Eje de "dueño" del hecho: 'company' (compartido) | 'user'/'employee' (privado).
   "ALTER TABLE kaly_memory ADD COLUMN IF NOT EXISTS owner_kind text NOT NULL DEFAULT 'company'",
-  "ALTER TABLE kaly_memory ADD COLUMN IF NOT EXISTS owner_id uuid",
+  "ALTER TABLE kaly_memory ADD COLUMN IF NOT EXISTS owner_id text",
   "CREATE INDEX IF NOT EXISTS idx_kaly_memory_scope ON kaly_memory(company_id, owner_kind, owner_id)",
 ];
 
