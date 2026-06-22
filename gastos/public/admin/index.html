@@ -72,6 +72,20 @@
   </header>
   <div class="wrap">
 
+    <!-- EQUIPO (ADMINS INDIVIDUALES) -->
+    <div class="card">
+      <h3>👥 Equipo (admins)</h3>
+      <div id="adminsList" style="margin:6px 0 12px">Cargando…</div>
+      <div class="row">
+        <div><label>Email</label><input id="ad_email" type="email" autocapitalize="none" placeholder="persona@atiko.cl" /></div>
+        <div><label>Nombre</label><input id="ad_nombre" placeholder="Nombre" /></div>
+        <div><label>Contraseña (mín 8)</label><input id="ad_pass" type="password" placeholder="••••••••" /></div>
+        <div style="display:flex; align-items:flex-end"><button id="ad_btn" class="btn-gold">Crear admin</button></div>
+      </div>
+      <p id="ad_err" class="err"></p>
+      <div id="ad_2fa" style="margin-top:10px; border-top:1px solid #2a2a2a; padding-top:10px"></div>
+    </div>
+
     <!-- CREAR CLIENTE -->
     <div class="card">
       <h3>➕ Nuevo cliente</h3>
@@ -226,6 +240,7 @@ function planSelect(id, plan) {
 }
 async function cargar() {
   $('listErr').textContent = '';
+  cargarAdmins(); render2fa();
   const now = new Date();
   $('periodoLbl').textContent = '(' + now.toLocaleString('es-CL', { month: 'long', year: 'numeric' }) + ')';
   try {
@@ -394,6 +409,51 @@ async function guardarProductos(id) {
     $('fe_msg').textContent = '✓ Guardado';
     cargar();
   } catch (e) { $('fe_msg').className = 'err'; $('fe_msg').textContent = 'Error: ' + e.message; }
+}
+
+// ---- Equipo (admins individuales) ----
+function escA(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+async function cargarAdmins() {
+  if (!$('adminsList')) return;
+  try {
+    const r = await api('/admins');
+    const list = r.admins || [];
+    $('adminsList').innerHTML = list.length ? list.map(a =>
+      '<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid #1e1e1e">'
+      + '<span>' + escA(a.email) + (a.nombre ? ' · ' + escA(a.nombre) : '') + (a.tiene_2fa ? ' 🔐' : '') + (a.activo ? '' : ' <span style="opacity:.5">(inactivo)</span>') + '</span>'
+      + '<button data-toggle="' + escA(a.id) + '" data-activo="' + (a.activo ? 1 : 0) + '" style="font-size:12px;padding:2px 8px">' + (a.activo ? 'Desactivar' : 'Activar') + '</button>'
+      + '</div>').join('') : '<span style="opacity:.6">Sin admins individuales todavía.</span>';
+    $('adminsList').querySelectorAll('[data-toggle]').forEach(b => b.onclick = async () => {
+      try { await api('/admins/' + b.dataset.toggle + '/activo', { method: 'PATCH', body: JSON.stringify({ activo: b.dataset.activo === '0' }) }); cargarAdmins(); } catch (e) {}
+    });
+  } catch (e) { $('adminsList').textContent = 'No se pudo cargar.'; }
+}
+if ($('ad_btn')) $('ad_btn').onclick = async () => {
+  $('ad_err').textContent = '';
+  try {
+    await api('/admins', { method: 'POST', body: JSON.stringify({ email: $('ad_email').value.trim(), nombre: $('ad_nombre').value.trim(), password: $('ad_pass').value }) });
+    $('ad_email').value = ''; $('ad_nombre').value = ''; $('ad_pass').value = '';
+    cargarAdmins();
+  } catch (e) { $('ad_err').textContent = e.status === 409 ? 'Ya existe un admin con ese email' : (e.status === 400 ? 'Email y contraseña (mín 8) requeridos' : 'Error: ' + e.message); }
+};
+function render2fa() {
+  const box = $('ad_2fa'); if (!box) return;
+  box.innerHTML = '<button id="ad_2fa_start" class="btn-gold" style="font-size:13px">🔐 Activar mi 2FA</button>';
+  $('ad_2fa_start').onclick = async () => {
+    try {
+      const s = await api('/2fa/setup', { method: 'POST', body: '{}' });
+      box.innerHTML =
+        '<div style="font-size:13px">1) Agregá esta clave en Google Authenticator (entrada manual):<br><b style="font-family:monospace;letter-spacing:1px">' + escA(s.secret) + '</b></div>'
+        + '<div style="margin:8px 0"><label>2) Código de 6 dígitos</label><input id="ad_2fa_code" maxlength="6" inputmode="numeric" placeholder="123456" /></div>'
+        + '<button id="ad_2fa_confirm" class="btn-gold" style="font-size:13px">Confirmar y activar</button> <span id="ad_2fa_msg" style="margin-left:8px"></span>';
+      $('ad_2fa_confirm').onclick = async () => {
+        try { await api('/2fa/activar', { method: 'POST', body: JSON.stringify({ secret: s.secret, code: ($('ad_2fa_code').value || '').trim() }) }); $('ad_2fa_msg').textContent = '✅ 2FA activado'; cargarAdmins(); }
+        catch (e) { $('ad_2fa_msg').textContent = '❌ Código inválido'; }
+      };
+    } catch (e) {
+      box.innerHTML = '<span style="opacity:.6;font-size:13px">El admin "root" (por variables de entorno) configura su 2FA con GASTOS_ADMIN_TOTP_SECRET en el servidor.</span>';
+    }
+  };
 }
 
 // init

@@ -61,6 +61,20 @@ const CONTACTOS_DDL = [
   "CREATE UNIQUE INDEX IF NOT EXISTS idx_contactos_uniq ON contactos(company_id, channel, contact_key)",
 ];
 
+// Admins individuales de la agencia (login propio + 2FA por persona).
+const ADMINS_DDL = [
+  `CREATE TABLE IF NOT EXISTS admins (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    email text NOT NULL,
+    password_hash text NOT NULL,
+    nombre text,
+    totp_secret text,
+    activo boolean NOT NULL DEFAULT true,
+    created_at timestamptz NOT NULL DEFAULT now()
+  )`,
+  "CREATE UNIQUE INDEX IF NOT EXISTS idx_admins_email ON admins(email)",
+];
+
 // Índices de dedup (no únicos: el override permite una 2ª fila a propósito).
 const DEDUP_INDEXES = [
   "CREATE INDEX IF NOT EXISTS idx_expenses_dedup_doc ON expenses(company_id, rut_emisor, folio)",
@@ -88,6 +102,9 @@ async function migrate(db) {
     try { await db.query(stmt); } catch (e) { /* pg-mem / ya existe */ }
   }
   for (const stmt of CONTACTOS_DDL) {
+    try { await db.query(stmt); } catch (e) { /* pg-mem / ya existe */ }
+  }
+  for (const stmt of ADMINS_DDL) {
     try { await db.query(stmt); } catch (e) { /* pg-mem / ya existe */ }
   }
   for (const stmt of DEDUP_INDEXES) {
