@@ -1,7 +1,7 @@
 # Hash IA — Materiales para Google Play
 
-**App:** Hash IA · **applicationId:** `cl.atikodigital.hashia` · **versionCode:** 43 · versionName: 1.0
-**Artefacto a subir:** `gastos-app/android/app/build/outputs/bundle/release/app-release.aab` (AAB firmado, 5.4 MB)
+**App:** Hash IA · **applicationId:** `cl.atikodigital.hashia` · **versionCode:** 59 · versionName: 3.24
+**Artefacto a subir:** `gastos-app/android/app/build/outputs/bundle/release/app-release.aab` (AAB firmado, ~5.3 MB)
 **Política de privacidad (live):** https://hash.atikodigital.cl/privacidad.html
 **Términos y condiciones (live):** https://hash.atikodigital.cl/terminos.html
 **Email de contacto:** atikodigital@gmail.com
