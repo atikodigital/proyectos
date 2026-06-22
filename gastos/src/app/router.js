@@ -40,6 +40,7 @@ const { geminiChat } = require('../varas/gemini');
 const { ejecutarAccion } = require('../varas/acciones');
 const { TOOLS_READ } = require('../varas/tools');
 const memoryRepo = require('../agent/memory');
+const { saldo: saldoCreditos } = require('../billing/creditos');
 
 function createAppRouter({ db, extractExpense, createLiveToken, sendText, sendImage, extractCartola, componer, extraerProductos, extractLibroSii, varasGemini, extraerHechos, juzgarHecho } = {}) {
   const _extract = extractExpense || realExtract.extractExpense;
@@ -605,6 +606,15 @@ function createAppRouter({ db, extractExpense, createLiveToken, sendText, sendIm
       [req.auth.companyId, req.auth.employeeId]
     );
     return res.json(r.rows);
+  });
+
+  router.get('/suscripcion', async (req, res) => {
+    try {
+      const s = await saldoCreditos(db, req.auth.companyId);
+      res.json(s);
+    } catch (e) {
+      res.status(500).json({ error: 'saldo_error' });
+    }
   });
 
   return router;
