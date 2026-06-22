@@ -25,6 +25,7 @@ const V2_COLUMNS = [
   "ALTER TABLE expenses ADD COLUMN IF NOT EXISTS wa_sender_phone text",
   "ALTER TABLE employees ADD COLUMN IF NOT EXISTS agent_prefs jsonb",
   "ALTER TABLE companies ADD COLUMN IF NOT EXISTS giro text",
+  "ALTER TABLE companies ADD COLUMN IF NOT EXISTS archivada boolean NOT NULL DEFAULT false",
 ];
 
 const KALY_COLUMNS = [

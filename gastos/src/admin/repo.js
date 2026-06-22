@@ -146,10 +146,23 @@ async function movimientosDelMes(db, companyId, year, month) {
   return r.rows.filter((e) => (ym(e.fecha) || ym(e.created_at)) === target).length;
 }
 
-async function listClientesConStats(db, year, month) {
+async function ensureArchivada(db) {
+  try { await db.query('ALTER TABLE companies ADD COLUMN IF NOT EXISTS archivada boolean NOT NULL DEFAULT false'); } catch (e) { /* ya existe */ }
+}
+
+// Archiva (soft delete) o restaura una empresa. No borra datos.
+async function archivarCliente(db, companyId, archivada) {
+  await ensureArchivada(db);
+  const r = await db.query('UPDATE companies SET archivada=$2 WHERE id=$1 RETURNING id, nombre, archivada', [companyId, !!archivada]);
+  return r.rows[0] || null;
+}
+
+async function listClientesConStats(db, year, month, opts = {}) {
   await ensurePlan(db);
   await ensureProductos(db);
-  const cs = await db.query('SELECT id, nombre, rut, plan, productos, canales, burbuja_activa, owner_nombre, created_at FROM companies ORDER BY created_at ASC');
+  await ensureArchivada(db);
+  const quiero = opts.archivadas ? true : false;
+  const cs = await db.query('SELECT id, nombre, rut, plan, productos, canales, burbuja_activa, owner_nombre, created_at FROM companies WHERE COALESCE(archivada,false)=$1 ORDER BY created_at ASC', [quiero]);
   const out = [];
   for (const c of cs.rows) {
     const emp = await db.query('SELECT count(*)::int AS n FROM employees WHERE company_id=$1', [c.id]);
@@ -189,4 +202,4 @@ async function getFichaCliente(db, companyId, year, month) {
   return { empresa, empleados, movimientos, resumen, conciliacion, pedidos };
 }
 
-module.exports = { ensurePlan, crearCliente, crearLogin, setCompanyPlan, movimientosDelMes, listClientesConStats, ensureProductos, getProductos, setProductos, PRODUCTOS, CANALES, getFichaCliente };
+module.exports = { ensurePlan, crearCliente, crearLogin, setCompanyPlan, movimientosDelMes, listClientesConStats, archivarCliente, ensureProductos, getProductos, setProductos, PRODUCTOS, CANALES, getFichaCliente };

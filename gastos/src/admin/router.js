@@ -39,7 +39,15 @@ function createAdminRouter({ db } = {}) {
 
   router.get('/clientes', async (req, res) => {
     const d = new Date();
-    return res.json(await adminRepo.listClientesConStats(db, d.getFullYear(), d.getMonth() + 1));
+    const archivadas = String(req.query.archivadas || '') === '1';
+    return res.json(await adminRepo.listClientesConStats(db, d.getFullYear(), d.getMonth() + 1, { archivadas }));
+  });
+
+  // Archivar (soft delete) o restaurar una empresa. {archivada:true|false}
+  router.post('/clientes/:id/archivar', async (req, res) => {
+    const out = await adminRepo.archivarCliente(db, req.params.id, !!(req.body || {}).archivada);
+    if (!out) return res.status(404).json({ error: 'no_existe' });
+    return res.json(out);
   });
 
   router.post('/clientes', async (req, res) => {
