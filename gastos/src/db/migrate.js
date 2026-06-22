@@ -80,6 +80,35 @@ const ADMINS_DDL = [
   "CREATE UNIQUE INDEX IF NOT EXISTS idx_admins_email ON admins(email)",
 ];
 
+// Suscripciones y consumo de IA (créditos). Fase 1 de monetización.
+const BILLING_DDL = [
+  `CREATE TABLE IF NOT EXISTS subscriptions (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    company_id uuid NOT NULL,
+    plan text NOT NULL DEFAULT 'free',
+    estado text NOT NULL DEFAULT 'activa',
+    source text NOT NULL DEFAULT 'manual',
+    external_id text,
+    ciclo_inicio timestamptz NOT NULL DEFAULT now(),
+    ciclo_fin timestamptz,
+    creditos_limite integer NOT NULL DEFAULT 30,
+    creditos_usados integer NOT NULL DEFAULT 0,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now()
+  )`,
+  "CREATE UNIQUE INDEX IF NOT EXISTS idx_subscriptions_company ON subscriptions(company_id)",
+  `CREATE TABLE IF NOT EXISTS ia_consumo (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    company_id uuid NOT NULL,
+    tipo text NOT NULL,
+    cantidad numeric NOT NULL DEFAULT 1,
+    creditos integer NOT NULL DEFAULT 0,
+    meta jsonb,
+    created_at timestamptz NOT NULL DEFAULT now()
+  )`,
+  "CREATE INDEX IF NOT EXISTS idx_ia_consumo_company ON ia_consumo(company_id, created_at)",
+];
+
 // Índices de dedup (no únicos: el override permite una 2ª fila a propósito).
 const DEDUP_INDEXES = [
   "CREATE INDEX IF NOT EXISTS idx_expenses_dedup_doc ON expenses(company_id, rut_emisor, folio)",
@@ -110,6 +139,9 @@ async function migrate(db) {
     try { await db.query(stmt); } catch (e) { /* pg-mem / ya existe */ }
   }
   for (const stmt of ADMINS_DDL) {
+    try { await db.query(stmt); } catch (e) { /* pg-mem / ya existe */ }
+  }
+  for (const stmt of BILLING_DDL) {
     try { await db.query(stmt); } catch (e) { /* pg-mem / ya existe */ }
   }
   for (const stmt of DEDUP_INDEXES) {
