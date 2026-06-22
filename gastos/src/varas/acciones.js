@@ -39,6 +39,18 @@ async function _resumenWhatsapp(db, companyId, args, sendText) {
   return { ok: true, to: wa.owner_whatsapp };
 }
 
+async function _recordar(db, companyId, args, owner) {
+  const { crearMemoria } = require('../agent/memory');
+  const esPersonal = args.alcance === 'personal';
+  const m = await crearMemoria(db, companyId, {
+    tipo: args.tipo, contenido: args.contenido, origen: 'kaly',
+    owner_kind: esPersonal && owner ? owner.kind : 'company',
+    owner_id: esPersonal && owner ? owner.id : null,
+  });
+  if (!m) return { ok: false, error: 'contenido_vacio' };
+  return { ok: true, contenido: m.contenido };
+}
+
 // Registra un movimiento (gasto/ingreso) confirmado, igual que /expenses/manual.
 async function _crearMovimiento(db, companyId, args) {
   const tipo = args.tipo === 'ingreso' ? 'ingreso' : 'gasto';
@@ -68,12 +80,13 @@ async function _crearMovimiento(db, companyId, args) {
   return { ok: true, expenseId: expense.id, total: expense.total };
 }
 
-async function ejecutarAccion(db, companyId, tipo, args = {}, { sendText } = {}) {
+async function ejecutarAccion(db, companyId, tipo, args = {}, { sendText, owner } = {}) {
   const _send = sendText || require('../whatsapp/client').sendText;
   if (tipo === 'marcar_pagado') return _marcarPagado(db, companyId, args);
   if (tipo === 'crear_asiento_manual') return _crearAsiento(db, companyId, args);
   if (tipo === 'enviar_resumen_whatsapp') return _resumenWhatsapp(db, companyId, args, _send);
   if (tipo === 'crear_movimiento') return _crearMovimiento(db, companyId, args);
+  if (tipo === 'recordar') return _recordar(db, companyId, args, owner);
   return { ok: false, error: 'accion_desconocida' };
 }
 

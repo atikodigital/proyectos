@@ -41,6 +41,7 @@ const { TOOLS_READ } = require('../varas/tools');
 const { buildAgentContext } = require('../agent/context');
 const { createEphemeralToken } = require('../agent/token');
 const { suggestOrder } = require('../pedidos/suggest');
+const { saldo: saldoCreditos } = require('../billing/creditos');
 
 function parseFiltros(q = {}) {
   return {
@@ -66,6 +67,11 @@ function createPanelRouter({ db, sendText, sendImage, varasGemini } = {}) {
   });
 
   router.use(requireAuth, requireKind('user'));
+
+  router.get('/suscripcion', async (req, res) => {
+    try { res.json(await saldoCreditos(db, req.auth.companyId)); }
+    catch (e) { res.status(500).json({ error: 'saldo_error' }); }
+  });
 
   router.get('/chat/contacto', async (req, res) => {
     const { channel, contact } = req.query;
@@ -478,7 +484,7 @@ function createPanelRouter({ db, sendText, sendImage, varasGemini } = {}) {
   });
   router.post('/varas/accion', async (req, res) => {
     const b = req.body || {};
-    res.json(await ejecutarAccion(db, req.auth.companyId, b.tipo, b.args || {}, { sendText: _sendText }));
+    res.json(await ejecutarAccion(db, req.auth.companyId, b.tipo, b.args || {}, { sendText: _sendText, owner: { kind: 'user', id: req.auth.userId } }));
   });
   // Lectura server-side para la voz (Gemini Live): ejecuta una tool de lectura scoped por empresa.
   router.post('/varas/tool', async (req, res) => {

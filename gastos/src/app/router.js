@@ -108,7 +108,7 @@ function createAppRouter({ db, extractExpense, createLiveToken, sendText, sendIm
   });
   router.post('/varas/accion', async (req, res) => {
     const b = req.body || {};
-    res.json(await ejecutarAccion(db, req.auth.companyId, b.tipo, b.args || {}, { sendText: _sendText }));
+    res.json(await ejecutarAccion(db, req.auth.companyId, b.tipo, b.args || {}, { sendText: _sendText, owner: { kind: 'employee', id: req.auth.employeeId } }));
   });
   // Lectura server-side para la voz (Gemini Live): ejecuta una tool de lectura scoped por empresa.
   router.post('/varas/tool', async (req, res) => {

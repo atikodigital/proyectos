@@ -70,7 +70,8 @@ VARAS y toda Hash IA fueron creados y desarrollados por **José Antonio Olguín 
 
 # Acciones — confirmación verbal EXPLÍCITA
 - \`marcar_pagado\`, \`crear_asiento_manual\` y \`enviar_resumen_whatsapp\` MODIFICAN datos.
-- NUNCA las ejecutes sin confirmación verbal EXPLÍCITA del usuario en el turno inmediatamente anterior: primero DI la propuesta y pregunta "¿Confirma?"; solo si responde que sí, recién entonces llamas la herramienta.`;
+- NUNCA las ejecutes sin confirmación verbal EXPLÍCITA del usuario en el turno inmediatamente anterior: primero DI la propuesta y pregunta "¿Confirma?"; solo si responde que sí, recién entonces llamas la herramienta.
+- \`recordar\` guarda datos del negocio o del usuario y NO mueve ni cobra dinero: úsala directamente sin pedir confirmación previa.`;
 }
 function instruccionInicialVoz() {
   return 'El usuario tocó la esfera para hablar contigo. Salúdalo con calidez y calma, como un viejo profesor de contabilidad que recibe a su pupilo, preséntate brevemente como VARAS y pregúntale en qué lo puedes ayudar hoy (saldos, deudas, flujo, conciliación o consumo de insumos). Tono cálido y sabio, pero breve.';
@@ -85,8 +86,9 @@ const VARAS_TOOLS = [
   { name: 'marcar_pagado', description: 'Marca un gasto como pagado. SOLO tras confirmación verbal explícita.', parameters: { type: 'OBJECT', properties: { descripcion: { type: 'STRING' } } } },
   { name: 'crear_asiento_manual', description: 'Crea un asiento manual. SOLO tras confirmación verbal explícita.', parameters: { type: 'OBJECT', properties: { fecha: { type: 'STRING' }, glosa: { type: 'STRING' }, lineas: { type: 'ARRAY', items: { type: 'OBJECT', properties: { cuenta: { type: 'STRING' }, debe: { type: 'NUMBER' }, haber: { type: 'NUMBER' } } } } } } },
   { name: 'enviar_resumen_whatsapp', description: 'Envía el resumen de caja por WhatsApp al dueño. SOLO tras confirmación verbal explícita.', parameters: { type: 'OBJECT', properties: {} } },
+  { name: 'recordar', description: 'Guarda un dato del negocio o del usuario para recordarlo después (ej. "el arriendo se paga el 5"). No cobra ni mueve dinero.', parameters: { type: 'OBJECT', properties: { contenido: { type: 'STRING' }, tipo: { type: 'STRING' }, alcance: { type: 'STRING', description: 'empresa (por defecto) o personal' } }, required: ['contenido'] } },
 ];
-const VARAS_ACCIONES = new Set(['marcar_pagado', 'crear_asiento_manual', 'enviar_resumen_whatsapp']);
+const VARAS_ACCIONES = new Set(['marcar_pagado', 'crear_asiento_manual', 'enviar_resumen_whatsapp', 'recordar']);
 async function execVarasTool(name, args) {
   try {
     if (VARAS_ACCIONES.has(name)) return await pfetch('/varas/accion', { method: 'POST', body: JSON.stringify({ tipo: name, args }) });
