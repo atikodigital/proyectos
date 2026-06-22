@@ -31,6 +31,9 @@ async function crearMemoria(db, companyId, input) {
   const KINDS = ['company', 'user', 'employee'];
   const owner_kind = input && KINDS.includes(input.owner_kind) ? input.owner_kind : 'company';
   const owner_id = owner_kind === 'company' ? null : (input && input.owner_id) || null;
+  // Memoria personal SIEMPRE necesita owner_id; sin él sería una fila huérfana
+  // (invisible para listMemorias y no borrable por la limpieza). Se rechaza.
+  if (owner_kind !== 'company' && !owner_id) return null;
   const r = await db.query(
     "INSERT INTO kaly_memory(company_id, tipo, contenido, origen, owner_kind, owner_id) VALUES($1,$2,$3,$4,$5,$6) RETURNING id, tipo, contenido, origen, owner_kind, owner_id, created_at",
     [companyId, n.tipo, n.contenido, origen, owner_kind, owner_id]

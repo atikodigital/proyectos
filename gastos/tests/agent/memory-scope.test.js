@@ -75,3 +75,10 @@ test('borrarMemoriasDe limpia toda la memoria personal de la persona', async () 
   const quedan = (await memory.listMemorias(db, C, { owner: { kind: 'user', id: P1 } })).map((m) => m.contenido);
   expect(quedan).toEqual(['empresa']);
 });
+
+test('crearMemoria personal sin owner_id se rechaza (no crea fila huérfana)', async () => {
+  const db = await freshDb();
+  const C = require('crypto').randomUUID();
+  const orphan = await memory.crearMemoria(db, C, { contenido: 'x', owner_kind: 'user' });
+  expect(orphan).toBe(null);
+});
