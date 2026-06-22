@@ -3,12 +3,18 @@
 // createKalyOrb(el, { size, onTap }) → { setState, setLevel, destroy }
 // state: 'off' | 'connecting' | 'live' | 'listening' | 'speaking' | 'error'
 
-function colorFor(state) {
-  if (state === 'error') return '#ff5a5a';
-  if (state === 'connecting') return '#8ec9ff';
-  if (state === 'speaking') return '#7ad6ff';
-  if (state === 'listening' || state === 'live') return '#4fc3f7';
-  return '#5ad7ff';
+// Temas de color: celeste (KALY) y dorado (VARAS). Mismo orbe, distinto color.
+const THEMES = {
+  kaly:  { error: '#ff5a5a', connecting: '#8ec9ff', speaking: '#7ad6ff', listening: '#4fc3f7', idle: '#5ad7ff', h1a: '#5ad7ff', h1b: '#0369a1', h2a: '#7ad6ff', h2b: '#0ea5e9' },
+  varas: { error: '#ff5a5a', connecting: '#e7cd86', speaking: '#f3d98f', listening: '#d9b35e', idle: '#C9A24B', h1a: '#C9A24B', h1b: '#4a3712', h2a: '#f0d28a', h2b: '#8a6a1f' },
+};
+
+function colorFor(state, t) {
+  if (state === 'error') return t.error;
+  if (state === 'connecting') return t.connecting;
+  if (state === 'speaking') return t.speaking;
+  if (state === 'listening' || state === 'live') return t.listening;
+  return t.idle;
 }
 
 function arcPath(rad, fromDeg, span) {
@@ -17,11 +23,11 @@ function arcPath(rad, fromDeg, span) {
   return `M ${(150 + Math.cos(a1) * rad).toFixed(2)} ${(150 + Math.sin(a1) * rad).toFixed(2)} A ${rad} ${rad} 0 ${span > 180 ? 1 : 0} 1 ${(150 + Math.cos(a2) * rad).toFixed(2)} ${(150 + Math.sin(a2) * rad).toFixed(2)}`;
 }
 
-function renderSVG(state, tick, lvl) {
+function renderSVG(state, tick, lvl, t) {
   const speaking = state === 'speaking';
   const listening = state === 'listening' || state === 'live';
   const idle = state === 'off';
-  const color = colorFor(state);
+  const color = colorFor(state, t);
 
   // Contorno audio-reactivo (96 puntos)
   let d = ''; const N = 96;
@@ -103,14 +109,15 @@ function renderSVG(state, tick, lvl) {
   return defs + g1 + g2 + g3 + wave + bars + rings + core + sweep;
 }
 
-export function createKalyOrb(el, { size = 150, onTap } = {}) {
+export function createKalyOrb(el, { size = 150, onTap, theme = 'kaly' } = {}) {
+  const t = THEMES[theme] || THEMES.kaly;
   const base = 260; const scale = size / base;
   const h1 = Math.round(190 * scale), h2 = Math.round(110 * scale);
   const b1 = Math.round(40 * scale), b2 = Math.round(26 * scale);
   el.innerHTML = `
     <div class="korb-wrap" style="position:relative;width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;cursor:pointer;user-select:none">
-      <div class="korb-h1" style="position:absolute;border-radius:50%;filter:blur(${b1}px);width:${h1}px;height:${h1}px;background:radial-gradient(circle,#5ad7ff 0%,#0369a1 70%,transparent 100%);transition:opacity .25s,transform .1s ease-out"></div>
-      <div class="korb-h2" style="position:absolute;border-radius:50%;filter:blur(${b2}px);width:${h2}px;height:${h2}px;background:radial-gradient(circle,#7ad6ff 0%,#0ea5e9 70%,transparent 100%);transition:transform .1s ease-out"></div>
+      <div class="korb-h1" style="position:absolute;border-radius:50%;filter:blur(${b1}px);width:${h1}px;height:${h1}px;background:radial-gradient(circle,${t.h1a} 0%,${t.h1b} 70%,transparent 100%);transition:opacity .25s,transform .1s ease-out"></div>
+      <div class="korb-h2" style="position:absolute;border-radius:50%;filter:blur(${b2}px);width:${h2}px;height:${h2}px;background:radial-gradient(circle,${t.h2a} 0%,${t.h2b} 70%,transparent 100%);transition:transform .1s ease-out"></div>
       <svg class="korb-svg" width="${size}" height="${size}" viewBox="0 0 300 300" style="overflow:visible;position:relative;z-index:1"></svg>
       <div class="korb-hit" style="position:absolute;inset:0;z-index:3;cursor:pointer;border-radius:50%"></div>
     </div>`;
@@ -143,7 +150,7 @@ export function createKalyOrb(el, { size = 150, onTap } = {}) {
       halo1.style.transform = `scale(${((1 + lvl * 0.45) * breathScale).toFixed(3)})`;
       halo2.style.opacity = ((0.28 + lvl * 0.5 + (speaking ? 0.15 : 0)) * baseOp).toFixed(3);
       halo2.style.transform = `scale(${((1 + lvl * 0.25) * breathScale).toFixed(3)})`;
-      svg.innerHTML = renderSVG(state, tick, lvl);
+      svg.innerHTML = renderSVG(state, tick, lvl, t);
     }
     raf = requestAnimationFrame(frame);
   }

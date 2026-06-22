@@ -292,7 +292,7 @@ function makeAgent(el, opts) {
   // Orbe animado estilo KALY (clon de hash.atikodigital.cl) cuando orbKind==='kaly'.
   let kalyOrb = null;
   function toggle() { unlockAudio(); if (!session) { lastEl.textContent = ''; start('manual'); } else stop(); }
-  if (orbKind === 'kaly') { kalyOrb = createKalyOrb(el.querySelector('.agv-orbslot'), { size, onTap: toggle }); }
+  if (orbKind === 'kaly') { kalyOrb = createKalyOrb(el.querySelector('.agv-orbslot'), { size, onTap: toggle, theme: opts.orbTheme || 'kaly' }); }
 
   function clearSilence() { if (silenceTimer) { clearTimeout(silenceTimer); silenceTimer = null; } }
   function armSilence() { if (!behavior.silenceMs) return; clearSilence(); silenceTimer = setTimeout(() => { silenceTimer = null; stop(); }, behavior.silenceMs); }
@@ -405,11 +405,17 @@ function makeAgent(el, opts) {
   };
 }
 
-export function mountVaras(el) {
+export function mountVaras(el, over = {}) {
   return makeAgent(el, {
     titulo: 'VARAS', color: '#C9A24B', voice: 'Gacrux',
     buildPrompt: buildVarasVoicePrompt, instruccion: instruccionInicialVoz,
     tools: VARAS_TOOLS, execTool: execVarasTool,
+    orbKind: 'kaly', orbTheme: 'varas',
+    texto: over.texto !== undefined ? over.texto : true,
+    archivos: true,
+    mostrarTranscripcion: false,
+    size: over.size,
+    compact: over.compact,
   });
 }
 
