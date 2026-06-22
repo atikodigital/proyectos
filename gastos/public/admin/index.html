@@ -48,6 +48,9 @@
   header.top, .wrap { position:relative; z-index:1; }
   .card { background:rgba(10,16,13,0.55); backdrop-filter:blur(9px); -webkit-backdrop-filter:blur(9px); }
   table.exp th { background:rgba(12,20,16,0.92); }
+  /* El desplegable nativo abría con fondo blanco ilegible: forzamos opciones oscuras */
+  select { background-color:#14181a; }
+  select option { background:#14181a; color:#fff; }
 </style>
 </head>
 <body>
