@@ -2,7 +2,8 @@
 
 **App:** Hash IA · **applicationId:** `cl.atikodigital.hashia` · **versionCode:** 43 · versionName: 1.0
 **Artefacto a subir:** `gastos-app/android/app/build/outputs/bundle/release/app-release.aab` (AAB firmado, 5.4 MB)
-**Política de privacidad (live):** https://gastos.atikodigital.cl/panel/privacidad.html
+**Política de privacidad (live):** https://hash.atikodigital.cl/privacidad.html
+**Términos y condiciones (live):** https://hash.atikodigital.cl/terminos.html
 **Email de contacto:** atikodigital@gmail.com
 
 ---
