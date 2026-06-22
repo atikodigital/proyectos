@@ -6,6 +6,7 @@ const realStorage = require('./storage');
 const { createLineas } = require('./lineas-repo');
 const { mapearLineas } = require('../auxiliares/mapear');
 const { getGiro } = require('../companies/repo');
+const { consumirCredito } = require('../billing/creditos');
 
 // Devuelve { expense, duplicado }.
 // - duplicado fuerte sin override: expense = null (no se inserta).
@@ -18,6 +19,9 @@ async function intakeFromImage({
 }) {
   const run = extract || extractExpense;
   const _store = storeImage || realStorage.storeImage;
+  // Cobra 1 crédito 'imagen' antes de gastar la llamada de IA. Si no hay saldo,
+  // lanza SinCreditosError y NO se ejecuta el OCR.
+  await consumirCredito(db, companyId, { tipo: 'imagen', cantidad: 1, meta: { canal } });
   const extracted = await run({ imageBuffer, mimeType });
 
   if (extracted.tipo === 'cartola' || extracted.tipo === 'libro_compra_venta') {

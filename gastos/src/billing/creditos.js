@@ -13,6 +13,7 @@ class SinCreditosError extends Error {
 // Cobra los créditos de una operación de IA. Lanza SinCreditosError si no alcanza.
 // Para tipos con peso 0 igual registra auditoría (no descuenta).
 async function consumirCredito(db, companyId, { tipo, cantidad = 1, meta = null } = {}) {
+  await repo.createFreeSubscription(db, companyId); // idempotente: free si no existe
   const creditos = creditosDe(tipo, cantidad);
   if (creditos > 0) {
     const ok = await repo.tryConsume(db, companyId, creditos);

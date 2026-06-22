@@ -44,3 +44,13 @@ test('tipo con peso 0 (texto) no consume pero sí audita', async () => {
   const s = await saldo(db, c);
   expect(s.usado).toBe(0);
 });
+
+test('consumirCredito crea suscripción free si la empresa no tiene', async () => {
+  const db = await freshDb(); const c = cid();
+  // NO se crea suscripción a propósito.
+  await consumirCredito(db, c, { tipo: 'imagen', cantidad: 1 });
+  const s = await saldo(db, c);
+  expect(s.plan).toBe('free');
+  expect(s.usado).toBe(1);
+  expect(s.restante).toBe(29);
+});
