@@ -503,16 +503,48 @@ function createPanelRouter({ db, sendText, sendImage, varasGemini } = {}) {
   });
 
   // ── KALY memoria (hechos del negocio, scoped por empresa) ──
+  // Memoria del agente (nivel 2): empresa (compartida) + personal (del dueño).
+  function ownerDelCaller(req) { return { kind: 'user', id: req.auth.userId }; }
+
   router.get('/kaly/memoria', async (req, res) => {
-    return res.json(await memoryRepo.listMemorias(db, req.auth.companyId));
+    const owner = ownerDelCaller(req);
+    const todas = await memoryRepo.listMemorias(db, req.auth.companyId, { owner });
+    return res.json({
+      empresa: todas.filter((m) => m.owner_kind === 'company'),
+      personal: todas.filter((m) => m.owner_kind !== 'company'),
+    });
   });
+
   router.post('/kaly/memoria', async (req, res) => {
-    const m = await memoryRepo.crearMemoria(db, req.auth.companyId, { ...(req.body || {}), origen: 'dueño' });
+    const b = req.body || {};
+    const owner = ownerDelCaller(req);
+    const esPersonal = b.alcance === 'personal';
+    const m = await memoryRepo.crearMemoria(db, req.auth.companyId, {
+      tipo: b.tipo, contenido: b.contenido, origen: 'dueño',
+      owner_kind: esPersonal ? owner.kind : 'company',
+      owner_id: esPersonal ? owner.id : null,
+    });
     if (!m) return res.status(400).json({ error: 'contenido_vacio' });
     return res.status(201).json({ accion: 'insertar', memoria: m });
   });
+
+  router.delete('/kaly/memoria', async (req, res) => {
+    const owner = ownerDelCaller(req);
+    if (req.query.alcance === 'personal') {
+      const n = await memoryRepo.borrarMemoriasDe(db, req.auth.companyId, { ownerKind: owner.kind, ownerId: owner.id });
+      return res.json({ ok: true, borradas: n });
+    }
+    if (req.query.alcance === 'empresa') {
+      if (req.auth.rol !== 'owner') return res.status(403).json({ error: 'solo_dueño' });
+      const n = await memoryRepo.borrarMemoriasDe(db, req.auth.companyId, { ownerKind: 'company' });
+      return res.json({ ok: true, borradas: n });
+    }
+    return res.status(400).json({ error: 'alcance_requerido' });
+  });
+
   router.delete('/kaly/memoria/:id', async (req, res) => {
-    const r = await memoryRepo.borrarMemoria(db, req.auth.companyId, req.params.id);
+    const owner = ownerDelCaller(req);
+    const r = await memoryRepo.borrarMemoria(db, req.auth.companyId, req.params.id, { owner });
     if (!r) return res.status(404).json({ error: 'no_existe' });
     return res.json({ ok: true });
   });

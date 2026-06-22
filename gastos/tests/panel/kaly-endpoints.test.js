@@ -60,8 +60,8 @@ test('POST/GET /kaly/memoria: el dueño guarda y lista hechos del negocio', asyn
   expect(crea.body.memoria.contenido).toBe('Abrimos de lunes a sábado');
 
   const lista = await request(app).get('/api/panel/kaly/memoria').set('Authorization', `Bearer ${t}`);
-  expect(lista.body.length).toBe(1);
-  expect(lista.body[0].contenido).toBe('Abrimos de lunes a sábado');
+  expect(lista.body.empresa.length).toBe(1);
+  expect(lista.body.empresa[0].contenido).toBe('Abrimos de lunes a sábado');
 });
 
 test('/agent/session expone nombre/trato del dueño guardados en prefs', async () => {
