@@ -8,6 +8,7 @@ const contactosRepo = require('../chat/contactos-repo');
 const { fichaDerivada, telefonoDeContacto } = require('../chat/ficha');
 const { listExpenses } = require('../expenses/query');
 const { markExpensePaid, getExpense, updateExpense, annulExpense, createExpense } = require('../expenses/repo');
+const { intakeFromImage } = require('../expenses/intake');
 const { readImage, contentTypeFor } = require('../expenses/storage');
 const { buildExpensesWorkbook } = require('./excel');
 const xc = require('./excel-contabilidad');
@@ -437,6 +438,24 @@ function createPanelRouter({ db, sendText, sendImage, varasGemini } = {}) {
     });
     await aplicarContabilidad(db, req.auth.companyId, expense, 'confirmar');
     return res.status(201).json(expense);
+  });
+
+  // OCR de documento (foto/PDF/captura) subido desde el panel: lee y registra el gasto.
+  router.post('/expenses/ocr', async (req, res) => {
+    const { imageBase64, mimeType, override } = req.body || {};
+    if (!imageBase64) return res.status(400).json({ error: 'falta_imagen' });
+    try {
+      const { expense, duplicado, documento } = await intakeFromImage({
+        db, companyId: req.auth.companyId, employeeId: null,
+        imageBuffer: Buffer.from(imageBase64, 'base64'), mimeType: mimeType || 'image/jpeg',
+        canal: 'app', override: !!override,
+      });
+      if (documento) return res.status(202).json({ documento });
+      if (!expense) return res.status(409).json({ error: 'duplicado', duplicado });
+      return res.status(201).json({ expense, duplicado: duplicado || null });
+    } catch (e) {
+      return res.status(502).json({ error: 'ocr_falla', detalle: e.message });
+    }
   });
 
   // ── VARAS chat IA ──

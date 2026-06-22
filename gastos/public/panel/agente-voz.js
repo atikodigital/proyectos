@@ -363,19 +363,32 @@ function makeAgent(el, opts) {
         unlockAudio();
         clearSilence();
         const prevLabel = stEl.textContent;
-        stEl.textContent = 'Enviando documento…';
+        stEl.textContent = 'Leyendo documento…';
         try {
           const { b64, mime } = await prepararArchivo(file);
+          // SIEMPRE por OCR: lee y registra el documento, luego el agente lo comenta por voz.
+          const r = await pfetch('/expenses/ocr', { method: 'POST', body: JSON.stringify({ imageBase64: b64, mimeType: mime }) });
           if (!session) { await start('manual'); }
-          if (session && session.sendMedia) {
-            const caption = file.type === 'application/pdf'
-              ? 'Te envío un PDF, por favor revísalo y dime qué es.'
-              : 'Te envío una imagen (foto/captura), por favor revísala y dime qué es.';
-            session.sendMedia(b64, mime, caption);
+          let msg;
+          if (r && r.documento === 'cartola') {
+            msg = 'El usuario subió una cartola bancaria. Dile con amabilidad que las cartolas se concilian en la pantalla Match, y que de los números del banco se encarga VARAS.';
+          } else if (r && r.documento) {
+            msg = 'El usuario subió un Libro de Compra/Venta del SII. Dile que ese libro se usa en Match para conciliar con el SII.';
+          } else if (r && r.error === 'duplicado') {
+            const d = (r.duplicado && r.duplicado.proveedor) ? ` de "${r.duplicado.proveedor}"` : '';
+            msg = `El usuario subió un documento${d} que YA estaba registrado (duplicado). Avísale con amabilidad que ese movimiento ya existe, sin registrarlo de nuevo.`;
+          } else if (r && r.expense) {
+            const e = r.expense;
+            const clp = (n) => '$' + Number(n || 0).toLocaleString('es-CL');
+            msg = `Registré por OCR este documento — tipo ${e.tipo}, proveedor "${e.proveedor || 'sin dato'}", total ${clp(e.total)}, IVA ${clp(e.iva)}, fecha ${e.fecha || 'sin dato'}, folio ${e.folio || 'sin dato'}. Confírmaselo al usuario en UNA frase breve y pregúntale si ya está pagado o queda pendiente.`;
+          } else {
+            msg = 'No pude leer bien el documento que subió el usuario. Pídele con amabilidad que lo reenvíe más nítido, o que lo registre a mano.';
           }
+          stEl.textContent = prevLabel;
+          if (session) session.sendText(msg);
         } catch (_) {
-          stEl.textContent = 'No pude leer el archivo';
-          setTimeout(() => { if (stEl.textContent === 'No pude leer el archivo') stEl.textContent = prevLabel; }, 2500);
+          stEl.textContent = 'No pude leer el documento';
+          setTimeout(() => { if (stEl.textContent === 'No pude leer el documento') stEl.textContent = prevLabel; }, 2500);
         }
       };
     }
