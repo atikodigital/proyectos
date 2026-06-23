@@ -3,8 +3,8 @@
 const PLANES = {
   free:      { nombre: 'free',      creditos: 30 },
   basico:    { nombre: 'basico',    creditos: 100 },
-  pyme:      { nombre: 'pyme',      creditos: 250 },
-  empresa:   { nombre: 'empresa',   creditos: 800 },
+  pyme:      { nombre: 'pyme',      creditos: 210 },
+  empresa:   { nombre: 'empresa',   creditos: 600 },
   ilimitado: { nombre: 'ilimitado', creditos: 100000000 },
 };
 

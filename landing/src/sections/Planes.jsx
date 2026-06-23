@@ -26,7 +26,7 @@ const PLANES = [
   },
   {
     nombre: 'Pyme',
-    shots: 250,
+    shots: 210,
     precio: '$24.900',
     sub: 'El más elegido',
     destacado: true,
@@ -36,12 +36,12 @@ const PLANES = [
   },
   {
     nombre: 'Empresa',
-    shots: 800,
+    shots: 600,
     precio: '$49.900',
     sub: 'Para alto volumen',
     destacado: false,
     cta: { label: 'Cotiza con nosotros', href: WHATSAPP_URL },
-    incluye: ['800 shots al mes', 'Onboarding personalizado', 'Soporte dedicado'],
+    incluye: ['600 shots al mes', 'Onboarding personalizado', 'Soporte dedicado'],
     extraDe: 'Pyme',
   },
 ];
