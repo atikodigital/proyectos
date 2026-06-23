@@ -43,4 +43,21 @@ async function resetCiclo(db, companyId) {
       WHERE company_id = $1`, [companyId]);
 }
 
-module.exports = { createFreeSubscription, getSubscription, tryConsume, logConsumo, resetCiclo };
+async function setPlanLimite(db, companyId, { plan, creditosLimite } = {}) {
+  await createFreeSubscription(db, companyId); // asegura que exista la fila
+  let limite, planName;
+  if (creditosLimite != null && creditosLimite !== '') {
+    limite = Math.max(0, Math.floor(Number(creditosLimite)));
+    planName = plan || 'custom';
+  } else {
+    const p = getPlan(plan);
+    limite = p.creditos;
+    planName = p.nombre;
+  }
+  await db.query(
+    `UPDATE subscriptions SET plan=$2, creditos_limite=$3, estado='activa', updated_at=now() WHERE company_id=$1`,
+    [companyId, planName, limite]);
+  return getSubscription(db, companyId);
+}
+
+module.exports = { createFreeSubscription, getSubscription, tryConsume, logConsumo, resetCiclo, setPlanLimite };

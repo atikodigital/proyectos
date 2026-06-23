@@ -248,7 +248,7 @@ $('logoutBtn').onclick = () => { token = ''; localStorage.removeItem(TKEY); show
 
 // ---- lista de clientes ----
 let verArchivadas = false;
-const PLANES = ['free', 'basico', 'pyme', 'empresa'];
+const PLANES = ['free', 'basico', 'pyme', 'empresa', 'ilimitado'];
 const PRODUCTOS = ['hashia', 'crm', 'chat', 'pedidos'];
 const CANALES = ['whatsapp', 'messenger', 'instagram', 'email', 'telegram', 'web', 'voz'];
 function planSelect(id, plan) {
@@ -402,6 +402,15 @@ async function abrirFicha(id) {
       '<div class="card"><h3>Empresa</h3>' + esc(e.nombre) + ' · ' + esc(e.rut || '—') + ' · ' + esc(e.giro || '—') +
       '<br>Teléfono: ' + esc(e.owner_whatsapp || '—') + ' · Email: ' + esc(e.owner_email || '—') +
       '<br>Plan: ' + esc(e.plan) + '</div>' +
+      '<div class="card"><h3>Créditos IA</h3>' +
+        (f.creditos ? ('Usado: <b>' + f.creditos.usado + '</b> / Límite: <b>' + f.creditos.limite + '</b> · Plan: ' + esc(f.creditos.plan) + ' · Restante: <b>' + f.creditos.restante + '</b>') : '—') +
+        '<div class="row" style="gap:8px;margin-top:8px;align-items:center">' +
+          '<select id="fc_plan" class="btn-sm">' + PLANES.concat(['custom']).map(p => '<option value="' + p + '"' + ((f.creditos && f.creditos.plan === p) ? ' selected' : '') + '>' + p + '</option>').join('') + '</select>' +
+          '<input id="fc_limite" type="number" min="0" placeholder="límite custom (deja vacío para usar el del plan)" style="flex:1;padding:4px 8px;background:#1a1a2e;color:#e0e0ff;border:1px solid #333;border-radius:4px">' +
+          '<button id="fc_guardar_creditos" class="btn-gold btn-sm">Aplicar</button>' +
+          '<span id="fc_msg" class="ok" style="font-size:12px"></span>' +
+        '</div>' +
+      '</div>' +
       '<div class="card"><h3>Empleados</h3>' + emp + '</div>' +
       '<div class="card"><h3>Resumen del mes</h3>Ingresos ' + fmtCLP(resu.ingresos) + ' · Gastos ' + fmtCLP(resu.gastos) + ' · Saldo ' + fmtCLP(resu.saldo) + ' · Conciliación ' + con + '</div>' +
       '<div class="card"><h3>Movimientos recientes</h3>' + movs + '</div>' +
@@ -419,6 +428,17 @@ async function abrirFicha(id) {
         '<div class="row" style="justify-content:flex-end; margin-top:8px; align-items:center; gap:10px"><span id="fe_msg" class="ok"></span><button id="ficha_guardar" class="btn-gold btn-sm">Guardar productos</button></div>' +
       '</div>';
     $('ficha_guardar').onclick = () => guardarProductos(id);
+    $('fc_guardar_creditos').onclick = async () => {
+      const plan = $('fc_plan').value;
+      const limiteRaw = $('fc_limite').value.trim();
+      const body = limiteRaw !== '' ? { plan, creditosLimite: Number(limiteRaw) } : { plan };
+      $('fc_msg').className = 'ok'; $('fc_msg').textContent = '';
+      try {
+        await api('/clientes/' + id + '/creditos', { method: 'PATCH', body: JSON.stringify(body) });
+        $('fc_msg').textContent = '✓ Créditos actualizados';
+        abrirFicha(id); // recarga la ficha para mostrar el nuevo límite
+      } catch (e) { $('fc_msg').className = 'err'; $('fc_msg').textContent = 'Error: ' + e.message; }
+    };
   } catch (err) { $('fichaBody').innerHTML = 'Error: ' + esc(err.message); }
 }
 $('ficha_cerrar').onclick = () => $('fichaModal').classList.add('hidden');

@@ -1,10 +1,11 @@
 // Definición de planes y pesos de consumo de IA. Pesos INICIALES — se calibran
 // con el costo real de la API más adelante antes de cobrar.
 const PLANES = {
-  free:    { nombre: 'free',    creditos: 30 },
-  basico:  { nombre: 'basico',  creditos: 100 },
-  pyme:    { nombre: 'pyme',    creditos: 250 },
-  empresa: { nombre: 'empresa', creditos: 800 },
+  free:      { nombre: 'free',      creditos: 30 },
+  basico:    { nombre: 'basico',    creditos: 100 },
+  pyme:      { nombre: 'pyme',      creditos: 250 },
+  empresa:   { nombre: 'empresa',   creditos: 800 },
+  ilimitado: { nombre: 'ilimitado', creditos: 100000000 },
 };
 
 // Cuántos créditos cuesta una unidad de cada operación. Provisional (calibrar).

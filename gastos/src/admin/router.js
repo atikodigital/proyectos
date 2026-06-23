@@ -62,6 +62,15 @@ function createAdminRouter({ db } = {}) {
     return res.json(r);
   });
 
+  // Fija límite de créditos a mano (override/excepción). Body: { creditosLimite } o { plan }.
+  router.patch('/clientes/:id/creditos', async (req, res) => {
+    const b = req.body || {};
+    const billingRepo = require('../billing/repo');
+    const sub = await billingRepo.setPlanLimite(db, req.params.id, { plan: b.plan, creditosLimite: b.creditosLimite });
+    if (!sub) return res.status(404).json({ error: 'no_existe' });
+    return res.json(sub);
+  });
+
   router.post('/clientes/:id/login', async (req, res) => {
     const b = req.body || {};
     if (!b.usuario || !b.password) return res.status(400).json({ error: 'falta_usuario_clave' });

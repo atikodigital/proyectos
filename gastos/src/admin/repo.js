@@ -5,6 +5,8 @@ const { cashflowSummary } = require('../expenses/summary');
 const matchRepo = require('../match/repo');
 const pedidosRepo = require('../pedidos/repo');
 const { hashPassword } = require('../auth/password');
+const billingRepo = require('../billing/repo');
+const { saldo } = require('../billing/creditos');
 
 const PRODUCTOS = ['hashia', 'crm', 'chat', 'pedidos'];
 const CANALES = ['whatsapp', 'messenger', 'instagram', 'email', 'telegram', 'web', 'voz'];
@@ -85,7 +87,10 @@ function ym(v) {
 async function setCompanyPlan(db, companyId, plan) {
   await ensurePlan(db);
   const r = await db.query('UPDATE companies SET plan=$2 WHERE id=$1 RETURNING id, plan', [companyId, plan || 'free']);
-  return r.rows[0] || null;
+  const row = r.rows[0] || null;
+  // Sincroniza el límite real de créditos con el plan elegido.
+  try { await billingRepo.setPlanLimite(db, companyId, { plan: plan || 'free' }); } catch (_) { /* nunca rompe el comportamiento existente */ }
+  return row;
 }
 
 // Crea un cliente nuevo: empresa + (opcional) su login de dueño.
@@ -199,7 +204,8 @@ async function getFichaCliente(db, companyId, year, month) {
   const u = await matchRepo.getUltima(db, companyId, 'bancaria');
   const conciliacion = u ? { cuadrado: u.cuadrado, sca: Number(u.sca), sba: Number(u.sba) } : null;
   const pedidos = empresa.productos.includes('pedidos') ? await pedidosRepo.listPedidos(db, companyId, 10) : null;
-  return { empresa, empleados, movimientos, resumen, conciliacion, pedidos };
+  const creditos = await saldo(db, companyId);
+  return { empresa, empleados, movimientos, resumen, conciliacion, pedidos, creditos };
 }
 
 module.exports = { ensurePlan, crearCliente, crearLogin, setCompanyPlan, movimientosDelMes, listClientesConStats, archivarCliente, ensureProductos, getProductos, setProductos, PRODUCTOS, CANALES, getFichaCliente };
