@@ -144,6 +144,9 @@ async function migrate(db) {
   for (const stmt of BILLING_DDL) {
     try { await db.query(stmt); } catch (e) { /* pg-mem / ya existe */ }
   }
+  // Grandfathering: las empresas que YA existen (sin suscripción) parten ILIMITADAS
+  // para no bloquear a clientes actuales al activar el cobro.
+  try { await grandfatherExisting(db); } catch (e) { /* tolerante */ }
   for (const stmt of DEDUP_INDEXES) {
     try { await db.query(stmt); } catch (e) { /* tolerante */ }
   }
@@ -155,4 +158,21 @@ async function migrate(db) {
   }
 }
 
-module.exports = { migrate, schemaSql };
+// Da plan ilimitado a las empresas que no tienen suscripción (clientes actuales).
+// Las nuevas nacen en free vía createCompany. Idempotente: salta a quien ya tiene.
+async function grandfatherExisting(db) {
+  const cs = await db.query('SELECT id FROM companies');
+  const ss = await db.query('SELECT company_id FROM subscriptions');
+  const tienen = new Set(ss.rows.map((r) => r.company_id));
+  let n = 0;
+  for (const c of cs.rows) {
+    if (tienen.has(c.id)) continue;
+    await db.query(
+      `INSERT INTO subscriptions(company_id, plan, estado, source, creditos_limite, creditos_usados)
+       VALUES($1,'ilimitado','activa','grandfather',100000000,0)`, [c.id]);
+    n++;
+  }
+  return n;
+}
+
+module.exports = { migrate, schemaSql, grandfatherExisting };
