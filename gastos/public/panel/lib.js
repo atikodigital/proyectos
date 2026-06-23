@@ -139,9 +139,88 @@
   }
 
   function detalleHtml(e) {
-    return detalleRows(e || {}).map(function (f) {
-      return '<div class="detrow"><span class="detk">' + escapeHtml(f[0]) + '</span><span class="detv">' + escapeHtml(f[1]) + '</span></div>';
+    e = e || {};
+    var esIngreso = e.tipo === 'ingreso';
+    function ok(v) { return v !== undefined && v !== null && String(v).trim() !== ''; }
+    function campo(label, val) { return [label, val]; }
+    var grupos = [
+      {
+        icon: '\u{1F4B0}', titulo: 'Monto',
+        grad: 'linear-gradient(135deg,#059669 0%,#0e7490 100%)',
+        campos: [
+          campo('Total', ok(e.total) ? fmtClp(e.total) : null),
+          campo('Neto', ok(e.neto) ? fmtClp(e.neto) : null),
+          campo('IVA', ok(e.iva) ? fmtClp(e.iva) : null),
+        ]
+      },
+      {
+        icon: '\u{1F3E2}', titulo: esIngreso ? 'Pagador' : 'Proveedor',
+        grad: 'linear-gradient(135deg,#2563eb 0%,#4f46e5 100%)',
+        campos: [
+          campo(esIngreso ? 'Pagador' : 'Proveedor', e.proveedor),
+          campo('RUT', e.rut_emisor),
+          campo('Tipo doc', e.tipo_documento),
+          campo('Dirección', e.direccion_emisor),
+        ]
+      },
+      {
+        icon: '\u{1F4C4}', titulo: 'Documento',
+        grad: 'linear-gradient(135deg,#7c3aed 0%,#9333ea 100%)',
+        campos: [
+          campo('Folio', e.folio),
+          campo('N° operación', e.nro_operacion),
+          campo('Fecha emisión', e.fecha),
+          campo('Fecha carga', ok(e.created_at) ? String(e.created_at).slice(0, 10) : null),
+        ]
+      },
+      {
+        icon: '\u{1F3F7}️', titulo: 'Clasificación',
+        grad: 'linear-gradient(135deg,#ea580c 0%,#fca311 100%)',
+        campos: [
+          campo('Tipo', esIngreso ? 'Ingreso' : 'Gasto'),
+          campo('Categoría', !esIngreso ? e.categoria : null),
+          campo('Cuenta SII', ok(e.cuenta_sii_codigo) ? (e.cuenta_sii_codigo + ' ' + (e.cuenta_sii_nombre || '')) : null),
+          campo('Canal', e.canal),
+          campo('Empleado', e.empleado_nombre),
+        ]
+      },
+      {
+        icon: '✅', titulo: 'Estado',
+        grad: 'linear-gradient(135deg,#10b981 0%,#065f46 100%)',
+        campos: [
+          campo('Estado', e.estado),
+          campo('Pago', e.estado_pago),
+          campo('Glosa', e.glosa),
+          campo('WhatsApp', [e.wa_sender_name, e.wa_sender_phone].filter(Boolean).join(' · ') || null),
+        ]
+      },
+    ];
+
+    var gruposFiltrados = grupos.filter(function (g) {
+      return g.campos.some(function (c) { return ok(c[1]); });
+    });
+
+    var cardsHtml = gruposFiltrados.map(function (g, i) {
+      var camposHtml = g.campos
+        .filter(function (c) { return ok(c[1]); })
+        .map(function (c) {
+          return '<div class="dc-row"><span class="dc-k">' + escapeHtml(c[0]) + '</span>'
+            + '<span class="dc-v">' + escapeHtml(String(c[1])) + '</span></div>';
+        }).join('');
+      return '<li class="det-card" data-idx="' + i + '" tabindex="0" style="background:' + g.grad + '">'
+        + '<div class="dc-overlay"></div>'
+        + '<article class="dc-article">'
+        + '<span class="dc-label-col">' + g.icon + ' ' + escapeHtml(g.titulo) + '</span>'
+        + '<div class="dc-expanded">'
+        + '<span class="dc-icon">' + g.icon + '</span>'
+        + '<h3 class="dc-title">' + escapeHtml(g.titulo) + '</h3>'
+        + '<div class="dc-campos">' + camposHtml + '</div>'
+        + '</div>'
+        + '</article>'
+        + '</li>';
     }).join('');
+
+    return '<ul class="det-cards" data-n="' + gruposFiltrados.length + '">' + cardsHtml + '</ul>';
   }
 
   function cuadreManual(lineas) {

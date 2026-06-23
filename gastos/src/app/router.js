@@ -323,6 +323,22 @@ function createAppRouter({ db, extractExpense, createLiveToken, sendText, sendIm
     return res.json({ ...tok, context });
   });
 
+  router.post('/agent/session/end', async (req, res) => {
+    const duracion_seg = Number((req.body || {}).duracion_seg);
+    if (!Number.isFinite(duracion_seg) || duracion_seg <= 0) {
+      return res.status(400).json({ error: 'duracion_invalida' });
+    }
+    const minutos = Math.max(1, Math.ceil(duracion_seg / 60));
+    try {
+      await consumirCredito(db, req.auth.companyId, { tipo: 'voz_min', cantidad: minutos, meta: { duracion_seg } });
+      const s = await saldoCreditos(db, req.auth.companyId);
+      return res.json({ ok: true, saldo: s });
+    } catch (e) {
+      if (e instanceof SinCreditosError) return res.status(402).json({ error: 'sin_creditos', saldo: e.saldo });
+      return res.status(500).json({ error: 'voz_end_error' });
+    }
+  });
+
   // ── KALY memoria (hechos scoped por empresa + personal por empleado) ──
   function ownerDelEmpleado(req) { return { kind: 'employee', id: req.auth.employeeId }; }
 

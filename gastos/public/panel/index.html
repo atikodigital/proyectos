@@ -292,7 +292,77 @@
   .detrow:last-child { border-bottom: 0; }
   .detrow .detk { color: var(--text-muted); }
   .detrow .detv { font-weight: 600; text-align: right; }
-  
+
+  /* === Expanding Cards — detalle movimiento === */
+  #detalleModal .box { max-width: 680px; }
+  .det-cards {
+    display: grid;
+    list-style: none;
+    margin: 0; padding: 0;
+    gap: 8px;
+    height: 230px;
+    grid-template-columns: repeat(5, 1fr);
+    transition: grid-template-columns 0.5s ease-out;
+  }
+  .det-card {
+    position: relative;
+    overflow: hidden;
+    border-radius: 12px;
+    cursor: pointer;
+    border: 1px solid rgba(255,255,255,0.12);
+    min-width: 0;
+    transition: box-shadow 0.2s;
+    outline: none;
+  }
+  .det-card:focus-visible { box-shadow: 0 0 0 2px #fca311; }
+  .dc-overlay {
+    position: absolute; inset: 0;
+    background: linear-gradient(to top, rgba(0,0,0,0.82) 0%, rgba(0,0,0,0.28) 60%, transparent 100%);
+    pointer-events: none;
+  }
+  .dc-article {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    justify-content: flex-end;
+    padding: 12px;
+    overflow: hidden;
+  }
+  .dc-label-col {
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    transform: rotate(180deg);
+    font-size: 10px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: rgba(255,255,255,0.85);
+    white-space: nowrap;
+    position: absolute;
+    top: 50%; left: 50%;
+    translate: -50% -50%;
+    opacity: 1;
+    transition: opacity 0.2s ease;
+    pointer-events: none;
+  }
+  .det-card.dc-active .dc-label-col { opacity: 0; }
+  .dc-expanded {
+    opacity: 0;
+    transition: opacity 0.3s ease 0.08s;
+    display: flex; flex-direction: column; gap: 3px;
+    overflow: hidden;
+  }
+  .det-card.dc-active .dc-expanded { opacity: 1; }
+  .dc-icon { font-size: 18px; margin-bottom: 2px; }
+  .dc-title {
+    font-size: 13px; font-weight: 700;
+    color: #fff; margin: 0 0 6px;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.5);
+  }
+  .dc-campos { display: flex; flex-direction: column; gap: 3px; overflow-y: auto; max-height: 140px; }
+  .dc-row { display: flex; justify-content: space-between; gap: 6px; font-size: 11px; }
+  .dc-k { color: rgba(255,255,255,0.6); flex-shrink: 0; }
+  .dc-v { color: #fff; font-weight: 600; text-align: right; word-break: break-word; }
+
   /* Carousels & Movcards */
   .carousel {
     display: flex;
@@ -1631,11 +1701,30 @@
       };
     });
   }
+  function initDetCards() {
+    var container = document.querySelector('#detalleBody .det-cards');
+    if (!container) return;
+    var cards = Array.prototype.slice.call(container.querySelectorAll('.det-card'));
+    function activate(idx) {
+      cards.forEach(function (c, i) { c.classList.toggle('dc-active', i === idx); });
+      container.style.gridTemplateColumns = cards.map(function (_, i) {
+        return i === idx ? '5fr' : '1fr';
+      }).join(' ');
+    }
+    activate(0);
+    cards.forEach(function (card, idx) {
+      card.addEventListener('mouseenter', function () { activate(idx); });
+      card.addEventListener('click',      function () { activate(idx); });
+      card.addEventListener('focus',      function () { activate(idx); });
+    });
+  }
+
   var detSel = null;
   function openDetalle(row) {
     detSel = row;
     $('detalleTitulo').textContent = (row.tipo === 'ingreso' ? 'Ingreso' : 'Gasto') + ' · ' + PanelLib.fmtClp(row.total);
     $('detalleBody').innerHTML = PanelLib.detalleHtml(row);
+    initDetCards();
     defaultActions();
     $('detalleModal').classList.remove('hidden');
   }
