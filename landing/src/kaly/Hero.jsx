@@ -200,7 +200,7 @@ export default function Hero() {
       {/* Barra superior de información + acciones */}
       <header className="relative z-40 w-full max-w-5xl mx-auto flex items-center justify-between gap-2 bg-white/90 border border-slate-200/80 rounded-2xl px-3 md:px-4 py-2 shadow-sm backdrop-blur-md">
         <div className="flex items-center gap-2 min-w-0">
-          <span className="h-2 w-2 rounded-full bg-[#0a6e8c] animate-pulse shrink-0"></span>
+          <img src="/icon-192.png" alt="Hash IA" width="28" height="28" className="h-7 w-7 shrink-0" />
           <span className="font-bold text-slate-800 font-sans text-sm tracking-tight shrink-0">Hash IA</span>
           <button
             onClick={() => ui.mostrarPlanes()}
