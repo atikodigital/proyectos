@@ -289,7 +289,7 @@ function makeAgent(el, opts) {
   const inputEl = el.querySelector('.agv-input');
   const sendBtn = el.querySelector('.agv-send');
   if (orb) orb.textContent = titulo;
-  let session = null; let muted = false; let silenceTimer = null;
+  let session = null; let muted = false; let silenceTimer = null; let sessionStartMs = 0;
 
   // Orbe animado estilo KALY (clon de hash.atikodigital.cl) cuando orbKind==='kaly'.
   let kalyOrb = null;
@@ -329,8 +329,22 @@ function makeAgent(el, opts) {
       onUserTranscript: (txt) => { clearSilence(); if (behavior.esNegativa && behavior.esNegativa(txt)) setTimeout(() => stop(), 2500); },
       onAgentTranscript: (txt) => { if (mostrarTranscripcion) lastEl.textContent = (lastEl.textContent ? lastEl.textContent + ' ' : '') + txt; },
       onToolCall: async (fc) => { const out = await execTool(fc.name, fc.args || {}); if (session) session.sendToolResponse(fc.id, fc.name, out); },
-      onClose: () => { session = null; clearSilence(); setState('off'); },
+      onClose: () => {
+        session = null;
+        clearSilence();
+        setState('off');
+        if (sessionStartMs > 0) {
+          const duracion_seg = Math.round((Date.now() - sessionStartMs) / 1000);
+          sessionStartMs = 0;
+          if (duracion_seg >= 5) {
+            pfetch('/agent/session/end', { method: 'POST', body: JSON.stringify({ duracion_seg }) })
+              .then((r) => { if (r && r.error === 'sin_creditos') lastEl.textContent = '⚠️ Sin créditos de voz.'; })
+              .catch(() => {});
+          }
+        }
+      },
     });
+    sessionStartMs = Date.now();
     if (muted && session.setMuted) session.setMuted(true);
     session.sendText(instruccion(mot, s.context || {}));
   }
