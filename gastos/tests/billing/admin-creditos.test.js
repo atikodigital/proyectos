@@ -12,11 +12,11 @@ async function freshDb() {
   return { db, cid: r.rows[0].id };
 }
 
-test('setPlanLimite con plan pyme → limite 250', async () => {
+test('setPlanLimite con plan pyme → limite 210', async () => {
   const { db, cid } = await freshDb();
   const sub = await billingRepo.setPlanLimite(db, cid, { plan: 'pyme' });
   expect(sub.plan).toBe('pyme');
-  expect(Number(sub.creditos_limite)).toBe(250);
+  expect(Number(sub.creditos_limite)).toBe(210);
 });
 
 test('setPlanLimite con plan ilimitado → limite 100000000', async () => {

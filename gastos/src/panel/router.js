@@ -42,6 +42,7 @@ const { buildAgentContext } = require('../agent/context');
 const { createEphemeralToken } = require('../agent/token');
 const { suggestOrder } = require('../pedidos/suggest');
 const { saldo: saldoCreditos, consumirCredito, SinCreditosError } = require('../billing/creditos');
+const { createPreapproval } = require('../billing/mp');
 
 function parseFiltros(q = {}) {
   return {
@@ -71,6 +72,28 @@ function createPanelRouter({ db, sendText, sendImage, varasGemini } = {}) {
   router.get('/suscripcion', async (req, res) => {
     try { res.json(await saldoCreditos(db, req.auth.companyId)); }
     catch (e) { res.status(500).json({ error: 'saldo_error' }); }
+  });
+
+  router.post('/suscripcion/crear', async (req, res) => {
+    const { plan } = req.body || {};
+    if (!plan || !['basico', 'pyme', 'empresa'].includes(plan)) {
+      return res.status(400).json({ error: 'plan_invalido' });
+    }
+    const sub = await saldoCreditos(db, req.auth.companyId);
+    if (sub.plan === 'ilimitado') return res.status(409).json({ error: 'plan_especial' });
+    if (sub.estado === 'activa' && sub.plan === plan) return res.status(409).json({ error: 'ya_activa' });
+    try {
+      const backUrl = `${process.env.PANEL_BASE_URL || 'https://gastos.atikodigital.cl'}/panel/#plan`;
+      const { id, init_point } = await createPreapproval(plan, backUrl);
+      await db.query(
+        `UPDATE subscriptions SET external_id=$2, updated_at=now() WHERE company_id=$1`,
+        [req.auth.companyId, id]);
+      console.log('[mp] preapproval', id, 'empresa', req.auth.companyId, 'plan', plan);
+      return res.json({ init_point });
+    } catch (e) {
+      console.error('[mp] error preapproval:', e.message);
+      return res.status(502).json({ error: 'mp_error' });
+    }
   });
 
   router.get('/chat/contacto', async (req, res) => {

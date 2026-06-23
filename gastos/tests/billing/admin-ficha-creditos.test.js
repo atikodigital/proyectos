@@ -25,5 +25,5 @@ test('getFichaCliente refleja plan actualizado en creditos', async () => {
   const r = await adminRepo.crearCliente(db, { nombreEmpresa: 'Empresa Pyme', plan: 'pyme' });
   const ficha = await adminRepo.getFichaCliente(db, r.empresa.id, 2026, 6);
   expect(ficha.creditos.plan).toBe('pyme');
-  expect(ficha.creditos.limite).toBe(250);
+  expect(ficha.creditos.limite).toBe(210);
 });

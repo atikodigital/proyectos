@@ -2,7 +2,7 @@ const { PLANES, PESOS, getPlan, creditosDe } = require('../../src/billing/planes
 
 test('planes tienen límite de créditos', () => {
   expect(getPlan('free').creditos).toBe(30);
-  expect(getPlan('pyme').creditos).toBe(250);
+  expect(getPlan('pyme').creditos).toBe(210);
   expect(getPlan('desconocido').nombre).toBe('free'); // fallback a free
 });
 

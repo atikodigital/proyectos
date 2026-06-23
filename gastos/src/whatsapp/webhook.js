@@ -75,7 +75,8 @@ function createWebhookRouter({ db, verifyToken, sendText, downloadMedia, extract
               });
             } catch (e) {
               if (e instanceof SinCreditosError) {
-                await reply('Te quedaste sin créditos este mes. Mejora tu plan o espera la renovación.');
+                const panelUrl = process.env.PANEL_BASE_URL || 'https://gastos.atikodigital.cl';
+                await reply(`⚠️ Te quedaste sin créditos de IA este mes.\nMejora tu plan aquí: ${panelUrl}/panel/#plan`);
                 continue;
               }
               throw e;

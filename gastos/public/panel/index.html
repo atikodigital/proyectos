@@ -969,6 +969,12 @@
         <span class="text-sm">Agente IA</span>
         <span class="ml-auto text-[9px] font-bold bg-[#ffd700]/20 text-[#ffd700] border border-[#ffd700]/30 rounded-full px-2 py-0.5">Beta</span>
       </button>
+
+      <!-- Mi Plan -->
+      <button class="side-tab text-[#d0c6ab] hover:text-[#e3e2e2] hover:bg-[#343535]/50 transition-all duration-300 flex items-center gap-3 px-4 py-3 rounded-xl border border-transparent hover:border-[#343535] w-full text-left" data-tab="plan">
+        <span class="material-symbols-outlined text-[20px]">credit_card</span>
+        <span class="text-sm">Mi Plan</span>
+      </button>
     </nav>
     
     <div class="px-3 mt-auto mb-3 shrink-0">
@@ -1508,6 +1514,22 @@
           <div><label>Envío gratis desde $</label><input id="deliveryGratis" type="number" placeholder="(opcional)" /></div>
           <div><button id="deliveryGuardar" class="btn-gold btn-sm">Guardar envío</button></div>
         </div>
+      </div>
+    </section>
+
+    <!-- MI PLAN -->
+    <section id="planSection" class="hidden">
+      <div style="max-width:720px;margin:0 auto;padding:24px 16px">
+        <h2 style="font-size:1.1rem;font-weight:700;color:var(--gold);margin-bottom:4px">Mi Plan</h2>
+        <div id="planActualInfo" style="font-size:13px;color:#9a917a;margin-bottom:24px"></div>
+        <div id="planBannerMorosa" class="hidden" style="background:#7f1d1d;color:#fca5a5;border-radius:10px;padding:12px 16px;margin-bottom:16px;font-size:13px">
+          ⚠️ Tu pago falló. Renueva tu plan para seguir usando la IA.
+        </div>
+        <div id="planCards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px"></div>
+        <p style="font-size:11px;color:#555;margin-top:20px;text-align:center">
+          Para cancelar o bajar de plan, escríbenos al
+          <a href="https://wa.me/56927130792" target="_blank" style="color:var(--gold)">WhatsApp</a>.
+        </p>
       </div>
     </section>
   </div>
@@ -2577,11 +2599,68 @@
     $('headerDate').textContent = new Date().toLocaleDateString('es-CL', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
   }
 
-  // ── CRM / AGENTE secciones en sidebar ────────────────────────────────────
+  // ── MI PLAN ───────────────────────────────────────────────────────────────
+  var PLANES_PANEL = [
+    { key: 'basico',  nombre: 'Básico',  precio: '$9.900',  shots: 100 },
+    { key: 'pyme',    nombre: 'Pyme',    precio: '$24.900', shots: 210 },
+    { key: 'empresa', nombre: 'Empresa', precio: '$49.900', shots: 600 },
+  ];
+
+  async function loadMiPlan() {
+    var cards = $('planCards');
+    var info = $('planActualInfo');
+    var banner = $('planBannerMorosa');
+    if (!cards) return;
+    var s;
+    try { var r = await apiFetch('/suscripcion'); if (!r.ok) return; s = await r.json(); } catch (_) { return; }
+    var planActual = s.plan || 'free';
+    var estado = s.estado || 'activa';
+    var restante = s.restante != null ? s.restante : '—';
+    var renovacion = s.ciclo_fin ? new Date(s.ciclo_fin).toLocaleDateString('es-CL') : null;
+    info.textContent = 'Plan: ' + planActual.charAt(0).toUpperCase() + planActual.slice(1)
+      + '  •  Créditos restantes: ' + restante
+      + (renovacion ? '  •  Renovación: ' + renovacion : '');
+    if (banner) banner.classList.toggle('hidden', estado !== 'morosa');
+    if (planActual === 'ilimitado') {
+      cards.innerHTML = '<p style="color:#9a917a;font-size:13px">Plan especial — sin límite de créditos. Gracias por ser parte de Hash IA 🙌</p>';
+      return;
+    }
+    cards.innerHTML = PLANES_PANEL.map(function(p) {
+      var esActual = p.key === planActual;
+      var borde = esActual ? '2px solid var(--gold)' : '1px solid #2a2a2a';
+      var btn = esActual
+        ? '<button disabled style="width:100%;padding:8px;border-radius:8px;background:#2a2a2a;color:#555;border:none;font-size:12px;cursor:default">Plan actual</button>'
+        : '<button onclick="contratarPlan(\'' + p.key + '\',event)" style="width:100%;padding:8px;border-radius:8px;background:var(--gold);color:#1a1000;border:none;font-weight:700;font-size:12px;cursor:pointer">Contratar</button>';
+      return '<div style="border:' + borde + ';border-radius:12px;padding:16px;background:#0d0e0f">'
+        + '<div style="font-weight:700;color:#e3e2e2">' + p.nombre + '</div>'
+        + '<div style="font-size:1.4rem;font-weight:800;color:var(--gold);margin:6px 0">' + p.precio + '<span style="font-size:11px;font-weight:400;color:#555">/mes</span></div>'
+        + '<div style="font-size:12px;color:#9a917a;margin-bottom:12px">' + p.shots + ' shots al mes</div>'
+        + btn + '</div>';
+    }).join('');
+  }
+
+  window.contratarPlan = async function(plan, ev) {
+    var btn = ev && ev.target;
+    if (btn) { btn.disabled = true; btn.textContent = 'Redirigiendo…'; }
+    try {
+      var r = await apiFetch('/suscripcion/crear', { method: 'POST', body: JSON.stringify({ plan: plan }) });
+      var data = await r.json().catch(function () { return {}; });
+      if (data.init_point) {
+        window.open(data.init_point, '_blank');
+      } else if (data.error === 'ya_activa') {
+        alert('Ya tienes este plan activo.');
+      } else {
+        alert('No se pudo iniciar el pago. Intenta de nuevo.');
+      }
+    } catch (_) { alert('Error de conexión. Intenta de nuevo.'); }
+    if (btn) { btn.disabled = false; btn.textContent = 'Contratar'; }
+  };
+
+  // ── CRM / AGENTE / PLAN secciones en sidebar ──────────────────────────────
   var sideTabsAll = document.querySelectorAll('.side-tab[data-tab]');
   function hideAllSections() {
     ['gastosSection','employeesSection','productosSection','settingsSection',
-     'contabilidadSection','auxiliaresSection','crmSection','agenteSection'].forEach(function(id) {
+     'contabilidadSection','auxiliaresSection','crmSection','agenteSection','planSection'].forEach(function(id) {
       var el = $(id); if (el) el.classList.add('hidden');
     });
   }
@@ -2597,6 +2676,10 @@
       if (tab === 'agente') {
         hideAllSections(); $('agenteSection').classList.remove('hidden');
         updateSidebarUi('agente', null); return;
+      }
+      if (tab === 'plan') {
+        hideAllSections(); $('planSection').classList.remove('hidden');
+        updateSidebarUi('plan', null); loadMiPlan(); return;
       }
       if (orig) orig.call(b);
     };

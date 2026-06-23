@@ -60,4 +60,17 @@ async function setPlanLimite(db, companyId, { plan, creditosLimite } = {}) {
   return getSubscription(db, companyId);
 }
 
-module.exports = { createFreeSubscription, getSubscription, tryConsume, logConsumo, resetCiclo, setPlanLimite };
+async function activarSuscripcion(db, companyId, { plan, external_id, source, ciclo_fin }) {
+  await createFreeSubscription(db, companyId);
+  const p = getPlan(plan);
+  await db.query(
+    `UPDATE subscriptions
+        SET plan=$2, estado='activa', source=$3, external_id=$4,
+            ciclo_inicio=now(), ciclo_fin=$5,
+            creditos_limite=$6, creditos_usados=0, updated_at=now()
+      WHERE company_id=$1`,
+    [companyId, p.nombre, source || 'mp', external_id || null, ciclo_fin || null, p.creditos]);
+  return getSubscription(db, companyId);
+}
+
+module.exports = { createFreeSubscription, getSubscription, tryConsume, logConsumo, resetCiclo, setPlanLimite, activarSuscripcion };

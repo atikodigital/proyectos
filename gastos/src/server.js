@@ -6,6 +6,7 @@ const helmet = require('helmet');
 const express = require('express');
 const { createRateLimiter } = require('./middleware/rate-limit');
 const { createWebhookRouter } = require('./whatsapp/webhook');
+const { validarFirmaMP, procesarEventoMP } = require('./billing/webhook-mp');
 const { createAppRouter } = require('./app/router');
 const { createPanelRouter } = require('./panel/router');
 const { createAdminRouter } = require('./admin/router');
@@ -59,6 +60,35 @@ app.use(['/api/panel/login', '/api/app/login', '/api/admin/login'], loginLimiter
 app.use('/api/onboarding/register', registerLimiter);
 
 app.use('/api/whatsapp/webhook', createWebhookRouter({ db: getPool() }));
+
+// Webhook público de Mercado Pago: valida firma HMAC antes de procesar.
+app.post('/api/pagos/mp/webhook', async (req, res) => {
+  const secret = process.env.MP_WEBHOOK_SECRET;
+  if (secret) {
+    const dataId = (req.body && req.body.data && req.body.data.id) || '';
+    if (!validarFirmaMP(req.headers, dataId, secret)) {
+      console.warn('[mp-webhook] firma inválida');
+      return res.status(400).json({ error: 'firma_invalida' });
+    }
+  }
+  const { type, data } = req.body || {};
+  const preapprovalId = (data && data.id) || null;
+  try {
+    const db = getPool();
+    let companyId = null, plan = null;
+    if (preapprovalId) {
+      const r = await db.query(
+        `SELECT company_id, plan FROM subscriptions WHERE external_id=$1`, [preapprovalId]);
+      if (r.rows[0]) { companyId = r.rows[0].company_id; plan = r.rows[0].plan; }
+    }
+    const result = await procesarEventoMP(db, { type, preapprovalId, plan, companyId });
+    console.log('[mp-webhook] evento', type, '→', result.accion || result.razon);
+    return res.json({ ok: true });
+  } catch (e) {
+    console.error('[mp-webhook] error:', e.message);
+    return res.status(500).json({ error: 'webhook_error' });
+  }
+});
 app.use('/api/app', createAppRouter({ db: getPool() }));
 app.use('/api/panel', createPanelRouter({ db: getPool() }));
 app.use('/api/admin', createAdminRouter({ db: getPool() }));
