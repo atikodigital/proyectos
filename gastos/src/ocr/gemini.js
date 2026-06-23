@@ -31,6 +31,8 @@ function buildPrompt() {
     'folio, nro_operacion (N° de operación/transacción si es transferencia),',
     'direccion_emisor (dirección del emisor/vendedor),',
     'proveedor: para GASTO es la razón social del EMISOR (quien vende y cobra, el que aparece en el encabezado como "EMISOR" o "VENDEDOR"); NUNCA uses la razón social del RECEPTOR (a quien va dirigida la factura — ese es el comprador). Para INGRESO es el nombre de quien envía el pago.',
+    'receptor_rut (RUT de quien RECIBE la factura — el comprador; extrae del bloque RECEPTOR o "RAZÓN SOCIAL RECEPTOR"; si no aparece usa ""),',
+    'receptor_nombre (razón social del RECEPTOR/comprador; si no aparece usa ""),',
     'fecha (dd/mm/aaaa), neto, iva, total (en pesos CLP enteros),',
     `categoria (una de: ${CATEGORIES.join(', ')}; solo para gasto), glosa (descripción corta).`,
     'lineas (arreglo del detalle del documento; SOLO para gasto/factura con ítems): cada elemento { descripcion, cantidad, unidad (kg|g|L|ml|kWh|m3|m2|un|hora), neto, iva, total } en CLP entero. Si no hay detalle de ítems, usa [].',

@@ -6,6 +6,7 @@ const realStorage = require('./storage');
 const { createLineas } = require('./lineas-repo');
 const { mapearLineas } = require('../auxiliares/mapear');
 const { getGiro } = require('../companies/repo');
+const { normalizeRut } = require('../domain/normalize');
 const { consumirCredito } = require('../billing/creditos');
 
 // Devuelve { expense, duplicado }.
@@ -15,7 +16,7 @@ const { consumirCredito } = require('../billing/creditos');
 async function intakeFromImage({
   db, companyId, employeeId, imageBuffer, mimeType = 'image/jpeg', canal = 'whatsapp',
   waMessageId, fotoPath, extract, override = false, waSenderName, waSenderPhone,
-  storeImage, mapearAux,
+  storeImage, mapearAux, companyRut = '', overrideReceptor = false,
 }) {
   const run = extract || extractExpense;
   const _store = storeImage || realStorage.storeImage;
@@ -26,6 +27,22 @@ async function intakeFromImage({
 
   if (extracted.tipo === 'cartola' || extracted.tipo === 'libro_compra_venta') {
     return { expense: null, duplicado: null, documento: extracted.tipo };
+  }
+
+  // Valida que la factura esté dirigida a la empresa del usuario.
+  // Solo aplica a facturas (no boletas ni transferencias) donde ambos RUTs están disponibles.
+  if (!overrideReceptor && extracted.receptor_rut && companyRut) {
+    const rutEmpresa = normalizeRut(companyRut);
+    if (rutEmpresa && extracted.receptor_rut !== rutEmpresa) {
+      return {
+        expense: null, duplicado: null,
+        receptor_ajeno: {
+          receptor_rut: extracted.receptor_rut,
+          receptor_nombre: extracted.receptor_nombre || '',
+          preview: { proveedor: extracted.proveedor, total: extracted.total, tipo_documento: extracted.tipo_documento },
+        },
+      };
+    }
   }
 
   const image_hash = imageHash(imageBuffer);

@@ -23,9 +23,10 @@ export const api = {
     setToken(data.token);
     return data;
   },
-  createExpense(imageBase64, mimeType = 'image/jpeg', override = false) {
+  createExpense(imageBase64, mimeType = 'image/jpeg', override = false, overrideReceptor = false) {
     const body = { imageBase64, mimeType };
     if (override) body.override = true;
+    if (overrideReceptor) body.override_receptor = true;
     return req('/api/app/expenses', { method: 'POST', body });
   },
   confirmExpense(id) { return req(`/api/app/expenses/${id}/confirm`, { method: 'POST' }); },

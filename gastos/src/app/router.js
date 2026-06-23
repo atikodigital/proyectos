@@ -1,5 +1,5 @@
 const express = require('express');
-const { getEmployeeByUsuario, getAgentPrefs, setAgentPrefs, getCompanyWa, getCompanyProfile, setOnboarded, updateCompany, setGiro } = require('../companies/repo');
+const { getEmployeeByUsuario, getAgentPrefs, setAgentPrefs, getCompanyWa, getCompanyProfile, setOnboarded, updateCompany, setGiro, getCompany } = require('../companies/repo');
 const { verifyPassword } = require('../auth/password');
 const { signToken } = require('../auth/jwt');
 const { requireAuth, requireKind } = require('../auth/middleware');
@@ -407,21 +407,25 @@ function createAppRouter({ db, extractExpense, createLiveToken, sendText, sendIm
   }
 
   router.post('/expenses', async (req, res) => {
-    const { imageBase64, mimeType, override } = req.body || {};
+    const { imageBase64, mimeType, override, override_receptor } = req.body || {};
     if (!imageBase64) return res.status(400).json({ error: 'falta_imagen' });
+    const company = await getCompany(db, req.auth.companyId).catch(() => null);
+    const companyRut = (company && company.rut) || '';
     let intakeResult;
     try {
       intakeResult = await intakeFromImage({
         db, companyId: req.auth.companyId, employeeId: req.auth.employeeId,
         imageBuffer: Buffer.from(imageBase64, 'base64'), mimeType: mimeType || 'image/jpeg',
         canal: 'app', extract: _extract, override: !!override,
+        companyRut, overrideReceptor: !!override_receptor,
       });
     } catch (e) {
       if (e instanceof SinCreditosError) return res.status(402).json({ error: 'sin_creditos', saldo: e.saldo });
       throw e;
     }
-    const { expense, duplicado, documento } = intakeResult;
+    const { expense, duplicado, documento, receptor_ajeno } = intakeResult;
     if (documento) return res.status(202).json({ documento, match: 'pendiente' });
+    if (receptor_ajeno) return res.status(422).json({ error: 'receptor_ajeno', ...receptor_ajeno });
     if (!expense) return res.status(409).json({ error: 'duplicado', duplicado });
     return res.status(201).json({ ...expense, duplicado: duplicado || null });
   });

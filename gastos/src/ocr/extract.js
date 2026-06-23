@@ -75,6 +75,8 @@ async function extractExpense({ imageBuffer, mimeType = 'image/jpeg' }) {
   const confianza = Math.round((got / keys.length) * 100);
 
   const rutNorm = gem.rut_emisor ? normalizeRut(gem.rut_emisor) : '';
+  const receptorRut = gem.receptor_rut ? normalizeRut(gem.receptor_rut) : '';
+  const receptorNombre = String(gem.receptor_nombre || '').trim();
 
   return {
     tipo,
@@ -82,6 +84,8 @@ async function extractExpense({ imageBuffer, mimeType = 'image/jpeg' }) {
     es_nota_credito: esNotaCredito,
     exento: esExento,
     rut_emisor: rutNorm,
+    receptor_rut: receptorRut,
+    receptor_nombre: receptorNombre,
     rut_valido: rutNorm ? isValidRut(rutNorm) : null,
     folio: String(gem.folio || '').trim(),
     nro_operacion,
