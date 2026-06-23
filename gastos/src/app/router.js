@@ -407,7 +407,7 @@ function createAppRouter({ db, extractExpense, createLiveToken, sendText, sendIm
   }
 
   router.post('/expenses', async (req, res) => {
-    const { imageBase64, mimeType, override, override_receptor } = req.body || {};
+    const { imageBase64, mimeType, override, override_receptor, force_ingreso } = req.body || {};
     if (!imageBase64) return res.status(400).json({ error: 'falta_imagen' });
     const company = await getCompany(db, req.auth.companyId).catch(() => null);
     const companyRut = (company && company.rut) || '';
@@ -417,14 +417,15 @@ function createAppRouter({ db, extractExpense, createLiveToken, sendText, sendIm
         db, companyId: req.auth.companyId, employeeId: req.auth.employeeId,
         imageBuffer: Buffer.from(imageBase64, 'base64'), mimeType: mimeType || 'image/jpeg',
         canal: 'app', extract: _extract, override: !!override,
-        companyRut, overrideReceptor: !!override_receptor,
+        companyRut, overrideReceptor: !!override_receptor, forceIngreso: !!force_ingreso,
       });
     } catch (e) {
       if (e instanceof SinCreditosError) return res.status(402).json({ error: 'sin_creditos', saldo: e.saldo });
       throw e;
     }
-    const { expense, duplicado, documento, receptor_ajeno } = intakeResult;
+    const { expense, duplicado, documento, receptor_ajeno, es_venta } = intakeResult;
     if (documento) return res.status(202).json({ documento, match: 'pendiente' });
+    if (es_venta) return res.status(422).json({ error: 'es_venta', ...es_venta });
     if (receptor_ajeno) return res.status(422).json({ error: 'receptor_ajeno', ...receptor_ajeno });
     if (!expense) return res.status(409).json({ error: 'duplicado', duplicado });
     return res.status(201).json({ ...expense, duplicado: duplicado || null });

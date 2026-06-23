@@ -30,6 +30,7 @@ export default function GastosApp() {
   const [pending, setPending] = useState(null);
   const [dup, setDup] = useState(null);
   const [receptorAjeno, setReceptorAjeno] = useState(null);
+  const [esVenta, setEsVenta] = useState(null);
   const [busy, setBusy] = useState(false);
   const [matchDoc, setMatchDoc] = useState(null);
   const [mostrarOnboarding, setMostrarOnboarding] = useState(false);
@@ -60,21 +61,23 @@ export default function GastosApp() {
 
   if (!authed) return <LoginScreen onLoggedIn={() => setAuthed(true)} />;
 
-  async function submit(imageBase64, mimeType, override, overrideReceptor) {
+  async function submit(imageBase64, mimeType, override, overrideReceptor, forceIngreso) {
     setBusy(true);
     try {
-      const exp = await api.createExpense(imageBase64, mimeType, override, overrideReceptor);
+      const exp = await api.createExpense(imageBase64, mimeType, override, overrideReceptor, forceIngreso);
       if (exp && exp.documento) {
         setMatchDoc(exp.documento);
-        setDup(null); setReceptorAjeno(null);
+        setDup(null); setReceptorAjeno(null); setEsVenta(null);
         setTab('match');
         return;
       }
       setPending({ exp, img: imageBase64, mime: mimeType });
-      setDup(null); setReceptorAjeno(null);
+      setDup(null); setReceptorAjeno(null); setEsVenta(null);
     }
     catch (e) {
-      if (e && e.status === 422 && e.data && e.data.error === 'receptor_ajeno')
+      if (e && e.status === 422 && e.data && e.data.error === 'es_venta')
+        setEsVenta({ imageBase64, mimeType, info: e.data });
+      else if (e && e.status === 422 && e.data && e.data.error === 'receptor_ajeno')
         setReceptorAjeno({ imageBase64, mimeType, info: e.data });
       else if (e && e.status === 409)
         setDup({ imageBase64, mimeType, info: (e.data && e.data.duplicado) || {} });
@@ -119,13 +122,31 @@ export default function GastosApp() {
         </div>
       </header>
       <main className="flex-1 min-h-0 flex flex-col overflow-hidden">
-        {!pending && !dup && !receptorAjeno && (tab === 'capturar' || tab === 'chat') && (
+        {!pending && !dup && !receptorAjeno && !esVenta && (tab === 'capturar' || tab === 'chat') && (
           <div className="px-4 py-2 bg-slate-50/50 border-b border-slate-200/40 shrink-0">
             <KalyAgent />
           </div>
         )}
         <div className="flex-1 min-h-0">
-        {receptorAjeno ? (
+        {esVenta ? (
+          <div className="h-full overflow-y-auto p-6 max-w-sm mx-auto grid gap-3 content-start">
+            <h2 className="text-xl font-black" style={{ color: '#C9A24B' }}>📤 Factura de venta</h2>
+            <div className="rounded-2xl bg-black/5 p-4 border text-sm grid gap-2">
+              <div>Eres el <b>emisor</b> de esta factura. Se registrará como ingreso <b>pendiente de cobro</b> hasta confirmarlo con la cartola.</div>
+              {esVenta.info.receptor_nombre || esVenta.info.receptor_rut ? (
+                <div className="opacity-80">Cliente: <b>{esVenta.info.receptor_nombre || esVenta.info.receptor_rut}</b></div>
+              ) : null}
+              {esVenta.info.preview && esVenta.info.preview.total > 0 ? (
+                <div className="opacity-80">
+                  Total: {clp(esVenta.info.preview.total)}
+                  {esVenta.info.preview.folio ? ` · folio ${esVenta.info.preview.folio}` : ''}
+                </div>
+              ) : null}
+            </div>
+            <button onClick={() => submit(esVenta.imageBase64, esVenta.mimeType, false, false, true)} className="rounded-xl font-black py-3 text-black" style={{ background: '#C9A24B' }}>Registrar como ingreso</button>
+            <button onClick={() => setEsVenta(null)} className="rounded-xl font-black py-3 bg-black/10 border">Descartar</button>
+          </div>
+        ) : receptorAjeno ? (
           <div className="h-full overflow-y-auto p-6 max-w-sm mx-auto grid gap-3 content-start">
             <h2 className="text-xl font-black" style={{ color: '#C9A24B' }}>⚠️ Factura de otra empresa</h2>
             <div className="rounded-2xl bg-black/5 p-4 border text-sm grid gap-2">

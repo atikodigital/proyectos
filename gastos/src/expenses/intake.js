@@ -16,7 +16,7 @@ const { consumirCredito } = require('../billing/creditos');
 async function intakeFromImage({
   db, companyId, employeeId, imageBuffer, mimeType = 'image/jpeg', canal = 'whatsapp',
   waMessageId, fotoPath, extract, override = false, waSenderName, waSenderPhone,
-  storeImage, mapearAux, companyRut = '', overrideReceptor = false,
+  storeImage, mapearAux, companyRut = '', overrideReceptor = false, forceIngreso = false,
 }) {
   const run = extract || extractExpense;
   const _store = storeImage || realStorage.storeImage;
@@ -29,9 +29,25 @@ async function intakeFromImage({
     return { expense: null, duplicado: null, documento: extracted.tipo };
   }
 
+  // Detecta si la empresa es el EMISOR (factura de venta propia).
+  // El ingreso queda pendiente hasta confirmar cobro con la cartola.
+  if (!forceIngreso && companyRut && extracted.rut_emisor) {
+    const rutNorm = normalizeRut(companyRut);
+    if (rutNorm && extracted.rut_emisor === rutNorm) {
+      return {
+        expense: null, duplicado: null,
+        es_venta: {
+          receptor_rut: extracted.receptor_rut || '',
+          receptor_nombre: extracted.receptor_nombre || '',
+          preview: { total: extracted.total, folio: extracted.folio, tipo_documento: extracted.tipo_documento },
+        },
+      };
+    }
+  }
+
   // Valida que la factura esté dirigida a la empresa del usuario.
-  // Solo aplica a facturas (no boletas ni transferencias) donde ambos RUTs están disponibles.
-  if (!overrideReceptor && extracted.receptor_rut && companyRut) {
+  // No aplica cuando: se forzó como ingreso, es una transferencia/depósito (tipo=ingreso), o no hay companyRut.
+  if (!overrideReceptor && !forceIngreso && extracted.tipo !== 'ingreso' && extracted.receptor_rut && companyRut) {
     const rutEmpresa = normalizeRut(companyRut);
     if (rutEmpresa && extracted.receptor_rut !== rutEmpresa) {
       return {
@@ -46,7 +62,11 @@ async function intakeFromImage({
   }
 
   const image_hash = imageHash(imageBuffer);
-  const tipo = extracted.tipo === 'ingreso' ? 'ingreso' : 'gasto';
+  // forceIngreso: la empresa es el emisor (venta). El "proveedor" en este contexto es el cliente comprador.
+  const tipo = forceIngreso ? 'ingreso' : (extracted.tipo === 'ingreso' ? 'ingreso' : 'gasto');
+  const proveedor = forceIngreso
+    ? (extracted.receptor_nombre || extracted.receptor_rut || extracted.proveedor || '')
+    : extracted.proveedor;
 
   const duplicado = await findDuplicate(db, companyId, {
     tipo,
@@ -56,7 +76,7 @@ async function intakeFromImage({
     image_hash,
     total: extracted.total,
     fecha: extracted.fecha,
-    proveedor: extracted.proveedor,
+    proveedor,
   });
 
   if (duplicado && duplicado.nivel === 'fuerte' && !override) {
@@ -66,6 +86,7 @@ async function intakeFromImage({
   const expense = await createExpense(db, {
     ...extracted,
     tipo,
+    proveedor,
     image_hash,
     company_id: companyId,
     employee_id: employeeId,
