@@ -2,7 +2,7 @@ const { newDb } = require('pg-mem');
 const { migrate } = require('../../src/db/migrate');
 const {
   createCompany, createEmployee,
-  getCompanyByPhoneNumberId, getEmployeeByPhone,
+  getCompanyByPhoneNumberId, getEmployeeByPhone, getCompanyProfile,
 } = require('../../src/companies/repo');
 
 async function freshDb() {
@@ -40,4 +40,14 @@ test('no resuelve empleado inactivo', async () => {
   const c = await createCompany(db, { nombre: 'Pyme X' });
   await createEmployee(db, { company_id: c.id, nombre: 'Ana', phone: '56911112222', activo: false });
   expect(await getEmployeeByPhone(db, c.id, '56911112222')).toBeNull();
+});
+
+test('getCompanyProfile expone productos: [] por defecto, incluye chat al activarlo', async () => {
+  const db = await freshDb();
+  const c = await createCompany(db, { nombre: 'Pyme X' });
+  const def = await getCompanyProfile(db, c.id);
+  expect(def.productos).toEqual([]);
+  await db.query('UPDATE companies SET productos=$2::jsonb WHERE id=$1', [c.id, JSON.stringify(['chat'])]);
+  const after = await getCompanyProfile(db, c.id);
+  expect(after.productos).toContain('chat');
 });

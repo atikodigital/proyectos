@@ -67,10 +67,17 @@ test('createExpense con documento:cartola cambia a tab Match y muestra cartola b
   await waitFor(() => expect(screen.getByText(/cartola bancaria/i)).toBeInTheDocument());
 });
 
-test('el nav YA NO tiene la pestaña Productos (se movió a Chat)', () => {
+test('Chat OCULTO por defecto (la empresa no tiene el módulo chat)', () => {
   setToken('TK');
   render(<GastosApp />);
+  expect(screen.queryByRole('button', { name: /^Chat$/i })).toBeNull();
   expect(screen.queryByRole('button', { name: /^Productos$/i })).toBeNull();
-  expect(screen.getByRole('button', { name: /^Chat$/i })).toBeInTheDocument();
   expect(screen.getByRole('button', { name: /^Match$/i })).toBeInTheDocument();
+});
+
+test('Chat VISIBLE cuando la empresa tiene el módulo chat activado (desde admin)', async () => {
+  setToken('TK');
+  api.getCompany.mockResolvedValueOnce({ onboarded_at: '2026-01-01', productos: ['chat'] });
+  render(<GastosApp />);
+  expect(await screen.findByRole('button', { name: /^Chat$/i })).toBeInTheDocument();
 });

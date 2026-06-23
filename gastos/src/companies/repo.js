@@ -141,13 +141,14 @@ const _ocReady = new WeakMap();
 async function ensureCompanyOnboarding(db) {
   if (_ocReady.get(db)) return;
   try { await db.query('ALTER TABLE companies ADD COLUMN IF NOT EXISTS onboarded_at timestamptz'); } catch (e) { /* ya existe */ }
+  try { await db.query("ALTER TABLE companies ADD COLUMN IF NOT EXISTS productos jsonb DEFAULT '[]'"); } catch (e) { /* ya existe */ }
   _ocReady.set(db, true);
 }
 
 async function getCompanyProfile(db, companyId) {
   await ensureCompanyOnboarding(db);
   const r = await db.query(
-    'SELECT id, nombre, rut, giro, owner_nombre, owner_whatsapp, onboarded_at, created_at, kaly_persona FROM companies WHERE id=$1',
+    'SELECT id, nombre, rut, giro, owner_nombre, owner_whatsapp, onboarded_at, created_at, kaly_persona, productos FROM companies WHERE id=$1',
     [companyId]
   );
   if (!r.rows[0]) return null;
@@ -155,6 +156,12 @@ async function getCompanyProfile(db, companyId) {
   if (typeof row.kaly_persona === 'string') {
     try { row.kaly_persona = JSON.parse(row.kaly_persona); } catch (e) { row.kaly_persona = null; }
   }
+  // productos: lista de módulos habilitados por cliente (ej. 'chat'). La app la usa
+  // para mostrar/ocultar pestañas. jsonb llega ya parseado; tolera string/null.
+  if (typeof row.productos === 'string') {
+    try { row.productos = JSON.parse(row.productos); } catch (e) { row.productos = []; }
+  }
+  if (!Array.isArray(row.productos)) row.productos = [];
   return row;
 }
 

@@ -34,16 +34,28 @@ export default function GastosApp() {
   const [mostrarOnboarding, setMostrarOnboarding] = useState(false);
   const [saltado, setSaltado] = useState(false);
   const [mostrarMemoria, setMostrarMemoria] = useState(false);
+  // Módulos habilitados por cliente (vienen del backend). El módulo "chat" sale
+  // OCULTO por defecto y solo se activa desde gastos.atikodigital.cl/admin.
+  const [productos, setProductos] = useState([]);
 
   useEffect(() => {
     if (!authed) return;
     (async () => {
       try {
         const resp = await api.getCompany();
+        setProductos(Array.isArray(resp.productos) ? resp.productos : []);
         if (!resp.onboarded_at && !saltado) setMostrarOnboarding(true);
       } catch { /* no romper el render */ }
     })();
   }, [authed]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const chatHabilitado = productos.includes('chat');
+
+  // Si el chat se desactiva (o nunca estuvo activo) y la pestaña activa era 'chat',
+  // vuelve a Captura para no dejar al usuario en una vista oculta.
+  useEffect(() => {
+    if (tab === 'chat' && !chatHabilitado) setTab('capturar');
+  }, [chatHabilitado, tab]);
 
   if (!authed) return <LoginScreen onLoggedIn={() => setAuthed(true)} />;
 
@@ -76,8 +88,8 @@ export default function GastosApp() {
         <OnboardingWizard
           onDone={() => setMostrarOnboarding(false)}
           onSkip={() => { setSaltado(true); setMostrarOnboarding(false); }}
-          onIrAlChat={() => { setMostrarOnboarding(false); setTab('chat'); }}
-          onCrearPedido={() => { setMostrarOnboarding(false); setTab('chat'); }}
+          onIrAlChat={() => { setMostrarOnboarding(false); setTab(chatHabilitado ? 'chat' : 'capturar'); }}
+          onCrearPedido={() => { setMostrarOnboarding(false); setTab(chatHabilitado ? 'chat' : 'capturar'); }}
         />
       )}
       {mostrarMemoria && (
@@ -135,7 +147,7 @@ export default function GastosApp() {
             <div className="shrink-0 border-b" style={{ height: '42%' }}><VarasChat /></div>
             <div className="flex-1 min-h-0 overflow-y-auto"><MyExpenses /></div>
           </div>
-        ) : tab === 'chat' ? (
+        ) : (tab === 'chat' && chatHabilitado) ? (
           <ChatView />
         ) : tab === 'transaccional' ? (
           <div className="h-full"><VarasChat /></div>
@@ -155,9 +167,11 @@ export default function GastosApp() {
           <button className={`flex-1 flex flex-col justify-center items-center text-[10.5px] font-bold border-r border-slate-300 transition-all duration-200 ${tab === 'transaccional' ? 'text-[#C9A24B] bg-slate-50/50' : 'text-neutral-500 opacity-60 hover:opacity-100'}`} onClick={() => setTab('transaccional')}>
             <span>Transaccional</span>
           </button>
+          {chatHabilitado && (
           <button className={`flex-1 flex flex-col justify-center items-center text-[10.5px] font-bold border-r border-slate-300 transition-all duration-200 ${tab === 'chat' ? 'text-[#C9A24B] bg-slate-50/50' : 'text-neutral-500 opacity-60 hover:opacity-100'}`} onClick={() => setTab('chat')}>
             <span>Chat</span>
           </button>
+          )}
           <button className={`flex-1 flex flex-col justify-center items-center text-[10.5px] font-bold transition-all duration-200 ${tab === 'match' ? 'bg-[#b91c1c] text-white font-bold' : 'text-[#b91c1c] opacity-80 hover:opacity-100 hover:bg-red-50/30'}`} onClick={() => setTab('match')}>
             <span>Match</span>
           </button>
