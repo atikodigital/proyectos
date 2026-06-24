@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { api } from './api';
 
 const CATEGORIES = [
@@ -218,56 +218,80 @@ function enPeriodo(e, filtro) {
   return true;
 }
 
-// Tarjeta de movimiento: foto de la factura arriba + detalle (tipo, tags, monto, glosa) abajo.
-function MovCard({ e, onClick }) {
-  const [foto, setFoto] = useState(null);
-  const esIngreso = e.tipo === 'ingreso';
+function MovimientosCards({ rows, onSelect }) {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [fotos, setFotos] = useState({});
+
   useEffect(() => {
-    let alive = true; let url = null;
-    if (api.fotoUrl) {
-      Promise.resolve(api.fotoUrl(e.id)).then((u) => { if (alive && u) { url = u; setFoto(u); } }).catch(() => {});
-    }
-    return () => { alive = false; if (url) { try { URL.revokeObjectURL(url); } catch (_) { /* noop */ } } };
-  }, [e.id]);
-  const tags = [esIngreso ? 'Ingreso' : (e.categoria || 'Otros gastos')];
-  if (e.estado) tags.push(e.estado);
-  if (e.estado_pago) tags.push(e.estado_pago);
+    let alive = true;
+    const urls = [];
+    rows.forEach((e) => {
+      if (api.fotoUrl) {
+        Promise.resolve(api.fotoUrl(e.id)).then((u) => {
+          if (alive && u) { urls.push(u); setFotos((p) => ({ ...p, [e.id]: u })); }
+        }).catch(() => {});
+      }
+    });
+    return () => { alive = false; urls.forEach((u) => { try { URL.revokeObjectURL(u); } catch (_) {} }); };
+  }, [rows]);
+
+  const gridStyle = useMemo(() => ({
+    gridTemplateColumns: rows.map((_, i) => i === activeIndex ? '5fr' : '1fr').join(' '),
+    transition: 'grid-template-columns 0.5s ease-out',
+  }), [activeIndex, rows.length]);
+
+  if (!rows.length) return null;
+
   return (
-    <button
-      onClick={onClick}
-      className="relative shrink-0 h-full rounded-2xl overflow-hidden border border-black/10 text-left shadow-lg"
-      style={{ minWidth: '82vw', maxWidth: '380px', scrollSnapAlign: 'center' }}
-    >
-      <div className="h-full w-full bg-black/30 flex items-center justify-center">
-        {foto ? (
-          <img alt="factura" src={foto} className="w-full h-full object-cover" />
-        ) : (
+    <div style={{ display: 'grid', gap: 8, height: '100%', ...gridStyle }}>
+      {rows.map((e, index) => {
+        const esIngreso = e.tipo === 'ingreso';
+        const foto = fotos[e.id];
+        const isActive = index === activeIndex;
+        const bg = esIngreso ? 'linear-gradient(135deg,#0b3d2e,#0f5132)' : 'linear-gradient(135deg,#2a2350,#3a1d1d)';
+
+        return (
           <div
-            className="w-full h-full flex items-center justify-center text-6xl opacity-40"
-            style={{ background: esIngreso ? 'linear-gradient(135deg,#0b3d2e,#0f5132)' : 'linear-gradient(135deg,#2a2350,#3a1d1d)' }}
+            key={e.id}
+            onClick={() => isActive ? onSelect(e) : setActiveIndex(index)}
+            onMouseEnter={() => setActiveIndex(index)}
+            style={{ position: 'relative', borderRadius: 16, overflow: 'hidden', cursor: 'pointer', border: '1px solid rgba(255,255,255,0.12)', background: bg, minWidth: 0 }}
           >
-            {esIngreso ? '📥' : '🧾'}
+            {foto && <img src={foto} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: isActive ? 0.35 : 0.2, transition: 'opacity 0.3s' }} />}
+            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.15) 100%)', pointerEvents: 'none' }} />
+            <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', padding: 12, overflow: 'hidden' }}>
+              {!isActive ? (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+                  <span style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)', color: 'rgba(255,255,255,0.85)', fontSize: 10, fontWeight: 700, whiteSpace: 'nowrap', userSelect: 'none', maxHeight: '55%', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {e.proveedor || (esIngreso ? 'Ingreso' : 'Gasto')}
+                  </span>
+                  <span style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)', color: esIngreso ? '#7CFC9B' : '#E7C46B', fontSize: 9, fontWeight: 800 }}>
+                    {esIngreso ? '+' : '−'}{clp(e.total)}
+                  </span>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                  <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: 10, fontWeight: 800, padding: '2px 8px', borderRadius: 20, background: esIngreso ? '#1f7a3f' : '#6d28d9', color: '#fff' }}>
+                      {esIngreso ? 'INGRESO' : 'GASTO'}
+                    </span>
+                    {e.estado ? <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 20, background: 'rgba(255,255,255,0.15)', color: '#fff', textTransform: 'capitalize' }}>{e.estado}</span> : null}
+                    {e.estado_pago ? <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 20, background: 'rgba(255,255,255,0.12)', color: '#fff' }}>{e.estado_pago}</span> : null}
+                  </div>
+                  <div style={{ color: '#fff', fontWeight: 800, fontSize: 14, lineHeight: 1.2 }}>{e.proveedor || (esIngreso ? 'Sin pagador' : 'Sin proveedor')}</div>
+                  <div style={{ fontWeight: 900, fontSize: 24, color: esIngreso ? '#7CFC9B' : '#E7C46B' }}>{esIngreso ? '+' : '−'}{clp(e.total)}</div>
+                  {(e.fecha || e.glosa) ? <div style={{ color: 'rgba(255,255,255,0.65)', fontSize: 11 }}>{e.fecha ? fechaCorta(e.fecha) : ''}{e.glosa ? (e.fecha ? ' · ' : '') + e.glosa : ''}</div> : null}
+                  {!esIngreso && e.categoria ? <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11 }}>{e.categoria}</div> : null}
+                  <button onClick={(ev) => { ev.stopPropagation(); onSelect(e); }} style={{ alignSelf: 'flex-start', marginTop: 4, fontSize: 11, fontWeight: 800, color: '#5ad7ff', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+                    Ver detalle ›
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
-        )}
-      </div>
-      <div
-        className="absolute inset-x-3 bottom-3 rounded-2xl p-4 space-y-2"
-        style={{ background: 'rgba(0,0,0,.55)', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)' }}
-      >
-        <div className="flex flex-wrap gap-1.5">
-          <span className="text-[11px] font-black px-2.5 py-0.5 rounded-full text-white" style={{ background: esIngreso ? '#1f7a3f' : '#6d28d9' }}>
-            {esIngreso ? 'INGRESO' : 'GASTO'}
-          </span>
-          {tags.map((t, i) => (
-            <span key={i} className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-white/15 text-white capitalize">{t}</span>
-          ))}
-        </div>
-        <div className="text-white font-black text-base truncate">{e.proveedor || (esIngreso ? 'Sin pagador' : 'Sin proveedor')}</div>
-        <div className="font-black text-2xl" style={{ color: esIngreso ? '#7CFC9B' : '#E7C46B' }}>{esIngreso ? '+' : '−'}{clp(e.total)}</div>
-        <div className="text-white/70 text-xs">{e.fecha || 's/fecha'}{e.glosa ? ' · ' + e.glosa : ''}</div>
-        <div className="text-xs font-bold" style={{ color: '#5ad7ff' }}>Ver detalle ›</div>
-      </div>
-    </button>
+        );
+      })}
+    </div>
   );
 }
 
@@ -276,8 +300,6 @@ export default function MyExpenses() {
   const [loading, setLoading] = useState(true);
   const [sel, setSel] = useState(null);
   const [filtro, setFiltro] = useState('mes');
-  const [prog, setProg] = useState(0);
-  const scrollRef = useRef(null);
   function load() {
     return api.listExpenses().then((r) => setRows(Array.isArray(r) ? r : [])).catch(() => {});
   }
@@ -291,13 +313,6 @@ export default function MyExpenses() {
   if (sel) return <Detalle e={sel} onBack={() => setSel(null)} onReload={load} />;
   const visibles = rows.filter((e) => enPeriodo(e, filtro));
   const N = visibles.length;
-  // El carrusel se desliza SOLO horizontal (swipe). La barra de progreso se calcula
-  // con la posición horizontal del scroll, no con scroll vertical.
-  function onScroll() {
-    const el = scrollRef.current; if (!el) return;
-    const max = el.scrollWidth - el.clientWidth;
-    setProg(max > 0 ? Math.round((el.scrollLeft / max) * 100) : 0);
-  }
   return (
     <div className="h-full flex flex-col">
       <div className="p-4 pb-2 grid gap-3 shrink-0">
@@ -313,18 +328,8 @@ export default function MyExpenses() {
       {N === 0 ? (
         <p className="px-6 opacity-60">{rows.length ? 'Sin movimientos en este período.' : 'Aún no tienes movimientos.'}</p>
       ) : (
-        <div className="flex-1 min-h-0 flex flex-col">
-          <div
-            ref={scrollRef}
-            onScroll={onScroll}
-            className="flex-1 min-h-0 flex gap-3 overflow-x-auto px-4 pb-1"
-            style={{ scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch' }}
-          >
-            {visibles.map((e) => <MovCard key={e.id} e={e} onClick={() => setSel(e)} />)}
-          </div>
-          <div className="mx-6 my-3 h-1.5 rounded-full bg-black/10 overflow-hidden shrink-0">
-            <div className="h-full rounded-full" style={{ width: (N <= 1 ? 100 : prog) + '%', background: '#5ad7ff' }} />
-          </div>
+        <div className="flex-1 min-h-0 px-4 pb-4">
+          <MovimientosCards rows={visibles} onSelect={setSel} />
         </div>
       )}
     </div>
