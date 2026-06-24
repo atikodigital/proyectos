@@ -75,12 +75,15 @@ export default function Hero() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // NO auto-iniciamos: KALY arranca solo cuando el visitante toca el orbe o le
-  // escribe (gesto del usuario). Así (1) el navegador permite micrófono + audio
-  // —si arranca sin gesto, la política de autoplay deja todo suspendido y no se
-  // oye el saludo ni se prende el micro— y (2) solo se paga Gemini Live cuando
-  // alguien realmente quiere hablar (control de costo).
+  // NO auto-iniciamos la voz: KALY arranca la sesión Live solo cuando el visitante
+  // toca el orbe o le escribe (gesto del usuario). Así (1) el navegador permite
+  // micrófono + audio —si arranca sin gesto, la política de autoplay deja todo
+  // suspendido y no se oye nada ni se prende el micro— y (2) solo se paga Gemini
+  // Live cuando alguien realmente quiere hablar (control de costo).
+  // Para que igual "parta saludando", sembramos un saludo de bienvenida EN TEXTO
+  // al instante (costo cero); al tocar el orbe, KALY saluda también en voz.
   useEffect(() => {
+    setSubtitulo('¡Hola! Soy KALY, el asistente de Hash IA 👋 Tócame y conversamos, o escríbeme aquí abajo.');
     return () => {
       if (sessionRef.current) {
         sessionRef.current.close();
@@ -265,6 +268,13 @@ export default function Hero() {
             <p className="text-[9px] text-[#0a6e8c] mt-1.5 bg-white/95 px-3 py-1 rounded-full border border-slate-200 shadow-md backdrop-blur-sm pointer-events-none animate-pulse tracking-wider font-sans uppercase font-bold">
               Toca para hablar
             </p>
+          )}
+          {/* Globo con lo que dice KALY: al cargar muestra el saludo de bienvenida
+              (texto, costo cero); ya en conversación muestra su transcripción en vivo. */}
+          {subtitulo && (
+            <div className="mt-2 max-w-[280px] bg-white/95 border border-slate-200 rounded-2xl px-3.5 py-2 shadow-lg backdrop-blur-sm pointer-events-none">
+              <p className="text-xs text-slate-700 font-sans leading-snug text-center">{subtitulo}</p>
+            </div>
           )}
         </div>
       </motion.div>
