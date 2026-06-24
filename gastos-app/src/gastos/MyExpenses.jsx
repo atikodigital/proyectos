@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { api } from './api';
 
 const CATEGORIES = [
@@ -10,6 +10,101 @@ const CATEGORIES = [
 
 function clp(n) { return '$' + (Math.round(Number(n) || 0)).toLocaleString('es-CL'); }
 function fechaCorta(v) { if (!v) return ''; const s = String(v); return s.length >= 10 ? s.slice(0, 10) : s; }
+
+function DetalleCards({ e }) {
+  const esIngreso = e.tipo === 'ingreso';
+  const [activeIndex, setActiveIndex] = useState(0);
+  const cards = useMemo(() => [
+    {
+      id: 'monto', title: 'Monto', icon: '💰',
+      gradient: 'linear-gradient(135deg,#0f766e,#0e7490)',
+      fields: [
+        ['Total', clp(e.total)],
+        e.neto ? ['Neto', clp(e.neto)] : null,
+        e.iva  ? ['IVA',  clp(e.iva)]  : null,
+      ].filter(Boolean),
+    },
+    {
+      id: 'empresa', title: esIngreso ? 'Pagador' : 'Proveedor', icon: '🏢',
+      gradient: 'linear-gradient(135deg,#1d4ed8,#4338ca)',
+      fields: [
+        e.proveedor        ? [esIngreso ? 'Pagador' : 'Proveedor', e.proveedor] : null,
+        e.rut_emisor       ? ['RUT',      e.rut_emisor]        : null,
+        e.direccion_emisor ? ['Dirección', e.direccion_emisor] : null,
+        e.wa_sender_name   ? ['WhatsApp',  [e.wa_sender_name, e.wa_sender_phone].filter(Boolean).join(' · ')] : null,
+        e.canal            ? ['Canal',    e.canal]             : null,
+      ].filter(Boolean),
+    },
+    {
+      id: 'documento', title: 'Documento', icon: '📄',
+      gradient: 'linear-gradient(135deg,#7c3aed,#6d28d9)',
+      fields: [
+        e.tipo_documento ? ['Tipo',    e.tipo_documento]         : null,
+        e.folio          ? ['Folio',   e.folio]                  : null,
+        e.nro_operacion  ? ['N° op.',  e.nro_operacion]          : null,
+        e.fecha          ? ['Emisión', fechaCorta(e.fecha)]      : null,
+        e.created_at     ? ['Carga',   fechaCorta(e.created_at)] : null,
+      ].filter(Boolean),
+    },
+    {
+      id: 'clasificacion', title: 'Clasificación', icon: '🏷️',
+      gradient: 'linear-gradient(135deg,#d97706,#b45309)',
+      fields: [
+        (!esIngreso && e.categoria)   ? ['Categoría',  e.categoria]   : null,
+        e.glosa                        ? ['Glosa',      e.glosa]        : null,
+        e.cuenta_sii_codigo            ? ['Cuenta SII', e.cuenta_sii_codigo + (e.cuenta_sii_nombre ? ' ' + e.cuenta_sii_nombre : '')] : null,
+      ].filter(Boolean),
+    },
+    {
+      id: 'estado', title: 'Estado', icon: '✅',
+      gradient: 'linear-gradient(135deg,#15803d,#166534)',
+      fields: [
+        ['Tipo',  esIngreso ? 'Ingreso' : 'Gasto'],
+        e.estado      ? ['Estado', e.estado]      : null,
+        e.estado_pago ? ['Pago',   e.estado_pago] : null,
+      ].filter(Boolean),
+    },
+  ].filter(c => c.fields.length > 0), [e, esIngreso]);
+
+  const gridStyle = useMemo(() => ({
+    gridTemplateColumns: cards.map((_, i) => i === activeIndex ? '5fr' : '1fr').join(' '),
+  }), [activeIndex, cards.length]);
+
+  return (
+    <div style={{ display: 'grid', gap: 8, height: 210, transition: 'grid-template-columns 0.5s ease-out', ...gridStyle }}>
+      {cards.map((card, index) => (
+        <div
+          key={card.id}
+          onClick={() => setActiveIndex(index)}
+          onMouseEnter={() => setActiveIndex(index)}
+          style={{ position: 'relative', borderRadius: 12, overflow: 'hidden', cursor: 'pointer', border: '1px solid rgba(255,255,255,0.15)', background: card.gradient, minWidth: 0 }}
+        >
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top,rgba(0,0,0,0.45) 0%,transparent 55%)', pointerEvents: 'none' }} />
+          <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', padding: 10, overflow: 'hidden' }}>
+            {index !== activeIndex ? (
+              <span style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)', color: 'rgba(255,255,255,0.9)', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, whiteSpace: 'nowrap', userSelect: 'none' }}>
+                {card.icon} {card.title}
+              </span>
+            ) : (
+              <div style={{ overflow: 'hidden' }}>
+                <div style={{ fontSize: 14, marginBottom: 4 }}>{card.icon}</div>
+                <div style={{ color: '#fff', fontWeight: 800, fontSize: 10, marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 }}>{card.title}</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4, overflowY: 'auto', maxHeight: 130 }}>
+                  {card.fields.map(([k, v]) => (
+                    <div key={k}>
+                      <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: 10, marginBottom: 1 }}>{k}</div>
+                      <div style={{ color: '#fff', fontWeight: 700, fontSize: 11, wordBreak: 'break-word' }}>{v}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 function EditForm({ e, onSaved, onCancel }) {
   const [f, setF] = useState({
@@ -75,26 +170,6 @@ function Detalle({ e: e0, onBack, onReload }) {
     const url = await api.fotoUrl(e.id);
     if (url) { setFotoUrl(url); setFotoMsg(''); } else { setFotoMsg('Sin foto disponible (se guarda 2 meses y luego se elimina).'); }
   }
-  const filas = [
-    [esIngreso ? 'Pagador / origen' : 'Proveedor', e.proveedor],
-    ['Total', clp(e.total)],
-    ['Neto', e.neto ? clp(e.neto) : ''],
-    ['IVA', e.iva ? clp(e.iva) : ''],
-    ['RUT', e.rut_emisor],
-    ['Folio (N° doc)', e.folio],
-    ['N° operación (voucher)', e.nro_operacion],
-    ['Documento', e.tipo_documento],
-    ['Categoría', esIngreso ? '' : e.categoria],
-    ['Cuenta SII', e.cuenta_sii_codigo ? (e.cuenta_sii_codigo + ' ' + (e.cuenta_sii_nombre || '')) : ''],
-    ['Fecha emisión', fechaCorta(e.fecha)],
-    ['Fecha de carga', fechaCorta(e.created_at)],
-    ['Dirección', e.direccion_emisor],
-    ['Glosa', e.glosa],
-    ['Enviado por (WhatsApp)', [e.wa_sender_name, e.wa_sender_phone].filter(Boolean).join(' · ')],
-    ['Canal', e.canal],
-    ['Estado', e.estado],
-    ['Estado de pago', e.estado_pago],
-  ].filter(function (f) { return f[1] !== undefined && f[1] !== null && String(f[1]).trim() !== ''; });
   async function anular() {
     setBusy(true);
     try { await api.annulExpense(e.id); onReload(); onBack(); } finally { setBusy(false); }
@@ -108,16 +183,7 @@ function Detalle({ e: e0, onBack, onReload }) {
         <>
           <span className="text-xs font-black w-fit px-2 py-0.5 rounded-full" style={{ background: esIngreso ? '#1f7a3f' : '#7a1f1f', color: '#fff' }}>{esIngreso ? 'INGRESO' : 'GASTO'}</span>
           <div className="text-2xl font-black" style={{ color: '#C9A24B' }}>{clp(e.total)}</div>
-          <div className="rounded-2xl bg-black/5 border">
-            {filas.map(function (f) {
-              return (
-                <div key={f[0]} className="flex justify-between gap-3 px-4 py-2 text-sm border-b last:border-0">
-                  <span className="opacity-60">{f[0]}</span>
-                  <span className="font-bold text-right">{f[1]}</span>
-                </div>
-              );
-            })}
-          </div>
+          <DetalleCards e={e} />
           {fotoUrl ? (
             <img alt="factura" src={fotoUrl} className="rounded-xl border w-full max-h-80 object-contain bg-black/20" />
           ) : (
