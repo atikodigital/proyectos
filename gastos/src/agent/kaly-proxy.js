@@ -56,9 +56,12 @@ function pipe(client, upstream, { onClose } = {}) {
 }
 
 // Engancha el proxy al http.Server (maneja el 'upgrade' del path indicado).
-// Demo pública = costo puro: tope de sesión corto (90s) + corte por inactividad (25s sin
-// tráfico en ninguna dirección). Junto al VAD del cliente, baja fuerte el gasto de la landing.
-function attachKalyProxy(server, { apiKey, path = '/api/public/kaly-ws', maxMs = 90 * 1000, idleMs = 25 * 1000, limiter = createLimiter(), WS = WebSocket } = {}) {
+// Control de costo SIN cortar conversaciones reales: el corte importante es el de
+// INACTIVIDAD (40s sin tráfico en ninguna dirección) — cierra sesiones abandonadas
+// rápido. El tope duro (10 min) es solo una red de seguridad para sesiones colgadas,
+// no para cortar al visitante mientras conversa. Junto al VAD del cliente, mantiene
+// bajo el gasto de la landing sin arruinar la experiencia de venta.
+function attachKalyProxy(server, { apiKey, path = '/api/public/kaly-ws', maxMs = 10 * 60 * 1000, idleMs = 40 * 1000, limiter = createLimiter(), WS = WebSocket } = {}) {
   const wss = new WebSocketServer({ noServer: true });
   server.on('upgrade', (req, socket, head) => {
     let pathname;

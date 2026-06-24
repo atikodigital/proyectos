@@ -107,11 +107,11 @@ export default function Hero() {
     return () => window.removeEventListener('keydown', onKey);
   }, [features]);
 
-  // Las tarjetas de características se muestran 3 segundos y se cierran solas
-  // (vistazo rápido durante la conversación, sin tapar la pantalla).
+  // Las tarjetas de características se muestran 10 segundos y se cierran solas
+  // (tiempo para mirarlas mientras KALY las comenta, sin tapar la pantalla).
   useEffect(() => {
     if (!features) return;
-    const t = setTimeout(() => setFeatures(null), 3000);
+    const t = setTimeout(() => setFeatures(null), 10000);
     return () => clearTimeout(t);
   }, [features]);
 
