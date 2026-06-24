@@ -58,6 +58,16 @@ function tokenParaUsuario(user) {
   return signToken({ kind: 'user', companyId: user.company_id, userId: user.id, rol: user.rol || 'owner' });
 }
 
+// Lee una cookie puntual del header Cookie (sin dependencias).
+function leerCookie(cookieHeader, name) {
+  if (!cookieHeader) return null;
+  for (const p of String(cookieHeader).split(';')) {
+    const i = p.indexOf('=');
+    if (i > -1 && p.slice(0, i).trim() === name) return decodeURIComponent(p.slice(i + 1).trim());
+  }
+  return null;
+}
+
 function requireAuth(req, res, next) {
   const h = req.headers.authorization || '';
   const token = h.startsWith('Bearer ') ? h.slice(7) : null;
@@ -141,6 +151,34 @@ function createOnboardingRouter({ db }) {
     } catch (e) {
       console.error('[onboarding/oauth/google]', e.message);
       res.status(500).json({ error: 'No se pudo iniciar sesión con Google' });
+    }
+  });
+
+  // ── PÚBLICO: login con Google en modo REDIRECCIÓN (sin popup) ─────
+  // Más robusto que el popup (no depende de cookies de terceros, que Chrome/McAfee
+  // suelen bloquear). Google hace POST (form) con `credential` a este login_uri;
+  // verificamos y redirigimos al panel con el JWT en el fragmento (#sso=...).
+  router.post('/oauth/google-redirect', async (req, res) => {
+    const panel = (process.env.PANEL_BASE_URL || 'https://gastos.atikodigital.cl') + '/panel/';
+    try {
+      const idToken = (req.body && req.body.credential) || null;
+      if (!idToken) return res.redirect(panel + '#sso_error=falta_token');
+      // CSRF doble-submit de Google (cookie == body), si viene.
+      const bodyCsrf = req.body && req.body.g_csrf_token;
+      const cookieCsrf = leerCookie(req.headers.cookie, 'g_csrf_token');
+      if (bodyCsrf && cookieCsrf && bodyCsrf !== cookieCsrf) {
+        return res.redirect(panel + '#sso_error=csrf');
+      }
+      let perfil;
+      try { perfil = await verifyGoogleIdToken(idToken); }
+      catch (e) { return res.redirect(panel + '#sso_error=google_invalido'); }
+      if (!perfil.email) return res.redirect(panel + '#sso_error=sin_email');
+      const { user, needsBusinessName } = await findOrCreateSocialUser(db, perfil);
+      const token = tokenParaUsuario(user);
+      return res.redirect(panel + '#sso=' + encodeURIComponent(token) + '&new=' + (needsBusinessName ? '1' : '0'));
+    } catch (e) {
+      console.error('[oauth/google-redirect]', e.message);
+      return res.redirect(panel + '#sso_error=server');
     }
   });
 
