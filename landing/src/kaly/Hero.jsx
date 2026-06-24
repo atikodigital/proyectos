@@ -48,6 +48,9 @@ export default function Hero() {
   const [modoTexto, setModoTexto] = useState(false);
   const [texto, setTexto] = useState('');
   const sessionRef = useRef(null);
+  // KALY saluda UNA sola vez por carga de página; si la sesión se corta por
+  // inactividad y se vuelve a conectar, NO repite el saludo (continuidad).
+  const greetedRef = useRef(false);
 
   const cardRef = useRef(null);
   const chatEndRef = useRef(null);
@@ -104,6 +107,14 @@ export default function Hero() {
     return () => window.removeEventListener('keydown', onKey);
   }, [features]);
 
+  // Las tarjetas de características se muestran 3 segundos y se cierran solas
+  // (vistazo rápido durante la conversación, sin tapar la pantalla).
+  useEffect(() => {
+    if (!features) return;
+    const t = setTimeout(() => setFeatures(null), 3000);
+    return () => clearTimeout(t);
+  }, [features]);
+
   // Mapeamos el movimiento relativo del mouse a un pequeño desplazamiento para el orbe (anclado a la cabeza)
   const orbX = useTransform(mouseX, [-700, 700], [-35, 35]);
   const orbY = useTransform(mouseY, [-450, 450], [-22, 22]);
@@ -140,7 +151,12 @@ export default function Hero() {
         onState: (s) => { setState(s); if (s === 'error') setModoTexto(true); },
         onAudioLevel: (_, rms) => setLevel(Math.min(1, rms * 6)),
         onReady: (sess) => {
-          sess.sendText("Hola. Preséntate de forma breve en español chileno y saluda.");
+          // Saludo solo en la primera conexión de esta visita; en reconexiones
+          // KALY retoma sin volver a presentarse.
+          if (!greetedRef.current) {
+            greetedRef.current = true;
+            sess.sendText("Hola. Preséntate de forma breve en español chileno y saluda.");
+          }
         },
         onToolCall: (fc) => {
           executeTool(fc.name, fc.args || {}, ui);

@@ -11,10 +11,13 @@ export function openLiveSession(opts) {
   const ws = (wsFactory || ((u) => new WebSocket(u)))(url);
   let closed = false; let micStop = null; let player = null; let muted = false;
   let sessionReady = false;
+  // Transcripción del turno del agente: Gemini la manda en pedacitos (deltas), así
+  // que la ACUMULAMOS y emitimos la frase completa; se resetea al cerrar el turno.
+  let agentTurn = '';
   const queue = [];
   // Ahorro de costo: VAD (no manda silencio) + corte por inactividad.
   const gate = createVadGate({ threshold: opts.vadThreshold || 0.01, hangoverMs: opts.vadHangoverMs || 800 });
-  const idleMs = opts.idleMs || 10000;
+  const idleMs = opts.idleMs || 20000;
   let lastActivity = Date.now();
   let idleTimer = null;
   const bump = () => { lastActivity = Date.now(); };
@@ -73,19 +76,22 @@ export function openLiveSession(opts) {
     const sc = msg.serverContent;
     if (!sc) return;
     if (sc.inputTranscription && sc.inputTranscription.text) onUserTranscript && onUserTranscript(sc.inputTranscription.text);
-    if (sc.outputTranscription && sc.outputTranscription.text) opts.onAgentTranscript && opts.onAgentTranscript(sc.outputTranscription.text);
-    if (sc.interrupted) { if (player) player.flush(); setState('listening'); }
+    // Acumulamos los deltas de la transcripción para mostrar la frase completa
+    // (antes cada pedacito reemplazaba al anterior → solo se veía la última palabra).
+    if (sc.outputTranscription && sc.outputTranscription.text) {
+      agentTurn += sc.outputTranscription.text;
+      opts.onAgentTranscript && opts.onAgentTranscript(agentTurn);
+    }
+    if (sc.interrupted) { agentTurn = ''; if (player) player.flush(); setState('listening'); }
     if (sc.modelTurn && sc.modelTurn.parts) {
-      let textContent = '';
+      // Solo reproducimos el audio. El texto de modelTurn es el "pensamiento"
+      // interno del modelo (no lo que dice) → NO se muestra; el texto visible
+      // sale de outputTranscription (lo que KALY realmente pronuncia).
       for (const p of sc.modelTurn.parts) {
         if (p.inlineData && p.inlineData.data) { bump(); setState('speaking'); if (player) player.push(p.inlineData.data); }
-        if (p.text) textContent += p.text;
-      }
-      if (textContent && opts.onAgentTranscript) {
-        opts.onAgentTranscript(textContent);
       }
     }
-    if (sc.turnComplete) { if (player) player.onDrain(() => setState('listening')); else setState('listening'); }
+    if (sc.turnComplete) { agentTurn = ''; if (player) player.onDrain(() => setState('listening')); else setState('listening'); }
   };
 
   ws.onerror = () => setState('error');
