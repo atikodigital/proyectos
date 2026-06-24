@@ -873,6 +873,8 @@
 <script>window.ATIKO_META_PIXEL_ID='1768028951050353';</script>
 <script src="https://atikodigital.cl/assets/meta-pixel.js" async crossorigin="anonymous"></script>
 <noscript><img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=1768028951050353&ev=PageView&noscript=1"/></noscript>
+<!-- Google Identity Services: para "Continuar con Google" en el login. -->
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body><!-- HERO SHADER -->
 <canvas id="heroShader" aria-hidden="true"></canvas>
@@ -903,6 +905,15 @@
       </div>
       <p id="loginErr" class="text-xs text-[#ffb4ab] font-semibold mt-1"></p>
       <button id="loginBtn" class="w-full bg-gradient-to-r from-[#ffd700] to-[#e9c400] text-[#3a3000] hover:shadow-[0_0_20px_rgba(255,215,0,0.4)] transition-all py-2.5 rounded-xl text-sm font-bold mt-2">Entrar</button>
+
+      <!-- Separador + login social (Google). Los botones aparecen solos si el navegador carga GIS. -->
+      <div class="flex items-center gap-2 my-1">
+        <div class="flex-1 h-px bg-[#343535]"></div>
+        <span class="text-[10px] text-[#d0c6ab]/60 uppercase tracking-wider">o</span>
+        <div class="flex-1 h-px bg-[#343535]"></div>
+      </div>
+      <div id="googleBtn" class="flex justify-center min-h-[40px]"></div>
+      <p id="socialErr" class="text-xs text-[#ffb4ab] font-semibold mt-1"></p>
     </div>
   </div>
 </div>
@@ -1626,6 +1637,67 @@
       showApp();
     } catch (e) { $('loginErr').textContent = 'Correo o contraseña incorrectos.'; }
   };
+
+  // ── Login social con Google ─────────────────────────────────────────────────
+  // El Client ID es público por diseño (va en el navegador). El backend verifica
+  // el token contra Google antes de crear/entrar a la cuenta.
+  var GOOGLE_CLIENT_ID = '790192917762-b6vt4u7ijukim3qlaastuhim20o9gof4.apps.googleusercontent.com';
+  function initGoogleBtn(intentos) {
+    intentos = intentos || 0;
+    if (!window.google || !google.accounts || !google.accounts.id) {
+      if (intentos < 30) return setTimeout(function () { initGoogleBtn(intentos + 1); }, 300);
+      return; // GIS no cargó (sin internet / bloqueado): el login por correo sigue funcionando
+    }
+    try {
+      google.accounts.id.initialize({ client_id: GOOGLE_CLIENT_ID, callback: onGoogleCredential });
+      google.accounts.id.renderButton($('googleBtn'), { theme: 'filled_black', size: 'large', text: 'continue_with', shape: 'pill', logo_alignment: 'left', width: 300 });
+    } catch (e) { /* noop */ }
+  }
+  async function onGoogleCredential(resp) {
+    $('socialErr').textContent = '';
+    try {
+      var r = await fetch('/api/onboarding/oauth/google', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idToken: resp.credential })
+      });
+      var data = await r.json();
+      if (!r.ok) throw new Error(data.mensaje || data.error || 'error');
+      setToken(data.token);
+      if (data.needsBusinessName) pedirNombreNegocio(); else showApp();
+    } catch (e) {
+      $('socialErr').textContent = 'No se pudo entrar con Google. Intenta de nuevo o usa tu correo.';
+    }
+  }
+  // Tras un registro social, pedimos el nombre del negocio antes de entrar.
+  function pedirNombreNegocio() {
+    var m = document.createElement('div');
+    m.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
+    m.innerHTML = '<div style="background:#1b1c1c;border:1px solid #343535;border-radius:16px;padding:22px;max-width:360px;width:100%;box-shadow:0 8px 40px rgba(0,0,0,.6);">'
+      + '<h3 style="margin:0 0 6px;font-weight:900;color:#ffd700;">¡Bienvenido! 👋</h3>'
+      + '<p style="margin:0 0 12px;color:#d0c6ab;font-size:13px;">¿Cómo se llama tu negocio? (lo puedes cambiar después)</p>'
+      + '<input id="bnInput" placeholder="Ej: Panadería Don José" style="width:100%;box-sizing:border-box;border-radius:8px;padding:10px;border:1px solid #343535;background:rgba(41,42,42,.5);color:#e3e2e2;outline:none;" />'
+      + '<p id="bnMsg" style="color:#ffb4ab;font-size:12px;margin:8px 0 0;min-height:14px;"></p>'
+      + '<button id="bnSave" style="width:100%;margin-top:10px;background:linear-gradient(to right,#ffd700,#e9c400);color:#3a3000;border:none;border-radius:10px;padding:11px;font-weight:800;cursor:pointer;">Empezar</button>'
+      + '</div>';
+    document.body.appendChild(m);
+    var input = m.querySelector('#bnInput'); input.focus();
+    async function guardar() {
+      var nombre = input.value.trim();
+      if (nombre.length < 2) { m.querySelector('#bnMsg').textContent = 'Escribe el nombre de tu negocio.'; return; }
+      try {
+        await fetch('/api/onboarding/business-name', {
+          method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token() },
+          body: JSON.stringify({ nombre: nombre })
+        });
+      } catch (e) { /* si falla, igual entra; puede renombrar en configuración */ }
+      document.body.removeChild(m);
+      showApp();
+    }
+    m.querySelector('#bnSave').onclick = guardar;
+    input.addEventListener('keydown', function (e) { if (e.key === 'Enter') guardar(); });
+  }
+  initGoogleBtn();
+
   $('logoutBtn').onclick = function () { clearToken(); showLogin(); };
   // Cambiar contraseña (el usuario tipea su clave; el backend la hashea, nunca se ve).
   $('cambiarClaveBtn').onclick = function () {
