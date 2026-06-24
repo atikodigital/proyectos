@@ -19,7 +19,7 @@ const WHATSAPP_URL = 'https://wa.me/56927130792';
 const PANEL_URL = 'https://gastos.atikodigital.cl/panel/';
 // Proxy WS público del backend: el navegador conecta acá y el server pone la API key.
 const KALY_WS_URL = 'wss://gastos.atikodigital.cl/api/public/kaly-ws';
-const KALY_MODEL = 'gemini-2.0-flash-live-001';
+const KALY_MODEL = 'gemini-2.5-flash-native-audio-preview-09-2025';
 const FEATURES = {
   finanzas: [
     { t: 'Gastos por foto o voz', d: 'Saca la foto de la boleta y la IA la registra con IVA.', familia: 'finanzas', img: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?q=80&w=800' },
@@ -75,9 +75,12 @@ export default function Hero() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Auto-iniciar la sesión al montar la página
+  // NO auto-iniciamos: KALY arranca solo cuando el visitante toca el orbe o le
+  // escribe (gesto del usuario). Así (1) el navegador permite micrófono + audio
+  // —si arranca sin gesto, la política de autoplay deja todo suspendido y no se
+  // oye el saludo ni se prende el micro— y (2) solo se paga Gemini Live cuando
+  // alguien realmente quiere hablar (control de costo).
   useEffect(() => {
-    iniciar();
     return () => {
       if (sessionRef.current) {
         sessionRef.current.close();

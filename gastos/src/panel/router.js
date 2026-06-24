@@ -583,7 +583,7 @@ function createPanelRouter({ db, sendText, sendImage, varasGemini } = {}) {
   router.post('/agent/session', async (req, res) => {
     let tok;
     if (process.env.KALY_TOKEN_MODE === 'key') {
-      tok = { token: process.env.GEMINI_API_KEY, expireAt: null, model: process.env.GEMINI_LIVE_MODEL || 'gemini-2.0-flash-live-001' };
+      tok = { token: process.env.GEMINI_API_KEY, expireAt: null, model: process.env.GEMINI_LIVE_MODEL || 'gemini-2.5-flash-native-audio-preview-09-2025' };
     } else {
       try { tok = await createEphemeralToken({ apiKey: process.env.GEMINI_API_KEY }); }
       catch (e) { return res.status(503).json({ error: 'live_no_disponible', detalle: e.message }); }

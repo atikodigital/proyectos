@@ -14,7 +14,7 @@ export function openLiveSession(opts) {
   const queue = [];
   // Ahorro de costo: VAD (no manda silencio) + corte por inactividad.
   const gate = createVadGate({ threshold: opts.vadThreshold || 0.01, hangoverMs: opts.vadHangoverMs || 800 });
-  const idleMs = opts.idleMs || 20000;
+  const idleMs = opts.idleMs || 10000;
   let lastActivity = Date.now();
   let idleTimer = null;
   const bump = () => { lastActivity = Date.now(); };

@@ -1,6 +1,6 @@
 const axios = require('axios');
 
-const DEFAULT_MODEL = process.env.GEMINI_LIVE_MODEL || 'gemini-2.0-flash-live-001';
+const DEFAULT_MODEL = process.env.GEMINI_LIVE_MODEL || 'gemini-2.5-flash-native-audio-preview-09-2025';
 
 // Crea un token efímero (v1alpha auth_tokens) para que la app abra la sesión Live
 // sin conocer la API key real. uses:1 → un solo arranque de sesión por token.
