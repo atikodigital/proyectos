@@ -15,6 +15,14 @@ const { hashPassword } = require('../auth/password');
 const { signToken, verifyToken } = require('../auth/jwt');
 const { verifyGoogleIdToken, verifyFacebookToken } = require('../auth/oauth');
 
+// ¿A esta empresa le falta completar sus datos (nombre/dueño/contacto)?
+async function companyNeedsSetup(db, companyId) {
+  try {
+    const r = await db.query('SELECT needs_setup FROM companies WHERE id=$1', [companyId]);
+    return !!(r.rows[0] && r.rows[0].needs_setup);
+  } catch (e) { return false; }
+}
+
 // Encuentra o crea la cuenta a partir del perfil verificado del proveedor social.
 // 1) por id de proveedor (ya entró antes) → login.  2) por email (ya tenía cuenta
 // por correo) → enlaza el proveedor y login.  3) nuevo → crea empresa (needs_setup)
@@ -26,15 +34,22 @@ async function findOrCreateSocialUser(db, perfil) {
   // Google siempre lo entrega; si Facebook no (el usuario no dio el permiso),
   // el endpoint le pedirá registrarse por correo.
   if (!email) { const err = new Error('sin_email'); err.code = 'sin_email'; throw err; }
+  // needsBusinessName depende de si a la empresa le faltan datos (needs_setup),
+  // NO de si es login nuevo: si creó la cuenta pero no completó el formulario,
+  // se lo volvemos a pedir en el próximo ingreso.
   // 1) por id de proveedor
   let user = await getUserByProvider(db, provider, providerId);
-  if (user) return { user, company: await getCompany(db, user.company_id), needsBusinessName: false };
+  if (user) {
+    const company = await getCompany(db, user.company_id);
+    return { user, company, needsBusinessName: await companyNeedsSetup(db, user.company_id) };
+  }
   // 2) por email (enlazar al que ya existía por correo)
   if (email) {
     const existing = await getUserByEmail(db, email);
     if (existing) {
       user = (await linkProvider(db, existing.id, provider, providerId)) || existing;
-      return { user, company: await getCompany(db, user.company_id), needsBusinessName: false };
+      const company = await getCompany(db, user.company_id);
+      return { user, company, needsBusinessName: await companyNeedsSetup(db, user.company_id) };
     }
   }
   // 3) cuenta nueva: empresa provisional + usuario owner social

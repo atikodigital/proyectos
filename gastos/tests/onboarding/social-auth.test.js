@@ -32,15 +32,23 @@ test('nuevo usuario social: crea empresa + usuario owner y pide nombre de negoci
   expect(sub.rows[0].plan).toBe('free');
 });
 
-test('segundo login con el mismo Google: NO duplica, no vuelve a pedir nombre', async () => {
+test('segundo login con el mismo Google: NO duplica; sigue pidiendo datos si no completó', async () => {
   const db = await freshDb();
   const a = await findOrCreateSocialUser(db, perfilGoogle);
   const b = await findOrCreateSocialUser(db, perfilGoogle);
   expect(b.user.id).toBe(a.user.id);
   expect(b.company.id).toBe(a.company.id);
-  expect(b.needsBusinessName).toBe(false);
+  expect(b.needsBusinessName).toBe(true); // aún no completó el formulario
   const count = await db.query('SELECT count(*)::int AS n FROM users');
   expect(count.rows[0].n).toBe(1);
+});
+
+test('completado el setup (needs_setup=false), no vuelve a pedir datos', async () => {
+  const db = await freshDb();
+  const a = await findOrCreateSocialUser(db, perfilGoogle);
+  await db.query('UPDATE companies SET needs_setup=false WHERE id=$1', [a.company.id]);
+  const b = await findOrCreateSocialUser(db, perfilGoogle);
+  expect(b.needsBusinessName).toBe(false);
 });
 
 test('si ya existía cuenta por correo, enlaza el proveedor (no crea otra)', async () => {
