@@ -309,7 +309,7 @@ function createAppRouter({ db, extractExpense, createLiveToken, sendText, sendIm
     if (process.env.KALY_TOKEN_MODE === 'key') {
       // Modo directo: entrega la API key real SOLO a empleados autenticados (fallback
       // mientras el WS no acepte tokens efimeros como key).
-      tok = { token: process.env.GEMINI_API_KEY, expireAt: null, model: process.env.GEMINI_LIVE_MODEL || 'gemini-2.5-flash-native-audio-preview-09-2025' };
+      tok = { token: process.env.GEMINI_API_KEY, expireAt: null, model: process.env.GEMINI_LIVE_MODEL || 'gemini-2.0-flash-live-001' };
     } else {
       try { tok = await _liveToken(); }
       catch (e) { return res.status(503).json({ error: 'live_no_disponible', detalle: e.message }); }

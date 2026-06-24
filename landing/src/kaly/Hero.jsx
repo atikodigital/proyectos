@@ -19,7 +19,7 @@ const WHATSAPP_URL = 'https://wa.me/56927130792';
 const PANEL_URL = 'https://gastos.atikodigital.cl/panel/';
 // Proxy WS público del backend: el navegador conecta acá y el server pone la API key.
 const KALY_WS_URL = 'wss://gastos.atikodigital.cl/api/public/kaly-ws';
-const KALY_MODEL = 'gemini-2.5-flash-native-audio-preview-09-2025';
+const KALY_MODEL = 'gemini-2.0-flash-live-001';
 const FEATURES = {
   finanzas: [
     { t: 'Gastos por foto o voz', d: 'Saca la foto de la boleta y la IA la registra con IVA.', familia: 'finanzas', img: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?q=80&w=800' },
