@@ -1672,38 +1672,50 @@
       return;
     }
     if (mSso) {
+      var mNombre = h.match(/[#&]nombre=([^&]+)/);
       setToken(decodeURIComponent(mSso[1]));
       try { history.replaceState(null, '', location.pathname); } catch (e) {}
-      if (mNew && mNew[1] === '1') pedirNombreNegocio(); else showApp();
+      if (mNew && mNew[1] === '1') pedirNombreNegocio(mNombre ? decodeURIComponent(mNombre[1]) : ''); else showApp();
     }
   }
   // Tras un registro social, pedimos el nombre del negocio antes de entrar.
-  function pedirNombreNegocio() {
+  function pedirNombreNegocio(prefillNombre) {
     var m = document.createElement('div');
     m.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
-    m.innerHTML = '<div style="background:#1b1c1c;border:1px solid #343535;border-radius:16px;padding:22px;max-width:360px;width:100%;box-shadow:0 8px 40px rgba(0,0,0,.6);">'
-      + '<h3 style="margin:0 0 6px;font-weight:900;color:#ffd700;">¡Bienvenido! 👋</h3>'
-      + '<p style="margin:0 0 12px;color:#d0c6ab;font-size:13px;">¿Cómo se llama tu negocio? (lo puedes cambiar después)</p>'
-      + '<input id="bnInput" placeholder="Ej: Panadería Don José" style="width:100%;box-sizing:border-box;border-radius:8px;padding:10px;border:1px solid #343535;background:rgba(41,42,42,.5);color:#e3e2e2;outline:none;" />'
+    var inp = 'width:100%;box-sizing:border-box;border-radius:8px;padding:10px;border:1px solid #343535;background:rgba(41,42,42,.5);color:#e3e2e2;outline:none;margin-top:4px;';
+    var lbl = 'display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#d0c6ab;margin-top:12px;';
+    m.innerHTML = '<div style="background:#1b1c1c;border:1px solid #343535;border-radius:16px;padding:22px;max-width:380px;width:100%;box-shadow:0 8px 40px rgba(0,0,0,.6);">'
+      + '<h3 style="margin:0 0 4px;font-weight:900;color:#ffd700;">¡Bienvenido! 👋</h3>'
+      + '<p style="margin:0;color:#d0c6ab;font-size:13px;">Cuéntanos un poco para terminar (lo puedes cambiar después).</p>'
+      + '<label style="' + lbl + '">Nombre del negocio</label>'
+      + '<input id="bnNegocio" placeholder="Ej: Panadería Don José" style="' + inp + '" />'
+      + '<label style="' + lbl + '">Tu nombre</label>'
+      + '<input id="bnNombre" placeholder="Ej: José Olguín" style="' + inp + '" />'
+      + '<label style="' + lbl + '">Número de contacto (WhatsApp)</label>'
+      + '<input id="bnContacto" type="tel" placeholder="Ej: +56 9 1234 5678" style="' + inp + '" />'
       + '<p id="bnMsg" style="color:#ffb4ab;font-size:12px;margin:8px 0 0;min-height:14px;"></p>'
-      + '<button id="bnSave" style="width:100%;margin-top:10px;background:linear-gradient(to right,#ffd700,#e9c400);color:#3a3000;border:none;border-radius:10px;padding:11px;font-weight:800;cursor:pointer;">Empezar</button>'
+      + '<button id="bnSave" style="width:100%;margin-top:12px;background:linear-gradient(to right,#ffd700,#e9c400);color:#3a3000;border:none;border-radius:10px;padding:11px;font-weight:800;cursor:pointer;">Empezar</button>'
       + '</div>';
     document.body.appendChild(m);
-    var input = m.querySelector('#bnInput'); input.focus();
+    if (prefillNombre) m.querySelector('#bnNombre').value = prefillNombre;
+    var negocio = m.querySelector('#bnNegocio'); negocio.focus();
     async function guardar() {
-      var nombre = input.value.trim();
+      var nombre = negocio.value.trim();
+      var ownerNombre = m.querySelector('#bnNombre').value.trim();
+      var contacto = m.querySelector('#bnContacto').value.trim();
       if (nombre.length < 2) { m.querySelector('#bnMsg').textContent = 'Escribe el nombre de tu negocio.'; return; }
+      if (contacto.replace(/[^\d]/g, '').length < 8) { m.querySelector('#bnMsg').textContent = 'Escribe un número de contacto válido.'; return; }
       try {
         await fetch('/api/onboarding/business-name', {
           method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token() },
-          body: JSON.stringify({ nombre: nombre })
+          body: JSON.stringify({ nombre: nombre, owner_nombre: ownerNombre, owner_whatsapp: contacto })
         });
-      } catch (e) { /* si falla, igual entra; puede renombrar en configuración */ }
+      } catch (e) { /* si falla, igual entra; puede completar en configuración */ }
       document.body.removeChild(m);
       showApp();
     }
     m.querySelector('#bnSave').onclick = guardar;
-    input.addEventListener('keydown', function (e) { if (e.key === 'Enter') guardar(); });
+    m.addEventListener('keydown', function (e) { if (e.key === 'Enter') guardar(); });
   }
   initGoogleBtn();
   manejarRetornoGoogle();

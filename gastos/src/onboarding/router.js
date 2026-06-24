@@ -175,7 +175,8 @@ function createOnboardingRouter({ db }) {
       if (!perfil.email) return res.redirect(panel + '#sso_error=sin_email');
       const { user, needsBusinessName } = await findOrCreateSocialUser(db, perfil);
       const token = tokenParaUsuario(user);
-      return res.redirect(panel + '#sso=' + encodeURIComponent(token) + '&new=' + (needsBusinessName ? '1' : '0'));
+      const nombreQs = (needsBusinessName && perfil.name) ? '&nombre=' + encodeURIComponent(perfil.name) : '';
+      return res.redirect(panel + '#sso=' + encodeURIComponent(token) + '&new=' + (needsBusinessName ? '1' : '0') + nombreQs);
     } catch (e) {
       console.error('[oauth/google-redirect]', e.message);
       return res.redirect(panel + '#sso_error=server');
@@ -205,18 +206,23 @@ function createOnboardingRouter({ db }) {
     }
   });
 
-  // ── PRIVADO: completar el nombre del negocio tras un registro social ──
+  // ── PRIVADO: completar datos del negocio tras un registro social ──
+  // El dueño completa: nombre del negocio, su nombre y su número de contacto.
   router.post('/business-name', requireAuth, async (req, res) => {
     try {
-      const nombre = String((req.body && req.body.nombre) || '').trim();
+      const b = req.body || {};
+      const nombre = String(b.nombre || '').trim();
       if (nombre.length < 2) return res.status(400).json({ error: 'nombre_invalido' });
-      await updateCompany(db, req.user.companyId, { nombre: nombre.slice(0, 120) });
+      const patch = { nombre: nombre.slice(0, 120) };
+      if (b.owner_nombre) patch.owner_nombre = String(b.owner_nombre).trim().slice(0, 80);
+      if (b.owner_whatsapp) patch.owner_whatsapp = String(b.owner_whatsapp).replace(/[^+\d]/g, '').slice(0, 20);
+      await updateCompany(db, req.user.companyId, patch);
       try { await db.query('UPDATE companies SET needs_setup=false WHERE id=$1', [req.user.companyId]); } catch (e) {}
       const company = await getCompany(db, req.user.companyId);
       return res.json({ ok: true, company: { id: company.id, nombre: company.nombre } });
     } catch (e) {
       console.error('[onboarding/business-name]', e.message);
-      res.status(500).json({ error: 'No se pudo guardar el nombre' });
+      res.status(500).json({ error: 'No se pudo guardar' });
     }
   });
 
