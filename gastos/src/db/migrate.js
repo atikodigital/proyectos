@@ -109,6 +109,24 @@ const BILLING_DDL = [
   "CREATE INDEX IF NOT EXISTS idx_ia_consumo_company ON ia_consumo(company_id, created_at)",
 ];
 
+// Login social (Google / Facebook): el registro deja de ser solo email+password.
+// password_hash y email pasan a ser opcionales (un usuario social no tiene clave);
+// guardamos el id del proveedor para encontrarlo en logins futuros. needs_setup
+// marca a la empresa recién creada por login social a la que aún le falta nombre.
+const SOCIAL_AUTH_DDL = [
+  "ALTER TABLE users ALTER COLUMN password_hash DROP NOT NULL",
+  "ALTER TABLE users ADD COLUMN IF NOT EXISTS auth_provider text NOT NULL DEFAULT 'email'",
+  "ALTER TABLE users ADD COLUMN IF NOT EXISTS google_sub text",
+  "ALTER TABLE users ADD COLUMN IF NOT EXISTS facebook_id text",
+  "ALTER TABLE companies ADD COLUMN IF NOT EXISTS needs_setup boolean NOT NULL DEFAULT false",
+];
+
+// Índices únicos parciales para los ids de proveedor (pg-mem no soporta WHERE → try/catch).
+const SOCIAL_AUTH_INDEXES = [
+  "CREATE UNIQUE INDEX IF NOT EXISTS idx_users_google_sub ON users(google_sub) WHERE google_sub IS NOT NULL",
+  "CREATE UNIQUE INDEX IF NOT EXISTS idx_users_facebook_id ON users(facebook_id) WHERE facebook_id IS NOT NULL",
+];
+
 // Índices de dedup (no únicos: el override permite una 2ª fila a propósito).
 const DEDUP_INDEXES = [
   "CREATE INDEX IF NOT EXISTS idx_expenses_dedup_doc ON expenses(company_id, rut_emisor, folio)",
@@ -143,6 +161,12 @@ async function migrate(db) {
   }
   for (const stmt of BILLING_DDL) {
     try { await db.query(stmt); } catch (e) { /* pg-mem / ya existe */ }
+  }
+  for (const stmt of SOCIAL_AUTH_DDL) {
+    try { await db.query(stmt); } catch (e) { /* pg-mem / ya existe */ }
+  }
+  for (const stmt of SOCIAL_AUTH_INDEXES) {
+    try { await db.query(stmt); } catch (e) { /* pg-mem: índice parcial no soportado */ }
   }
   // Grandfathering: las empresas que YA existen (sin suscripción) parten ILIMITADAS
   // para no bloquear a clientes actuales al activar el cobro.

@@ -57,7 +57,7 @@ app.get('/api/public/kaly-token', async (req, res) => {
 const loginLimiter = createRateLimiter({ windowMs: 10 * 60 * 1000, max: 12 });
 const registerLimiter = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 6 });
 app.use(['/api/panel/login', '/api/app/login', '/api/admin/login'], loginLimiter);
-app.use('/api/onboarding/register', registerLimiter);
+app.use(['/api/onboarding/register', '/api/onboarding/oauth/google', '/api/onboarding/oauth/facebook'], registerLimiter);
 
 app.use('/api/whatsapp/webhook', createWebhookRouter({ db: getPool() }));
 

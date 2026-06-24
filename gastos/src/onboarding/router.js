@@ -10,9 +10,53 @@
 const express = require('express');
 const mc = require('./meta-connect');
 const { createCompany, getCompany, updateCompany } = require('../companies/repo');
-const { createUser, getUserByEmail } = require('../users/repo');
+const { createUser, getUserByEmail, getUserByProvider, linkProvider } = require('../users/repo');
 const { hashPassword } = require('../auth/password');
 const { signToken, verifyToken } = require('../auth/jwt');
+const { verifyGoogleIdToken, verifyFacebookToken } = require('../auth/oauth');
+
+// Encuentra o crea la cuenta a partir del perfil verificado del proveedor social.
+// 1) por id de proveedor (ya entró antes) → login.  2) por email (ya tenía cuenta
+// por correo) → enlaza el proveedor y login.  3) nuevo → crea empresa (needs_setup)
+// + usuario owner. La empresa nueva nace con nombre provisional; el frontend pide
+// el nombre real justo después (needsBusinessName=true).
+async function findOrCreateSocialUser(db, perfil) {
+  const { provider, providerId, email, name } = perfil;
+  // El correo es obligatorio: lo usamos como identidad y para enlazar cuentas.
+  // Google siempre lo entrega; si Facebook no (el usuario no dio el permiso),
+  // el endpoint le pedirá registrarse por correo.
+  if (!email) { const err = new Error('sin_email'); err.code = 'sin_email'; throw err; }
+  // 1) por id de proveedor
+  let user = await getUserByProvider(db, provider, providerId);
+  if (user) return { user, company: await getCompany(db, user.company_id), needsBusinessName: false };
+  // 2) por email (enlazar al que ya existía por correo)
+  if (email) {
+    const existing = await getUserByEmail(db, email);
+    if (existing) {
+      user = (await linkProvider(db, existing.id, provider, providerId)) || existing;
+      return { user, company: await getCompany(db, user.company_id), needsBusinessName: false };
+    }
+  }
+  // 3) cuenta nueva: empresa provisional + usuario owner social
+  const company = await createCompany(db, {
+    nombre: (name ? String(name).trim().slice(0, 120) : 'Mi negocio') || 'Mi negocio',
+    owner_nombre: name ? String(name).trim().slice(0, 80) : null,
+    resumen_frecuencia: 'mensual',
+  });
+  try { await db.query('UPDATE companies SET needs_setup=true WHERE id=$1', [company.id]); } catch (e) { /* col nueva */ }
+  user = await createUser(db, {
+    company_id: company.id,
+    email: email || null,
+    rol: 'owner',
+    auth_provider: provider,
+    [provider === 'google' ? 'google_sub' : 'facebook_id']: providerId,
+  });
+  return { user, company, needsBusinessName: true };
+}
+
+function tokenParaUsuario(user) {
+  return signToken({ kind: 'user', companyId: user.company_id, userId: user.id, rol: user.rol || 'owner' });
+}
 
 function requireAuth(req, res, next) {
   const h = req.headers.authorization || '';
@@ -73,6 +117,68 @@ function createOnboardingRouter({ db }) {
     } catch (e) {
       console.error('[onboarding/register]', e.message);
       res.status(500).json({ error: 'No se pudo crear la cuenta' });
+    }
+  });
+
+  // ── PÚBLICO: login/registro con Google ────────────────────────────
+  // El cliente manda el ID token de Google; lo verificamos server-side.
+  router.post('/oauth/google', async (req, res) => {
+    try {
+      const idToken = (req.body && (req.body.idToken || req.body.credential)) || null;
+      if (!idToken) return res.status(400).json({ error: 'falta_id_token' });
+      let perfil;
+      try { perfil = await verifyGoogleIdToken(idToken); }
+      catch (e) { return res.status(401).json({ error: 'google_invalido', detalle: e.message }); }
+      if (!perfil.email) return res.status(422).json({ error: 'sin_email', mensaje: 'No pudimos obtener tu correo. Regístrate con email.' });
+      const { user, company, needsBusinessName } = await findOrCreateSocialUser(db, perfil);
+      return res.json({
+        ok: true,
+        token: tokenParaUsuario(user),
+        needsBusinessName,
+        user: { id: user.id, email: user.email, rol: user.rol, companyId: user.company_id },
+        company: { id: company.id, nombre: company.nombre },
+      });
+    } catch (e) {
+      console.error('[onboarding/oauth/google]', e.message);
+      res.status(500).json({ error: 'No se pudo iniciar sesión con Google' });
+    }
+  });
+
+  // ── PÚBLICO: login/registro con Facebook ──────────────────────────
+  router.post('/oauth/facebook', async (req, res) => {
+    try {
+      const accessToken = (req.body && (req.body.accessToken || req.body.token)) || null;
+      if (!accessToken) return res.status(400).json({ error: 'falta_access_token' });
+      let perfil;
+      try { perfil = await verifyFacebookToken(accessToken); }
+      catch (e) { return res.status(401).json({ error: 'facebook_invalido', detalle: e.message }); }
+      if (!perfil.email) return res.status(422).json({ error: 'sin_email', mensaje: 'Facebook no compartió tu correo. Regístrate con email.' });
+      const { user, company, needsBusinessName } = await findOrCreateSocialUser(db, perfil);
+      return res.json({
+        ok: true,
+        token: tokenParaUsuario(user),
+        needsBusinessName,
+        user: { id: user.id, email: user.email, rol: user.rol, companyId: user.company_id },
+        company: { id: company.id, nombre: company.nombre },
+      });
+    } catch (e) {
+      console.error('[onboarding/oauth/facebook]', e.message);
+      res.status(500).json({ error: 'No se pudo iniciar sesión con Facebook' });
+    }
+  });
+
+  // ── PRIVADO: completar el nombre del negocio tras un registro social ──
+  router.post('/business-name', requireAuth, async (req, res) => {
+    try {
+      const nombre = String((req.body && req.body.nombre) || '').trim();
+      if (nombre.length < 2) return res.status(400).json({ error: 'nombre_invalido' });
+      await updateCompany(db, req.user.companyId, { nombre: nombre.slice(0, 120) });
+      try { await db.query('UPDATE companies SET needs_setup=false WHERE id=$1', [req.user.companyId]); } catch (e) {}
+      const company = await getCompany(db, req.user.companyId);
+      return res.json({ ok: true, company: { id: company.id, nombre: company.nombre } });
+    } catch (e) {
+      console.error('[onboarding/business-name]', e.message);
+      res.status(500).json({ error: 'No se pudo guardar el nombre' });
     }
   });
 
@@ -162,4 +268,4 @@ function createOnboardingRouter({ db }) {
   return router;
 }
 
-module.exports = { createOnboardingRouter };
+module.exports = { createOnboardingRouter, findOrCreateSocialUser };
