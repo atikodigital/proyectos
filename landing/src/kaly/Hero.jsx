@@ -75,15 +75,15 @@ export default function Hero() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // NO auto-iniciamos la voz: KALY arranca la sesión Live solo cuando el visitante
-  // toca el orbe o le escribe (gesto del usuario). Así (1) el navegador permite
-  // micrófono + audio —si arranca sin gesto, la política de autoplay deja todo
-  // suspendido y no se oye nada ni se prende el micro— y (2) solo se paga Gemini
-  // Live cuando alguien realmente quiere hablar (control de costo).
-  // Para que igual "parta saludando", sembramos un saludo de bienvenida EN TEXTO
-  // al instante (costo cero); al tocar el orbe, KALY saluda también en voz.
+  // KALY "parte saludando": auto-iniciamos la sesión al cargar y enviamos el saludo.
+  // En navegadores que ya confían en el sitio (visitas repetidas) el saludo se oye
+  // de inmediato; en un visitante nuevo el audio queda en pausa hasta el primer
+  // toque (política de autoplay del navegador, no se puede saltar) — para ese caso
+  // sembramos el saludo EN TEXTO al instante, así igual ve la bienvenida.
+  // El costo se controla con el VAD (no manda silencio) + corte por inactividad 10s.
   useEffect(() => {
-    setSubtitulo('¡Hola! Soy KALY, el asistente de Hash IA 👋 Tócame y conversamos, o escríbeme aquí abajo.');
+    setSubtitulo('¡Hola! Soy KALY, el asistente de Hash IA 👋 Tócame o escríbeme para conversar.');
+    iniciar();
     return () => {
       if (sessionRef.current) {
         sessionRef.current.close();
