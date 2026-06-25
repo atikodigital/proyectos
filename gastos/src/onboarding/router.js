@@ -412,7 +412,9 @@ function createOnboardingRouter({ db }) {
       if (!ident) return res.status(400).json({ error: 'identificador_requerido' });
 
       // Buscar usuario por email o por WhatsApp del dueño de empresa.
-      let user = null, company = null, destEmail = null, destWa = null;
+      // waPhoneId/waToken: credenciales de WhatsApp que la propia empresa conectó;
+      // las reusamos para enviarle el link a su dueño (no hay número central del sistema).
+      let user = null, company = null, destEmail = null, destWa = null, waPhoneId = null, waToken = null;
       // Intento 1: por email exacto
       const byEmail = await getUserByEmail(db, ident);
       if (byEmail) {
@@ -420,18 +422,22 @@ function createOnboardingRouter({ db }) {
         company = await getCompany(db, user.company_id);
         destEmail = user.email;
         destWa = company && company.owner_whatsapp;
+        waPhoneId = company && company.wa_phone_number_id;
+        waToken = company && company.wa_token;
       } else {
         // Intento 2: por WhatsApp (limpiado)
         const phone = ident.replace(/[^+\d]/g, '');
         if (phone.length >= 8) {
           const r = await db.query(
-            'SELECT c.id as cid, c.owner_whatsapp, u.id as uid, u.email FROM companies c JOIN users u ON u.company_id=c.id WHERE c.owner_whatsapp=$1 LIMIT 1',
+            'SELECT c.id as cid, c.owner_whatsapp, c.wa_phone_number_id, c.wa_token, u.id as uid, u.email FROM companies c JOIN users u ON u.company_id=c.id WHERE c.owner_whatsapp=$1 LIMIT 1',
             [phone]
           );
           if (r.rows[0]) {
             user = { id: r.rows[0].uid, company_id: r.rows[0].cid, email: r.rows[0].email };
             destEmail = user.email;
             destWa = r.rows[0].owner_whatsapp;
+            waPhoneId = r.rows[0].wa_phone_number_id;
+            waToken = r.rows[0].wa_token;
           }
         }
       }
@@ -460,12 +466,13 @@ function createOnboardingRouter({ db }) {
           html: `<p>Hola,</p><p>Recibiste una solicitud para restablecer tu contraseña de <strong>Hash IA</strong>.</p><p><a href="${resetUrl}" style="background:#6C3CE1;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:600;">Restablecer contraseña</a></p><p style="color:#888;font-size:12px;">Este link es válido por 1 hora. Si no lo pediste, ignora este mensaje.</p>`,
         });
       }
-      // Enviar por WhatsApp del sistema
-      const sysPhoneId = process.env.SYSTEM_WA_PHONE_NUMBER_ID;
-      const sysTok = process.env.SYSTEM_WA_TOKEN;
-      if (destWa && sysPhoneId && sysTok) {
+      // Enviar por WhatsApp: preferimos un número central del sistema si está
+      // configurado; si no, usamos el WhatsApp que la propia empresa conectó.
+      const phoneId = process.env.SYSTEM_WA_PHONE_NUMBER_ID || waPhoneId;
+      const tok = process.env.SYSTEM_WA_TOKEN || waToken;
+      if (destWa && phoneId && tok) {
         try {
-          await waSendText({ to: destWa, body: msgText, token: sysTok, phoneNumberId: sysPhoneId });
+          await waSendText({ to: destWa, body: msgText, token: tok, phoneNumberId: phoneId });
         } catch (e) { console.error('[forgot-password/wa]', e.message); }
       }
 
