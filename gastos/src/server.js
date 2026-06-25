@@ -58,6 +58,9 @@ const loginLimiter = createRateLimiter({ windowMs: 10 * 60 * 1000, max: 12 });
 const registerLimiter = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 6 });
 app.use(['/api/panel/login', '/api/app/login', '/api/admin/login'], loginLimiter);
 app.use(['/api/onboarding/register', '/api/onboarding/oauth/google', '/api/onboarding/oauth/google-redirect', '/api/onboarding/oauth/facebook', '/api/onboarding/oauth/facebook-callback'], registerLimiter);
+// Recuperación de contraseña: límite estricto por IP (3 intentos/hora) para evitar abuso.
+const forgotLimiter = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 3 });
+app.use(['/api/onboarding/forgot-password', '/api/onboarding/reset-password'], forgotLimiter);
 
 app.use('/api/whatsapp/webhook', createWebhookRouter({ db: getPool() }));
 

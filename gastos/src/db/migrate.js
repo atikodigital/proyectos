@@ -133,6 +133,19 @@ const PERSONAL_COLUMNS = [
   "ALTER TABLE companies ADD COLUMN IF NOT EXISTS dia_pago INTEGER NOT NULL DEFAULT 1",
 ];
 
+// Recuperación de contraseña: token hasheado, caduca en 1 hora, un solo uso.
+const PASSWORD_RESETS_DDL = [
+  `CREATE TABLE IF NOT EXISTS password_resets (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id uuid NOT NULL,
+    token_hash text NOT NULL,
+    expires_at timestamptz NOT NULL,
+    used_at timestamptz
+  )`,
+  'CREATE UNIQUE INDEX IF NOT EXISTS idx_password_resets_token ON password_resets(token_hash)',
+  'CREATE INDEX IF NOT EXISTS idx_password_resets_user ON password_resets(user_id)',
+];
+
 // Índices de dedup (no únicos: el override permite una 2ª fila a propósito).
 const DEDUP_INDEXES = [
   "CREATE INDEX IF NOT EXISTS idx_expenses_dedup_doc ON expenses(company_id, rut_emisor, folio)",
@@ -175,6 +188,9 @@ async function migrate(db) {
     try { await db.query(stmt); } catch (e) { /* pg-mem: índice parcial no soportado */ }
   }
   for (const stmt of PERSONAL_COLUMNS) {
+    try { await db.query(stmt); } catch (e) { /* pg-mem / ya existe */ }
+  }
+  for (const stmt of PASSWORD_RESETS_DDL) {
     try { await db.query(stmt); } catch (e) { /* pg-mem / ya existe */ }
   }
   // Grandfathering: las empresas que YA existen (sin suscripción) parten ILIMITADAS

@@ -905,6 +905,7 @@
       </div>
       <p id="loginErr" class="text-xs text-[#ffb4ab] font-semibold mt-1"></p>
       <button id="loginBtn" class="w-full bg-gradient-to-r from-[#ffd700] to-[#e9c400] text-[#3a3000] hover:shadow-[0_0_20px_rgba(255,215,0,0.4)] transition-all py-2.5 rounded-xl text-sm font-bold mt-2">Entrar</button>
+      <p class="text-center mt-2"><button type="button" id="abrirOlvidaste" class="text-xs text-[#9d9da0] hover:text-[#ffd700] underline underline-offset-2 transition-colors">¿Olvidaste tu contraseña?</button></p>
 
       <!-- Separador + login social (Google). Los botones aparecen solos si el navegador carga GIS. -->
       <div class="flex items-center gap-2 my-1">
@@ -1723,6 +1724,90 @@
   }
   initGoogleBtn();
   manejarRetornoGoogle();
+
+  // ── Recuperación de contraseña ────────────────────────────────────────
+  // Si la URL trae ?reset=TOKEN, mostramos directamente el formulario de nueva clave.
+  (function manejarReset() {
+    var m = (location.search || '').match(/[?&]reset=([^&]+)/);
+    if (!m) return;
+    var rawToken = m[1];
+    try { history.replaceState(null, '', location.pathname); } catch (e) {}
+    var inp = 'width:100%;box-sizing:border-box;border-radius:8px;padding:10px;border:1px solid #343535;background:rgba(41,42,42,.5);color:#e3e2e2;outline:none;margin-top:4px;';
+    var modal = document.createElement('div');
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
+    modal.innerHTML = '<div style="background:#1b1c1c;border:1px solid #343535;border-radius:16px;padding:22px;max-width:380px;width:100%;box-shadow:0 8px 40px rgba(0,0,0,.6);">'
+      + '<h3 style="margin:0 0 4px;font-weight:900;color:#ffd700;">🔑 Nueva contraseña</h3>'
+      + '<p style="margin:0 0 12px;color:#d0c6ab;font-size:13px;">Escribe tu nueva contraseña (mín. 8 caracteres).</p>'
+      + '<input id="rpNueva" type="password" placeholder="Contraseña nueva" style="' + inp + '" />'
+      + '<input id="rpNueva2" type="password" placeholder="Repetir contraseña" style="' + inp + 'margin-top:8px;" />'
+      + '<p id="rpMsg" style="color:#ffb4ab;font-size:12px;margin:8px 0 0;min-height:14px;"></p>'
+      + '<button id="rpGuardar" style="width:100%;margin-top:12px;background:linear-gradient(to right,#ffd700,#e9c400);color:#3a3000;border:none;border-radius:10px;padding:11px;font-weight:800;cursor:pointer;">Guardar contraseña</button>'
+      + '</div>';
+    document.body.appendChild(modal);
+    modal.querySelector('#rpNueva').focus();
+    async function guardarReset() {
+      var nueva = modal.querySelector('#rpNueva').value;
+      var nueva2 = modal.querySelector('#rpNueva2').value;
+      var msg = modal.querySelector('#rpMsg');
+      if (nueva.length < 8) { msg.textContent = 'La contraseña debe tener al menos 8 caracteres.'; return; }
+      if (nueva !== nueva2) { msg.textContent = 'Las contraseñas no coinciden.'; return; }
+      try {
+        var r = await fetch('/api/onboarding/reset-password', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token: rawToken, nueva_password: nueva }),
+        });
+        var data = await r.json().catch(function () { return {}; });
+        if (!r.ok || !data.ok) {
+          var errores = { token_invalido: 'El link no es válido.', token_ya_usado: 'Este link ya fue usado.', token_expirado: 'El link expiró. Solicita uno nuevo.', password_corto: 'La contraseña es muy corta.' };
+          msg.textContent = errores[data.error] || 'No se pudo cambiar la contraseña.';
+          return;
+        }
+        msg.style.color = '#86efac'; msg.textContent = '✅ Contraseña actualizada. Ya puedes entrar.';
+        modal.querySelector('#rpGuardar').disabled = true;
+        setTimeout(function () { document.body.removeChild(modal); }, 2000);
+      } catch (e) { msg.textContent = 'Error de red. Intenta de nuevo.'; }
+    }
+    modal.querySelector('#rpGuardar').onclick = guardarReset;
+    modal.addEventListener('keydown', function (e) { if (e.key === 'Enter') guardarReset(); });
+  })();
+
+  // Modal "¿Olvidaste tu contraseña?"
+  $('abrirOlvidaste').onclick = function () {
+    var inp = 'width:100%;box-sizing:border-box;border-radius:8px;padding:10px;border:1px solid #343535;background:rgba(41,42,42,.5);color:#e3e2e2;outline:none;margin-top:4px;';
+    var modal = document.createElement('div');
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
+    modal.innerHTML = '<div style="background:#1b1c1c;border:1px solid #343535;border-radius:16px;padding:22px;max-width:380px;width:100%;box-shadow:0 8px 40px rgba(0,0,0,.6);">'
+      + '<h3 style="margin:0 0 4px;font-weight:900;color:#ffd700;">🔑 Recuperar contraseña</h3>'
+      + '<p style="margin:0 0 12px;color:#d0c6ab;font-size:13px;">Escribe tu correo o WhatsApp y te enviamos un link para restablecer tu contraseña.</p>'
+      + '<input id="olvIdent" type="text" placeholder="correo@ejemplo.com o +56 9 1234 5678" style="' + inp + '" />'
+      + '<p id="olvMsg" style="font-size:12px;margin:8px 0 0;min-height:14px;"></p>'
+      + '<div style="display:flex;gap:8px;margin-top:14px;">'
+      + '<button id="olvCancelar" style="flex:1;padding:10px;border-radius:10px;border:1px solid #343535;background:transparent;color:#d0c6ab;font-weight:700;cursor:pointer;">Cancelar</button>'
+      + '<button id="olvEnviar" style="flex:2;padding:10px;border-radius:10px;border:0;background:linear-gradient(to right,#ffd700,#e9c400);color:#3a3000;font-weight:900;cursor:pointer;">Enviar link</button>'
+      + '</div></div>';
+    document.body.appendChild(modal);
+    modal.querySelector('#olvIdent').focus();
+    modal.querySelector('#olvCancelar').onclick = function () { document.body.removeChild(modal); };
+    async function enviarOlvidaste() {
+      var ident = modal.querySelector('#olvIdent').value.trim();
+      var msg = modal.querySelector('#olvMsg');
+      if (ident.length < 5) { msg.style.color = '#ffb4ab'; msg.textContent = 'Escribe tu correo o WhatsApp.'; return; }
+      modal.querySelector('#olvEnviar').disabled = true;
+      modal.querySelector('#olvEnviar').textContent = 'Enviando…';
+      try {
+        await fetch('/api/onboarding/forgot-password', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ identificador: ident }),
+        });
+      } catch (e) {}
+      msg.style.color = '#86efac';
+      msg.textContent = '✅ Si encontramos tu cuenta, te enviamos el link por correo y WhatsApp.';
+      modal.querySelector('#olvEnviar').style.display = 'none';
+      modal.querySelector('#olvCancelar').textContent = 'Cerrar';
+    }
+    modal.querySelector('#olvEnviar').onclick = enviarOlvidaste;
+    modal.addEventListener('keydown', function (e) { if (e.key === 'Enter') enviarOlvidaste(); });
+  };
 
   $('logoutBtn').onclick = function () { clearToken(); showLogin(); };
   // Cambiar contraseña (el usuario tipea su clave; el backend la hashea, nunca se ve).

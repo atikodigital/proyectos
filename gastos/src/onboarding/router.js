@@ -7,12 +7,15 @@
  *   GET  /api/onboarding/oauth/callback       → público; recibe ?code & ?state de Meta y redirige al app
  *   GET  /api/onboarding/bsp-status           → reporta si APP_SECRET + config_id están configurados
  */
+const crypto = require('crypto');
 const express = require('express');
 const mc = require('./meta-connect');
 const { createCompany, getCompany, updateCompany, createEmployee } = require('../companies/repo');
 const { createUser, getUserByEmail, getUserByProvider, linkProvider } = require('../users/repo');
 const { hashPassword } = require('../auth/password');
 const { signToken, verifyToken } = require('../auth/jwt');
+const { sendEmail } = require('../notifications/email');
+const { sendText: waSendText } = require('../whatsapp/client');
 const { verifyGoogleIdToken, verifyFacebookToken } = require('../auth/oauth');
 
 // ¿A esta empresa le falta completar sus datos (nombre/dueño/contacto)?
@@ -395,6 +398,109 @@ function createOnboardingRouter({ db }) {
     } catch (e) {
       console.error('[onboarding/connect/facebook]', e.message);
       res.status(e.status || 500).json({ error: e.message || 'Error conectando Facebook/Instagram' });
+    }
+  });
+
+  // ── PÚBLICO: solicitar link de recuperación de contraseña ────────────
+  // Acepta { identificador } que puede ser email o número de WhatsApp.
+  // Envía el link por email Y WhatsApp según lo que tengamos. Siempre responde ok
+  // para no revelar si la cuenta existe.
+  router.post('/forgot-password', async (req, res) => {
+    const PANEL = (process.env.PANEL_BASE_URL || 'https://gastos.atikodigital.cl') + '/panel/';
+    try {
+      const ident = String((req.body && req.body.identificador) || '').trim().toLowerCase();
+      if (!ident) return res.status(400).json({ error: 'identificador_requerido' });
+
+      // Buscar usuario por email o por WhatsApp del dueño de empresa.
+      let user = null, company = null, destEmail = null, destWa = null;
+      // Intento 1: por email exacto
+      const byEmail = await getUserByEmail(db, ident);
+      if (byEmail) {
+        user = byEmail;
+        company = await getCompany(db, user.company_id);
+        destEmail = user.email;
+        destWa = company && company.owner_whatsapp;
+      } else {
+        // Intento 2: por WhatsApp (limpiado)
+        const phone = ident.replace(/[^+\d]/g, '');
+        if (phone.length >= 8) {
+          const r = await db.query(
+            'SELECT c.id as cid, c.owner_whatsapp, u.id as uid, u.email FROM companies c JOIN users u ON u.company_id=c.id WHERE c.owner_whatsapp=$1 LIMIT 1',
+            [phone]
+          );
+          if (r.rows[0]) {
+            user = { id: r.rows[0].uid, company_id: r.rows[0].cid, email: r.rows[0].email };
+            destEmail = user.email;
+            destWa = r.rows[0].owner_whatsapp;
+          }
+        }
+      }
+
+      // Responder ok siempre — no revelar si existe
+      if (!user) return res.json({ ok: true });
+
+      // Generar token seguro, guardar su hash en DB
+      const rawToken = crypto.randomBytes(32).toString('hex');
+      const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+      const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hora
+      await db.query(
+        'INSERT INTO password_resets(user_id, token_hash, expires_at) VALUES($1,$2,$3)',
+        [user.id, tokenHash, expiresAt]
+      );
+
+      const resetUrl = PANEL + '?reset=' + rawToken;
+      const msgText = `Hola! Recibiste una solicitud para restablecer tu contraseña de Hash IA.\n\nTu link (válido 1 hora):\n${resetUrl}\n\nSi no lo pediste, ignora este mensaje.`;
+
+      // Enviar por email
+      if (destEmail) {
+        await sendEmail({
+          to: destEmail,
+          subject: 'Restablecer contraseña — Hash IA',
+          text: msgText,
+          html: `<p>Hola,</p><p>Recibiste una solicitud para restablecer tu contraseña de <strong>Hash IA</strong>.</p><p><a href="${resetUrl}" style="background:#6C3CE1;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:600;">Restablecer contraseña</a></p><p style="color:#888;font-size:12px;">Este link es válido por 1 hora. Si no lo pediste, ignora este mensaje.</p>`,
+        });
+      }
+      // Enviar por WhatsApp del sistema
+      const sysPhoneId = process.env.SYSTEM_WA_PHONE_NUMBER_ID;
+      const sysTok = process.env.SYSTEM_WA_TOKEN;
+      if (destWa && sysPhoneId && sysTok) {
+        try {
+          await waSendText({ to: destWa, body: msgText, token: sysTok, phoneNumberId: sysPhoneId });
+        } catch (e) { console.error('[forgot-password/wa]', e.message); }
+      }
+
+      return res.json({ ok: true });
+    } catch (e) {
+      console.error('[forgot-password]', e.message);
+      return res.json({ ok: true }); // no revelar errores internos
+    }
+  });
+
+  // ── PÚBLICO: confirmar el token y guardar la nueva contraseña ─────────
+  router.post('/reset-password', async (req, res) => {
+    try {
+      const { token, nueva_password } = req.body || {};
+      if (!token || !nueva_password) return res.status(400).json({ error: 'faltan_campos' });
+      if (String(nueva_password).length < 8) return res.status(400).json({ error: 'password_corto' });
+
+      const tokenHash = crypto.createHash('sha256').update(String(token)).digest('hex');
+      const r = await db.query(
+        'SELECT id, user_id, expires_at, used_at FROM password_resets WHERE token_hash=$1',
+        [tokenHash]
+      );
+      const row = r.rows[0];
+      if (!row) return res.status(400).json({ error: 'token_invalido' });
+      if (row.used_at) return res.status(400).json({ error: 'token_ya_usado' });
+      if (new Date(row.expires_at) < new Date()) return res.status(400).json({ error: 'token_expirado' });
+
+      const hash = await hashPassword(String(nueva_password));
+      await db.query('UPDATE users SET password_hash=$1 WHERE id=$2', [hash, row.user_id]);
+      await db.query('UPDATE password_resets SET used_at=now() WHERE id=$1', [row.id]);
+
+      return res.json({ ok: true });
+    } catch (e) {
+      console.error('[reset-password]', e.message);
+      return res.status(500).json({ error: 'server_error' });
     }
   });
 
