@@ -241,6 +241,56 @@ function createOnboardingRouter({ db }) {
     }
   });
 
+  // ── PÚBLICO: login con Facebook en modo REDIRECCIÓN ───────────────
+  // Flujo OAuth 2.0 estándar: GET /oauth/facebook-start redirige a Meta,
+  // Meta devuelve ?code al callback /oauth/facebook-callback, el backend
+  // canjea el code por un access_token, verifica el perfil y redirige al
+  // panel con el JWT en el fragmento (#sso=...&new=...).
+  router.get('/oauth/facebook-start', (req, res) => {
+    const appId = process.env.FB_APP_ID || process.env.META_APP_ID;
+    if (!appId) return res.status(503).send('Facebook no configurado');
+    const panel = (process.env.PANEL_BASE_URL || 'https://gastos.atikodigital.cl') + '/panel/';
+    const redirectUri = (process.env.PANEL_BASE_URL || 'https://gastos.atikodigital.cl') + '/api/onboarding/oauth/facebook-callback';
+    const url = 'https://www.facebook.com/v19.0/dialog/oauth'
+      + '?client_id=' + encodeURIComponent(appId)
+      + '&redirect_uri=' + encodeURIComponent(redirectUri)
+      + '&scope=email,public_profile'
+      + '&response_type=code';
+    res.redirect(url);
+  });
+
+  router.get('/oauth/facebook-callback', async (req, res) => {
+    const panel = (process.env.PANEL_BASE_URL || 'https://gastos.atikodigital.cl') + '/panel/';
+    const redirectUri = (process.env.PANEL_BASE_URL || 'https://gastos.atikodigital.cl') + '/api/onboarding/oauth/facebook-callback';
+    const { code, error } = req.query || {};
+    if (error || !code) return res.redirect(panel + '#sso_error=facebook_cancelado');
+    try {
+      const appId = process.env.FB_APP_ID || process.env.META_APP_ID;
+      const appSecret = process.env.FB_APP_SECRET || process.env.META_APP_SECRET;
+      // 1) Canjear code por access_token
+      const tokUrl = 'https://graph.facebook.com/v19.0/oauth/access_token'
+        + '?client_id=' + encodeURIComponent(appId)
+        + '&redirect_uri=' + encodeURIComponent(redirectUri)
+        + '&client_secret=' + encodeURIComponent(appSecret)
+        + '&code=' + encodeURIComponent(code);
+      const tokRes = await fetch(tokUrl);
+      const tokData = await tokRes.json();
+      if (!tokData.access_token) return res.redirect(panel + '#sso_error=facebook_token');
+      // 2) Verificar token y obtener perfil
+      let perfil;
+      try { perfil = await verifyFacebookToken(tokData.access_token); }
+      catch (e) { return res.redirect(panel + '#sso_error=facebook_invalido'); }
+      if (!perfil.email) return res.redirect(panel + '#sso_error=sin_email');
+      const { user, needsBusinessName } = await findOrCreateSocialUser(db, perfil);
+      const token = tokenParaUsuario(user);
+      const nombreQs = (needsBusinessName && perfil.name) ? '&nombre=' + encodeURIComponent(perfil.name) : '';
+      return res.redirect(panel + '#sso=' + encodeURIComponent(token) + '&new=' + (needsBusinessName ? '1' : '0') + nombreQs + '&via=fb');
+    } catch (e) {
+      console.error('[oauth/facebook-callback]', e.message);
+      return res.redirect(panel + '#sso_error=server');
+    }
+  });
+
   // ── PÚBLICO: login/registro con Facebook ──────────────────────────
   router.post('/oauth/facebook', async (req, res) => {
     try {
