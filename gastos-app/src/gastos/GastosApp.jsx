@@ -11,6 +11,8 @@ import VarasChat from './VarasChat.jsx';
 import { APP_VERSION } from './version';
 import ChatView from './ChatView.jsx';
 import OnboardingWizard from './onboarding/OnboardingWizard.jsx';
+import OnboardingPersonal from './OnboardingPersonal.jsx';
+import BalanceCard from './BalanceCard.jsx';
 import MemoriaKalyView from './MemoriaKalyView.jsx';
 import { AgentInteractionProvider } from './agente/AgentInteractionProvider.jsx';
 
@@ -36,6 +38,8 @@ export default function GastosApp() {
   const [mostrarOnboarding, setMostrarOnboarding] = useState(false);
   const [saltado, setSaltado] = useState(false);
   const [mostrarMemoria, setMostrarMemoria] = useState(false);
+  const [company, setCompany] = useState(null);
+  const [refreshKey, setRefreshKey] = useState(0);
   // Módulos habilitados por cliente (vienen del backend). El módulo "chat" sale
   // OCULTO por defecto y solo se activa desde gastos.atikodigital.cl/admin.
   const [productos, setProductos] = useState([]);
@@ -45,6 +49,7 @@ export default function GastosApp() {
     (async () => {
       try {
         const resp = await api.getCompany();
+        setCompany(resp);
         setProductos(Array.isArray(resp.productos) ? resp.productos : []);
         if (!resp.onboarded_at && !saltado) setMostrarOnboarding(true);
       } catch { /* no romper el render */ }
@@ -52,6 +57,7 @@ export default function GastosApp() {
   }, [authed]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const chatHabilitado = productos.includes('chat');
+  const esPersonal = company?.tipo_cuenta === 'personal';
 
   // Si el chat se desactiva (o nunca estuvo activo) y la pestaña activa era 'chat',
   // vuelve a Captura para no dejar al usuario en una vista oculta.
@@ -94,12 +100,14 @@ export default function GastosApp() {
     <AgentInteractionProvider>
     <div className="h-screen flex flex-col overflow-hidden">
       {mostrarOnboarding && (
-        <OnboardingWizard
-          onDone={() => setMostrarOnboarding(false)}
-          onSkip={() => { setSaltado(true); setMostrarOnboarding(false); }}
-          onIrAlChat={() => { setMostrarOnboarding(false); setTab(chatHabilitado ? 'chat' : 'capturar'); }}
-          onCrearPedido={() => { setMostrarOnboarding(false); setTab(chatHabilitado ? 'chat' : 'capturar'); }}
-        />
+        esPersonal
+          ? <OnboardingPersonal company={company} onDone={() => setMostrarOnboarding(false)} />
+          : <OnboardingWizard
+              onDone={() => setMostrarOnboarding(false)}
+              onSkip={() => { setSaltado(true); setMostrarOnboarding(false); }}
+              onIrAlChat={() => { setMostrarOnboarding(false); setTab(chatHabilitado ? 'chat' : 'capturar'); }}
+              onCrearPedido={() => { setMostrarOnboarding(false); setTab(chatHabilitado ? 'chat' : 'capturar'); }}
+            />
       )}
       {mostrarMemoria && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 50, background: 'rgba(0,0,0,0.85)', overflowY: 'auto' }}>
@@ -174,13 +182,16 @@ export default function GastosApp() {
           </div>
         ) : pending ? (
           <div className="h-full overflow-y-auto">
-            <ConfirmScreen expense={pending.exp} photo={{ base64: pending.img, mime: pending.mime }} onDone={() => { setPending(null); setTab('mis'); }} />
+            <ConfirmScreen expense={pending.exp} photo={{ base64: pending.img, mime: pending.mime }} onDone={() => { setPending(null); setRefreshKey((k) => k + 1); setTab('mis'); }} />
           </div>
         ) : tab === 'capturar' ? (
           busy ? <div className="p-6">Procesando…</div>
                : <div className="h-full overflow-y-auto p-4">
-                   <p className="px-2 mb-2 opacity-70 text-xs font-bold">Captura la boleta, factura o comprobante:</p>
+                   <p className="px-2 mb-2 opacity-70 text-xs font-bold">
+                     {esPersonal ? 'Registra tu gasto:' : 'Captura la boleta, factura o comprobante:'}
+                   </p>
                    <EvidenceIntake maxEvidence={1} value={[]} onChange={onChange} showNativeCapture />
+                   {esPersonal && <BalanceCard key={refreshKey} />}
                  </div>
         ) : tab === 'mis' ? (
           <div className="h-full flex flex-col">
