@@ -28,7 +28,7 @@ async function calcularResumenPersonal(db, companyId) {
   const catMap = {};
   for (const row of rawCats) {
     const nombre = row.categoria || 'Otros';
-    catMap[nombre] = (catMap[nombre] || 0) + parseInt(row.total) || 0;
+    catMap[nombre] = (catMap[nombre] || 0) + (Number(row.total) || 0);
   }
   const categorias = Object.entries(catMap)
     .map(([nombre, total]) => ({ nombre, total }))
@@ -38,7 +38,7 @@ async function calcularResumenPersonal(db, companyId) {
   const lastDay = new Date(anio, mes, 0).getDate();
   const diasRestantes = Math.max(0, lastDay - now.getDate());
   const sueldoMensual = parseInt(company.sueldo_mensual) || 0;
-  const gastadoMes = parseInt(gasto.gastado) || 0;
+  const gastadoMes = Number(gasto.gastado) || 0;
   const disponible = sueldoMensual - gastadoMes;
   const porcentajeGastado = sueldoMensual > 0 ? Math.round((gastadoMes / sueldoMensual) * 100) : 0;
 

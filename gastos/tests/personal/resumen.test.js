@@ -74,3 +74,17 @@ test('calcularResumenPersonal categoriza y ordena por monto desc', async () => {
   expect(r.categorias[0].nombre).toBe('Arriendo');
   expect(r.categorias[0].total).toBe(280000);
 });
+
+test('calcularResumenPersonal agrupa categoria null como Otros', async () => {
+  const db = await freshDb();
+  const companyId = await seedPersonal(db, 500000);
+  const now = new Date();
+  const fecha = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-10`;
+  await db.query("INSERT INTO expenses(company_id, tipo, total, fecha, estado) VALUES($1,'gasto',120000,$2,'confirmado')", [companyId, fecha]);
+
+  const r = await calcularResumenPersonal(db, companyId);
+  expect(r.categorias.length).toBeGreaterThan(0);
+  const otros = r.categorias.find(c => c.nombre === 'Otros');
+  expect(otros).toBeDefined();
+  expect(otros.total).toBe(120000);
+});
