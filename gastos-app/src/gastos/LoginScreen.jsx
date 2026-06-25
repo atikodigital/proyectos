@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { api } from './api';
 import { APP_VERSION } from './version';
 import RegisterScreen from './RegisterScreen';
+import RegisterPersonalScreen from './RegisterPersonalScreen';
 
 export default function LoginScreen({ onLoggedIn }) {
-  const [mode, setMode] = useState('login'); // 'login' | 'register'
+  const [mode, setMode] = useState('login'); // 'login' | 'register' | 'personal'
   const [usuario, setUsuario] = useState('');
   const [password, setPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
@@ -13,6 +14,10 @@ export default function LoginScreen({ onLoggedIn }) {
 
   if (mode === 'register') {
     return <RegisterScreen onRegistered={onLoggedIn} onBackToLogin={() => setMode('login')} />;
+  }
+
+  if (mode === 'personal') {
+    return <RegisterPersonalScreen onRegistered={onLoggedIn} onBackToLogin={() => setMode('login')} />;
   }
 
   async function submit(e) {
@@ -50,6 +55,10 @@ export default function LoginScreen({ onLoggedIn }) {
       <button type="button" onClick={() => setMode('register')}
         className="text-sm opacity-80 underline mt-1">
         ¿No tienes cuenta? Crea una en 2 minutos
+      </button>
+      <button type="button" onClick={() => setMode('personal')}
+        className="text-sm opacity-60 underline">
+        ¿Persona natural? Crea tu cuenta gratis
       </button>
     </form>
   );
