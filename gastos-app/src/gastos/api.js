@@ -140,6 +140,12 @@ export const api = {
     if (data && data.token) setToken(data.token);
     return data;
   },
+  registerPersonal({ nombre, email, password, sueldo_mensual, dia_pago }) {
+    return req('/api/onboarding/register-personal', { method: 'POST', auth: false, body: { nombre, email, password, sueldo_mensual, dia_pago } });
+  },
+  personalResumen() {
+    return req('/api/app/personal/resumen');
+  },
   async loginOwner(email, password) {
     // Login del owner (usuario tabla `users`, no tabla `employees`).
     const data = await req('/api/panel/login', { method: 'POST', body: { email, password }, auth: false });
