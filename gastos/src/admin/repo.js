@@ -162,6 +162,28 @@ async function archivarCliente(db, companyId, archivada) {
   return r.rows[0] || null;
 }
 
+// Elimina PERMANENTEMENTE una empresa y TODOS sus datos. Irreversible.
+// Recorre dinámicamente las tablas que tienen company_id (así no se olvida ninguna,
+// ni las futuras) y las limpia; al final borra la empresa. Los nombres de tabla salen
+// del catálogo de Postgres (no de input del usuario), así que el SQL dinámico es seguro.
+async function eliminarCliente(db, companyId) {
+  const existe = await db.query('SELECT id, nombre FROM companies WHERE id=$1', [companyId]);
+  if (!existe.rows[0]) return null;
+  let tablas = [];
+  try {
+    const t = await db.query(
+      "SELECT table_name FROM information_schema.columns WHERE column_name='company_id' AND table_schema='public' AND table_name <> 'companies'"
+    );
+    tablas = t.rows.map((r) => r.table_name);
+  } catch (e) { /* pg-mem u otro: usamos el fallback */ }
+  if (!tablas.length) tablas = ['users', 'employees', 'expenses', 'subscriptions', 'ia_consumo', 'kaly_memory', 'contactos'];
+  for (const tabla of tablas) {
+    try { await db.query(`DELETE FROM "${tabla}" WHERE company_id=$1`, [companyId]); } catch (e) { /* tabla inexistente: tolerante */ }
+  }
+  const r = await db.query('DELETE FROM companies WHERE id=$1 RETURNING id, nombre', [companyId]);
+  return r.rows[0] || null;
+}
+
 async function listClientesConStats(db, year, month, opts = {}) {
   await ensurePlan(db);
   await ensureProductos(db);
@@ -208,4 +230,4 @@ async function getFichaCliente(db, companyId, year, month) {
   return { empresa, empleados, movimientos, resumen, conciliacion, pedidos, creditos };
 }
 
-module.exports = { ensurePlan, crearCliente, crearLogin, setCompanyPlan, movimientosDelMes, listClientesConStats, archivarCliente, ensureProductos, getProductos, setProductos, PRODUCTOS, CANALES, getFichaCliente };
+module.exports = { ensurePlan, crearCliente, crearLogin, setCompanyPlan, movimientosDelMes, listClientesConStats, archivarCliente, eliminarCliente, ensureProductos, getProductos, setProductos, PRODUCTOS, CANALES, getFichaCliente };

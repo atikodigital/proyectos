@@ -30,6 +30,26 @@ test('setCompanyPlan cambia el plan', async () => {
   expect(upd.plan).toBe('empresa');
 });
 
+test('eliminarCliente borra la empresa y sus datos (irreversible)', async () => {
+  const db = await makeDb();
+  const r = await admin.crearCliente(db, { nombreEmpresa: 'Para Borrar', usuario: 'pb', password: 'Clave123' });
+  const cid = r.empresa.id;
+  await db.query("INSERT INTO expenses(company_id, tipo, total, fecha, estado) VALUES($1,'gasto',1000,'2026-06-05','confirmado')", [cid]);
+  const out = await admin.eliminarCliente(db, cid);
+  expect(out.id).toBe(cid);
+  // La empresa, sus gastos y su empleado/login ya no existen.
+  expect((await db.query('SELECT 1 FROM companies WHERE id=$1', [cid])).rows.length).toBe(0);
+  expect((await db.query('SELECT 1 FROM expenses WHERE company_id=$1', [cid])).rows.length).toBe(0);
+  expect((await db.query('SELECT 1 FROM employees WHERE company_id=$1', [cid])).rows.length).toBe(0);
+  expect((await db.query('SELECT 1 FROM subscriptions WHERE company_id=$1', [cid])).rows.length).toBe(0);
+});
+
+test('eliminarCliente devuelve null si la empresa no existe', async () => {
+  const db = await makeDb();
+  const out = await admin.eliminarCliente(db, '00000000-0000-0000-0000-000000000999');
+  expect(out).toBeNull();
+});
+
 test('movimientosDelMes cuenta solo los del mes y excluye anulados', async () => {
   const db = await makeDb();
   const r = await admin.crearCliente(db, { nombreEmpresa: 'X', usuario: 'x', password: 'p' });

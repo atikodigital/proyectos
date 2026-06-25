@@ -50,6 +50,18 @@ function createAdminRouter({ db } = {}) {
     return res.json(out);
   });
 
+  // Eliminar PERMANENTEMENTE una empresa y todos sus datos. IRREVERSIBLE.
+  router.delete('/clientes/:id', async (req, res) => {
+    try {
+      const out = await adminRepo.eliminarCliente(db, req.params.id);
+      if (!out) return res.status(404).json({ error: 'no_existe' });
+      return res.json({ ok: true, eliminada: out });
+    } catch (e) {
+      console.error('[admin/eliminar]', e.message);
+      return res.status(500).json({ error: 'no_se_pudo_eliminar' });
+    }
+  });
+
   router.post('/clientes', async (req, res) => {
     const b = req.body || {};
     if (!b.nombreEmpresa) return res.status(400).json({ error: 'falta_nombre' });

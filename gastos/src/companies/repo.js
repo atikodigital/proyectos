@@ -1,7 +1,7 @@
 const billingRepo = require('../billing/repo');
 
 async function createCompany(db, data) {
-  const cols = ['nombre', 'rut', 'wa_phone_number_id', 'wa_token', 'owner_nombre', 'owner_whatsapp', 'resumen_frecuencia']
+  const cols = ['nombre', 'rut', 'wa_phone_number_id', 'wa_token', 'owner_nombre', 'owner_whatsapp', 'resumen_frecuencia', 'tipo_cuenta', 'sueldo_mensual', 'dia_pago']
     .filter((f) => data[f] !== undefined);
   const ph = cols.map((_, i) => `$${i + 1}`).join(', ');
   const r = await db.query(
@@ -69,7 +69,7 @@ async function getCompany(db, companyId) {
 }
 
 async function updateCompany(db, companyId, patch) {
-  const cols = ['nombre', 'rut', 'owner_nombre', 'owner_whatsapp', 'resumen_frecuencia'].filter((f) => patch[f] !== undefined);
+  const cols = ['nombre', 'rut', 'owner_nombre', 'owner_whatsapp', 'resumen_frecuencia', 'sueldo_mensual', 'dia_pago'].filter((f) => patch[f] !== undefined);
   if (!cols.length) return getCompany(db, companyId);
   const set = cols.map((f, i) => `${f}=$${i + 2}`).join(', ');
   await db.query(`UPDATE companies SET ${set} WHERE id=$1`, [companyId, ...cols.map((f) => patch[f])]);
@@ -148,7 +148,7 @@ async function ensureCompanyOnboarding(db) {
 async function getCompanyProfile(db, companyId) {
   await ensureCompanyOnboarding(db);
   const r = await db.query(
-    'SELECT id, nombre, rut, giro, owner_nombre, owner_whatsapp, onboarded_at, created_at, kaly_persona, productos FROM companies WHERE id=$1',
+    'SELECT id, nombre, rut, giro, owner_nombre, owner_whatsapp, onboarded_at, created_at, kaly_persona, productos, tipo_cuenta, sueldo_mensual, dia_pago FROM companies WHERE id=$1',
     [companyId]
   );
   if (!r.rows[0]) return null;

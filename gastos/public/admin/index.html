@@ -278,7 +278,8 @@ async function cargar() {
         '<button class="btn-ghost btn-sm" data-login="' + esc(c.id) + '" data-nombre="' + esc(c.nombre) + '">🔑 Login</button> ' +
         '<button class="btn-ghost btn-sm" data-kaly="' + esc(c.id) + '" data-nombre="' + esc(c.nombre) + '">🧠 KALY</button> ' +
         '<button class="btn-ghost btn-sm" data-ficha="' + esc(c.id) + '">👁️ Ver ficha</button> ' +
-        '<button class="btn-ghost btn-sm" style="color:' + (verArchivadas ? '#7be07b' : '#ff9f6b') + '" data-archivar="' + esc(c.id) + '" data-nombre="' + esc(c.nombre) + '" data-arch="' + (verArchivadas ? 1 : 0) + '">' + (verArchivadas ? '♻️ Restaurar' : '🗄 Archivar') + '</button>' +
+        '<button class="btn-ghost btn-sm" style="color:' + (verArchivadas ? '#7be07b' : '#ff9f6b') + '" data-archivar="' + esc(c.id) + '" data-nombre="' + esc(c.nombre) + '" data-arch="' + (verArchivadas ? 1 : 0) + '">' + (verArchivadas ? '♻️ Restaurar' : '🗄 Archivar') + '</button> ' +
+        '<button class="btn-ghost btn-sm" style="color:#ff6b6b" data-eliminar="' + esc(c.id) + '" data-nombre="' + esc(c.nombre) + '">🗑 Eliminar</button>' +
       '</td>' +
       '</tr>'
     )).join('');
@@ -298,6 +299,9 @@ async function cargar() {
     body.querySelectorAll('button[data-archivar]').forEach(btn => {
       btn.onclick = () => archivarEmpresa(btn.dataset.archivar, btn.dataset.nombre, btn.dataset.arch === '0');
     });
+    body.querySelectorAll('button[data-eliminar]').forEach(btn => {
+      btn.onclick = () => eliminarEmpresa(btn.dataset.eliminar, btn.dataset.nombre);
+    });
   } catch (e) {
     if (e.status === 401) { $('logoutBtn').click(); return; }
     $('listErr').textContent = 'Error al cargar: ' + e.message;
@@ -312,6 +316,14 @@ async function archivarEmpresa(id, nombre, archivar) {
   if (!confirm(msg)) return;
   try { await api('/clientes/' + id + '/archivar', { method: 'POST', body: JSON.stringify({ archivada: archivar }) }); cargar(); }
   catch (e) { $('listErr').textContent = 'No se pudo ' + (archivar ? 'archivar' : 'restaurar') + ': ' + e.message; }
+}
+// Eliminar PERMANENTE: pide escribir el nombre exacto para evitar borrados accidentales.
+async function eliminarEmpresa(id, nombre) {
+  const r = prompt('⚠️ ELIMINAR PERMANENTE\n\nVas a borrar la empresa "' + nombre + '" y TODOS sus datos (gastos, productos, usuarios, conciliaciones, etc.). NO se puede deshacer.\n\nSi estás seguro, escribe el nombre EXACTO de la empresa para confirmar:');
+  if (r === null) return;
+  if (r.trim() !== String(nombre).trim()) { alert('El nombre no coincide. No se eliminó nada.'); return; }
+  try { await api('/clientes/' + id, { method: 'DELETE' }); cargar(); }
+  catch (e) { $('listErr').textContent = 'No se pudo eliminar: ' + e.message; }
 }
 
 // ---- crear cliente ----
