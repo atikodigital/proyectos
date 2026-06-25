@@ -127,6 +127,12 @@ const SOCIAL_AUTH_INDEXES = [
   "CREATE UNIQUE INDEX IF NOT EXISTS idx_users_facebook_id ON users(facebook_id) WHERE facebook_id IS NOT NULL",
 ];
 
+const PERSONAL_COLUMNS = [
+  "ALTER TABLE companies ADD COLUMN IF NOT EXISTS tipo_cuenta TEXT NOT NULL DEFAULT 'empresa'",
+  "ALTER TABLE companies ADD COLUMN IF NOT EXISTS sueldo_mensual INTEGER NOT NULL DEFAULT 0",
+  "ALTER TABLE companies ADD COLUMN IF NOT EXISTS dia_pago INTEGER NOT NULL DEFAULT 1",
+];
+
 // Índices de dedup (no únicos: el override permite una 2ª fila a propósito).
 const DEDUP_INDEXES = [
   "CREATE INDEX IF NOT EXISTS idx_expenses_dedup_doc ON expenses(company_id, rut_emisor, folio)",
@@ -167,6 +173,9 @@ async function migrate(db) {
   }
   for (const stmt of SOCIAL_AUTH_INDEXES) {
     try { await db.query(stmt); } catch (e) { /* pg-mem: índice parcial no soportado */ }
+  }
+  for (const stmt of PERSONAL_COLUMNS) {
+    try { await db.query(stmt); } catch (e) { /* pg-mem / ya existe */ }
   }
   // Grandfathering: las empresas que YA existen (sin suscripción) parten ILIMITADAS
   // para no bloquear a clientes actuales al activar el cobro.
