@@ -26,7 +26,44 @@ function fmt(n) {
   return '$' + Number(n).toLocaleString('es-CL');
 }
 
+function buildSystemPromptPersonal(context = {}) {
+  const { nombre = '', trato = '', resumenPersonal = {}, memorias = [] } = context;
+  const tratamiento = trato || '';
+  const nombreLabel = nombre ? `, ${nombre}` : '';
+  const sueldo = fmt(resumenPersonal.sueldo_mensual);
+  const gastado = fmt(resumenPersonal.gastado_mes);
+  const disponible = fmt(resumenPersonal.disponible);
+  const dias = resumenPersonal.dias_restantes_mes ?? '';
+  const topCats = (resumenPersonal.categorias || []).slice(0, 3)
+    .map((c) => `${c.nombre} ${fmt(c.total)}`).join(', ') || 'sin datos';
+  const aviso = (resumenPersonal.disponible ?? 0) < 0
+    ? `\n⚠️ El disponible es negativo. Avisar con tacto.`
+    : '';
+
+  return `# Identidad
+Eres KALY, compañera de finanzas personales${nombre ? ` de ${nombre}` : ''}.
+Tratas al usuario como "${tratamiento}${nombreLabel}".
+
+# Contexto financiero del mes
+- Sueldo mensual: ${sueldo}
+- Gastado este mes: ${gastado}
+- Disponible: ${disponible}${aviso}
+- Días restantes del mes: ${dias}
+- Categorías principales: ${topCats}
+
+# Reglas
+- Habla siempre en términos simples y cercanos.
+- NUNCA menciones IVA, folios, libros contables, VARAS ni terminología de empresa.
+- Cuando el usuario registre un gasto, confirma cuánto le queda del presupuesto en una frase.
+- Si el disponible es bajo (< 20% del sueldo) o negativo, avísalo con tacto y sin alarmar.
+- Responde preguntas como "¿me alcanza este mes?" con honestidad y contexto.
+- Respuestas CONCISAS: 1 a 3 frases máximo. Idioma: siempre español.
+- Si el usuario dice "no", "nada", "gracias" o similar, despídete en una frase.
+${bloqueMemorias(memorias)}`;
+}
+
 export function buildSystemPrompt(context = {}) {
+  if (context.tipoPersonal) return buildSystemPromptPersonal(context);
   const {
     nombre = '',
     trato = '',

@@ -2,6 +2,7 @@ const { cashflowSummary } = require('../expenses/summary');
 const { getAgentPrefs, getCompany, getCompanyProfile } = require('../companies/repo');
 const { listMemorias } = require('./memory');
 const { construirSenales } = require('./senales');
+const { calcularResumenPersonal } = require('../personal/repo');
 
 function saludoHora(now = new Date()) {
   // Hora de Chile continental
@@ -24,6 +25,10 @@ async function buildAgentContext(db, { companyId, employeeId, owner = null, now 
     [companyId]
   );
   const proactividad = prefs.proactividad !== false;
+  const tipoPersonal = (profile && profile.tipo_cuenta) === 'personal';
+  const resumenPersonal = tipoPersonal
+    ? await calcularResumenPersonal(db, companyId).catch(() => null)
+    : null;
   const ctx = {
     nombre: prefs.nombre || '',
     trato: prefs.trato || '',
@@ -34,6 +39,8 @@ async function buildAgentContext(db, { companyId, employeeId, owner = null, now 
     memorias,
     persona: (profile && profile.kaly_persona) || {},
     proactividad,
+    tipoPersonal,
+    resumenPersonal,
   };
   ctx.senales = proactividad ? construirSenales(ctx) : [];
   return ctx;
