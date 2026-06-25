@@ -41,6 +41,7 @@ const { ejecutarAccion } = require('../varas/acciones');
 const { TOOLS_READ } = require('../varas/tools');
 const memoryRepo = require('../agent/memory');
 const { saldo: saldoCreditos, consumirCredito, SinCreditosError } = require('../billing/creditos');
+const { calcularResumenPersonal } = require('../personal/repo');
 
 function createAppRouter({ db, extractExpense, createLiveToken, sendText, sendImage, extractCartola, componer, extraerProductos, extractLibroSii, varasGemini, extraerHechos, juzgarHecho } = {}) {
   const _extract = extractExpense || realExtract.extractExpense;
@@ -209,6 +210,16 @@ function createAppRouter({ db, extractExpense, createLiveToken, sendText, sendIm
     if (b.giro !== undefined) await setGiro(db, req.auth.companyId, b.giro);
     if (b.onboarded) await setOnboarded(db, req.auth.companyId);
     return res.json(await getCompanyProfile(db, req.auth.companyId));
+  });
+
+  router.get('/personal/resumen', async (req, res) => {
+    const profile = await getCompanyProfile(db, req.auth.companyId).catch(() => null);
+    if (!profile || profile.tipo_cuenta !== 'personal') {
+      return res.status(403).json({ error: 'solo_para_modo_personal' });
+    }
+    const resumen = await calcularResumenPersonal(db, req.auth.companyId);
+    if (!resumen) return res.status(404).json({ error: 'no_encontrado' });
+    return res.json(resumen);
   });
 
   router.get('/pedido-config', async (req, res) => {
