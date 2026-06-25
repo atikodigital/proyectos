@@ -9,7 +9,7 @@
  */
 const express = require('express');
 const mc = require('./meta-connect');
-const { createCompany, getCompany, updateCompany } = require('../companies/repo');
+const { createCompany, getCompany, updateCompany, createEmployee } = require('../companies/repo');
 const { createUser, getUserByEmail, getUserByProvider, linkProvider } = require('../users/repo');
 const { hashPassword } = require('../auth/password');
 const { signToken, verifyToken } = require('../auth/jwt');
@@ -141,6 +141,49 @@ function createOnboardingRouter({ db }) {
       });
     } catch (e) {
       console.error('[onboarding/register]', e.message);
+      res.status(500).json({ error: 'No se pudo crear la cuenta' });
+    }
+  });
+
+  // ── PÚBLICO: auto-registro persona natural ─────────────────────────
+  router.post('/register-personal', async (req, res) => {
+    try {
+      const { nombre, email, password, sueldo_mensual, dia_pago } = req.body || {};
+      if (!nombre || !email || !password || String(password).length < 6) {
+        return res.status(400).json({ error: 'campos_requeridos' });
+      }
+      const sueldoNum = parseInt(sueldo_mensual);
+      if (!sueldoNum || sueldoNum <= 0) {
+        return res.status(400).json({ error: 'sueldo_invalido' });
+      }
+      const emailNorm = String(email).trim().toLowerCase();
+
+      const { rows: [existing] } = await db.query(
+        'SELECT id FROM employees WHERE usuario=$1', [emailNorm]
+      );
+      if (existing) return res.status(400).json({ error: 'email_en_uso' });
+
+      const company = await createCompany(db, {
+        nombre: String(nombre).trim().slice(0, 120),
+        tipo_cuenta: 'personal',
+        sueldo_mensual: sueldoNum,
+        dia_pago: parseInt(dia_pago) || 1,
+      });
+
+      const hash = await hashPassword(password);
+      const emp = await createEmployee(db, {
+        company_id: company.id,
+        nombre: String(nombre).trim().slice(0, 80),
+        usuario: emailNorm,
+        password_hash: hash,
+        rol: 'admin',
+        activo: true,
+      });
+
+      const token = signToken({ kind: 'employee', companyId: company.id, employeeId: emp.id });
+      res.json({ ok: true, token, employee: { id: emp.id, nombre: emp.nombre } });
+    } catch (e) {
+      console.error('[onboarding/register-personal]', e.message);
       res.status(500).json({ error: 'No se pudo crear la cuenta' });
     }
   });
