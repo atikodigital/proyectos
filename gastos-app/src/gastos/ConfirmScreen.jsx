@@ -40,8 +40,17 @@ export default function ConfirmScreen({ expense, onDone, photo }) {
     try { await api.updateExpense(e.id, { categoria: cat }); } catch (_) { /* reintenta al confirmar si hace falta */ }
   }
   return (
-    <div className="p-6 max-w-sm mx-auto grid gap-3">
-      <h2 className="text-xl font-black" style={{ color: '#C9A24B' }}>Revisa el {esIngreso ? 'ingreso' : 'gasto'}</h2>
+    <div className="relative p-6 max-w-sm mx-auto grid gap-3">
+      <button
+        type="button"
+        disabled={busy}
+        onClick={() => run(() => api.rejectExpense(e.id))}
+        aria-label="Cerrar"
+        className="absolute top-3 right-3 w-9 h-9 rounded-full bg-black/10 border flex items-center justify-center text-xl leading-none disabled:opacity-50"
+      >
+        ×
+      </button>
+      <h2 className="text-xl font-black pr-10" style={{ color: '#C9A24B' }}>Revisa el {esIngreso ? 'ingreso' : 'gasto'}</h2>
       {photo && photo.base64 ? (
         <img alt="factura" src={`data:${photo.mime || 'image/jpeg'};base64,${photo.base64}`} className="rounded-xl border w-full max-h-60 object-contain bg-black/20" />
       ) : null}

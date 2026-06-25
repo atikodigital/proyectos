@@ -639,7 +639,15 @@ const EvidenceIntake = ({
             )}
 
             {isCameraOpen && (
-                <div className="bg-[#EEF2FF] border border-[#C7D2FE] rounded-2xl p-3 space-y-3">
+                <div className="relative bg-[#EEF2FF] border border-[#C7D2FE] rounded-2xl p-3 space-y-3">
+                    <button
+                        type="button"
+                        onClick={stopCamera}
+                        aria-label="Cerrar camara"
+                        className="absolute top-2 right-2 z-10 w-9 h-9 rounded-full bg-black/70 text-white flex items-center justify-center"
+                    >
+                        <X className="w-5 h-5" />
+                    </button>
                     <video ref={videoRef} className="w-full rounded-xl bg-black max-h-72 object-contain" playsInline muted />
                     <div className="flex gap-3">
                         <button type="button" onClick={captureFromCamera} className="px-4 py-2 rounded-xl bg-[#4D96FF] text-white text-sm font-black">
