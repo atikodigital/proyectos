@@ -30,9 +30,9 @@ async function buildAgentContext(db, { companyId, employeeId, owner = null, now 
     ? await calcularResumenPersonal(db, companyId).catch(() => null)
     : null;
   const ctx = {
-    nombre: prefs.nombre || '',
+    nombre: prefs.nombre || (tipoPersonal && profile ? profile.nombre : ''),
     trato: prefs.trato || '',
-    onboarded: Boolean(prefs.onboarded_at),
+    onboarded: Boolean(prefs.onboarded_at) || (tipoPersonal && Boolean(profile && profile.onboarded_at)),
     saludoHora: saludoHora(now),
     empresaNombre: (company && company.nombre) || '',
     resumen: { ...s, pendientesPago: pend.rows[0].n },

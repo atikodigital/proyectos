@@ -28,6 +28,22 @@ test('buildAgentContext para cuenta personal incluye tipoPersonal y resumenPerso
   expect(ctx.resumenPersonal).toHaveProperty('dias_restantes_mes');
 });
 
+test('buildAgentContext personal toma nombre del profile y onboarded de company.onboarded_at', async () => {
+  const db = await freshDb();
+  // Sin onboarded_at → onboarded false, pero nombre sale del profile (Ana)
+  const r = await db.query("INSERT INTO companies(nombre,tipo_cuenta,sueldo_mensual,dia_pago) VALUES('Ana','personal',500000,1) RETURNING id");
+  const companyId = r.rows[0].id;
+  const e = await db.query("INSERT INTO employees(company_id,nombre,usuario,password_hash,activo) VALUES($1,'Ana','ana','x',true) RETURNING id", [companyId]);
+  let ctx = await buildAgentContext(db, { companyId, employeeId: e.rows[0].id });
+  expect(ctx.nombre).toBe('Ana');
+  expect(ctx.onboarded).toBe(false);
+
+  // Tras setear onboarded_at en company → onboarded true
+  await db.query("UPDATE companies SET onboarded_at=now() WHERE id=$1", [companyId]);
+  ctx = await buildAgentContext(db, { companyId, employeeId: e.rows[0].id });
+  expect(ctx.onboarded).toBe(true);
+});
+
 test('buildAgentContext para cuenta empresa NO incluye tipoPersonal', async () => {
   const db = await freshDb();
   const r = await db.query("INSERT INTO companies(nombre) VALUES('Mi Empresa') RETURNING id");
