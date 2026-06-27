@@ -22,7 +22,21 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(MaticoScreenCapturePlugin.class);
         registerPlugin(AtikoPedidoPlugin.class);
         super.onCreate(savedInstanceState);
+        enableMediaAutoplay();
         requestAppPermissions();
+    }
+
+    // El WebView de Android nace con mediaPlaybackRequiresUserGesture=true, lo que
+    // bloquea el autoplay de audio. Sin esto, el AudioContext de KALY (tanto el de
+    // salida —su saludo/voz— como el del micrófono) queda 'suspended' hasta el primer
+    // toque del usuario: KALY no saluda al abrir, no habla y no escucha. La gracia de
+    // KALY es justamente saludar y enseñar apenas se abre la app, así que lo habilitamos.
+    private void enableMediaAutoplay() {
+        try {
+            if (getBridge() != null && getBridge().getWebView() != null) {
+                getBridge().getWebView().getSettings().setMediaPlaybackRequiresUserGesture(false);
+            }
+        } catch (Exception e) { /* no-op: si falla, queda el comportamiento por defecto */ }
     }
 
     // Solicita permisos nativos base al iniciar la app.
