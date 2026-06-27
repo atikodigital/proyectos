@@ -33,10 +33,11 @@ async function companyNeedsSetup(db, companyId) {
 // el nombre real justo después (needsBusinessName=true).
 async function findOrCreateSocialUser(db, perfil) {
   const { provider, providerId, email, name } = perfil;
-  // El correo es obligatorio: lo usamos como identidad y para enlazar cuentas.
-  // Google siempre lo entrega; si Facebook no (el usuario no dio el permiso),
-  // el endpoint le pedirá registrarse por correo.
-  if (!email) { const err = new Error('sin_email'); err.code = 'sin_email'; throw err; }
+  // La identidad estable es el id del proveedor (providerId), no el correo. El correo
+  // es OPCIONAL: Google siempre lo entrega; Facebook (con sólo public_profile, sin el
+  // permiso `email` que en Business Login da problemas) puede no darlo. En ese caso
+  // identificamos al usuario por su facebook_id y pedimos el WhatsApp en el formulario.
+  if (!providerId) { const err = new Error('sin_identidad'); err.code = 'sin_identidad'; throw err; }
   // needsBusinessName depende de si a la empresa le faltan datos (needs_setup),
   // NO de si es login nuevo: si creó la cuenta pero no completó el formulario,
   // se lo volvemos a pedir en el próximo ingreso.
@@ -257,7 +258,7 @@ function createOnboardingRouter({ db }) {
     const url = 'https://www.facebook.com/v19.0/dialog/oauth'
       + '?client_id=' + encodeURIComponent(appId)
       + '&redirect_uri=' + encodeURIComponent(redirectUri)
-      + '&scope=email,public_profile'
+      + '&scope=public_profile'
       + '&response_type=code';
     res.redirect(url);
   });
@@ -283,7 +284,7 @@ function createOnboardingRouter({ db }) {
       let perfil;
       try { perfil = await verifyFacebookToken(tokData.access_token); }
       catch (e) { return res.redirect(panel + '#sso_error=facebook_invalido'); }
-      if (!perfil.email) return res.redirect(panel + '#sso_error=sin_email');
+      // El correo es opcional para Facebook (sólo pedimos public_profile): identidad = facebook_id.
       const { user, needsBusinessName } = await findOrCreateSocialUser(db, perfil);
       const token = tokenParaUsuario(user);
       const nombreQs = (needsBusinessName && perfil.name) ? '&nombre=' + encodeURIComponent(perfil.name) : '';
@@ -302,7 +303,7 @@ function createOnboardingRouter({ db }) {
       let perfil;
       try { perfil = await verifyFacebookToken(accessToken); }
       catch (e) { return res.status(401).json({ error: 'facebook_invalido', detalle: e.message }); }
-      if (!perfil.email) return res.status(422).json({ error: 'sin_email', mensaje: 'Facebook no compartió tu correo. Regístrate con email.' });
+      // Correo opcional para Facebook (sólo public_profile): identidad = facebook_id.
       const { user, company, needsBusinessName } = await findOrCreateSocialUser(db, perfil);
       return res.json({
         ok: true,

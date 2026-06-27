@@ -115,6 +115,9 @@ const BILLING_DDL = [
 // marca a la empresa recién creada por login social a la que aún le falta nombre.
 const SOCIAL_AUTH_DDL = [
   "ALTER TABLE users ALTER COLUMN password_hash DROP NOT NULL",
+  // Facebook con sólo public_profile no entrega correo: email pasa a ser opcional
+  // (identificamos por facebook_id). Google sigue trayéndolo siempre.
+  "ALTER TABLE users ALTER COLUMN email DROP NOT NULL",
   "ALTER TABLE users ADD COLUMN IF NOT EXISTS auth_provider text NOT NULL DEFAULT 'email'",
   "ALTER TABLE users ADD COLUMN IF NOT EXISTS google_sub text",
   "ALTER TABLE users ADD COLUMN IF NOT EXISTS facebook_id text",

@@ -14,6 +14,9 @@ async function freshDb() {
   const db = mem.adapters.createPg();
   const client = new db.Pool();
   await migrate(client).catch(() => {});
+  // pg-mem rechaza NULL en columnas UNIQUE; Postgres real permite múltiples NULL.
+  // Soltamos el constraint para reflejar el comportamiento de producción (Facebook sin correo).
+  await client.query('ALTER TABLE users DROP CONSTRAINT users_email_key').catch(() => {});
   return client;
 }
 
@@ -72,8 +75,15 @@ test('Facebook con email: crea la cuenta y enlaza facebook_id', async () => {
   expect(r.needsBusinessName).toBe(true);
 });
 
-test('social sin email: rechaza (se exige correo)', async () => {
+test('Facebook sin email: crea la cuenta identificando por facebook_id', async () => {
   const db = await freshDb();
-  await expect(findOrCreateSocialUser(db, { provider: 'facebook', providerId: 'fb-1', email: null, name: 'X' }))
-    .rejects.toThrow('sin_email');
+  const r = await findOrCreateSocialUser(db, { provider: 'facebook', providerId: 'fb-1', email: null, name: 'Sin Correo' });
+  expect(r.user.facebook_id).toBe('fb-1');
+  expect(r.user.email == null).toBe(true);
+  expect(r.needsBusinessName).toBe(true);
+  // Segundo login con el mismo facebook_id: no duplica.
+  const b = await findOrCreateSocialUser(db, { provider: 'facebook', providerId: 'fb-1', email: null, name: 'Sin Correo' });
+  expect(b.user.id).toBe(r.user.id);
+  const n = await db.query('SELECT count(*)::int AS n FROM users');
+  expect(n.rows[0].n).toBe(1);
 });
