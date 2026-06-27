@@ -152,6 +152,11 @@ export const api = {
     if (data && data.token) setToken(data.token);
     return data;
   },
+  // Recuperación de contraseña: envía el link por correo y/o WhatsApp. Cubre tanto
+  // cuentas de empresa (owner) como personales (empleado). Siempre responde ok.
+  forgotPassword(identificador) {
+    return req('/api/onboarding/forgot-password', { method: 'POST', auth: false, body: { identificador } });
+  },
   bspStatus() { return req('/api/onboarding/bsp-status'); },
   connectWhatsApp({ code, phone_number_id, waba_id, register, pin, label }) {
     return req('/api/onboarding/connect/whatsapp', {
