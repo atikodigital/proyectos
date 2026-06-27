@@ -36,6 +36,48 @@ async function seedUser(db) {
   return { companyId: cid, userId: u.rows[0].id };
 }
 
+test('register-app crea empresa + empleado admin y devuelve token', async () => {
+  const db = await freshDb(); const a = app(db);
+  const res = await request(a).post('/api/onboarding/register-app')
+    .send({ nombre: 'Panadería Don José', email: 'jose@pan.cl', password: 'Clave1234', whatsapp: '+56 9 1111 2222' });
+  expect(res.status).toBe(200);
+  expect(res.body.ok).toBe(true);
+  expect(res.body.token).toBeTruthy();
+  // El empleado existe y puede loguearse luego por /api/app/login.
+  const emp = await db.query("SELECT rol, company_id FROM employees WHERE usuario='jose@pan.cl'");
+  expect(emp.rows[0].rol).toBe('admin');
+});
+
+test('register-app rechaza email duplicado', async () => {
+  const db = await freshDb(); const a = app(db);
+  const body = { nombre: 'Negocio Dup', email: 'dup@x.cl', password: 'Clave1234' };
+  await request(a).post('/api/onboarding/register-app').send(body);
+  const res = await request(a).post('/api/onboarding/register-app').send(body);
+  expect(res.status).toBe(409);
+  expect(res.body.error).toBe('email_en_uso');
+});
+
+test('recuperación de empleado (APK): reset cambia la clave del empleado', async () => {
+  const db = await freshDb(); const a = app(db);
+  await request(a).post('/api/onboarding/register-app').send({ nombre: 'Neg', email: 'emp@x.cl', password: 'ClaveVieja1' });
+  // Solicita el link por su email
+  await request(a).post('/api/onboarding/forgot-password').send({ identificador: 'emp@x.cl' });
+  const pr = await db.query("SELECT subject_kind FROM password_resets ORDER BY expires_at DESC LIMIT 1");
+  expect(pr.rows[0].subject_kind).toBe('employee');
+  // Inserta un token conocido para el empleado y resetea
+  const crypto2 = require('crypto');
+  const emp = await db.query("SELECT id FROM employees WHERE usuario='emp@x.cl'");
+  const raw = 'tok-emp-123';
+  const th = crypto2.createHash('sha256').update(raw).digest('hex');
+  await db.query("INSERT INTO password_resets(user_id, token_hash, expires_at, subject_kind) VALUES($1,$2,$3,'employee')",
+    [emp.rows[0].id, th, new Date(Date.now() + 3600000)]);
+  const res = await request(a).post('/api/onboarding/reset-password').send({ token: raw, nueva_password: 'ClaveNueva9' });
+  expect(res.status).toBe(200);
+  const { verifyPassword } = require('../../src/auth/password');
+  const u = await db.query("SELECT password_hash FROM employees WHERE id=$1", [emp.rows[0].id]);
+  expect(await verifyPassword('ClaveNueva9', u.rows[0].password_hash)).toBe(true);
+});
+
 test('forgot-password siempre responde ok (no revela si existe)', async () => {
   const db = await freshDb(); const a = app(db);
   const res = await request(a).post('/api/onboarding/forgot-password').send({ identificador: 'noexiste@x.cl' });

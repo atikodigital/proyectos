@@ -10,7 +10,7 @@
 const crypto = require('crypto');
 const express = require('express');
 const mc = require('./meta-connect');
-const { createCompany, getCompany, updateCompany, createEmployee } = require('../companies/repo');
+const { createCompany, getCompany, updateCompany, createEmployee, getEmployeeByUsuario } = require('../companies/repo');
 const { createUser, getUserByEmail, getUserByProvider, linkProvider } = require('../users/repo');
 const { hashPassword } = require('../auth/password');
 const { signToken, verifyToken } = require('../auth/jwt');
@@ -188,6 +188,41 @@ function createOnboardingRouter({ db }) {
       res.json({ ok: true, token, employee: { id: emp.id, nombre: emp.nombre } });
     } catch (e) {
       console.error('[onboarding/register-personal]', e.message);
+      res.status(500).json({ error: 'No se pudo crear la cuenta' });
+    }
+  });
+
+  // ── PÚBLICO: auto-registro de negocio desde la APP (modelo "empleado") ──
+  // La APK loguea empleados (/api/app/login). Aquí el dueño crea su negocio +
+  // su login admin y entra directo; el OnboardingWizard completa el resto.
+  router.post('/register-app', async (req, res) => {
+    try {
+      const b = req.body || {};
+      const nombre = String(b.nombre || '').trim();
+      const email = String(b.email || b.usuario || '').trim().toLowerCase();
+      const password = String(b.password || '');
+      const whatsapp = b.whatsapp ? String(b.whatsapp).replace(/[^+\d]/g, '').slice(0, 20) : null;
+      if (nombre.length < 2) return res.status(400).json({ error: 'nombre_invalido' });
+      if (!email || !/.+@.+\..+/.test(email)) return res.status(400).json({ error: 'email_invalido' });
+      if (password.length < 8) return res.status(400).json({ error: 'password_corto' });
+      const existe = await getEmployeeByUsuario(db, email);
+      if (existe) return res.status(409).json({ error: 'email_en_uso' });
+
+      const company = await createCompany(db, {
+        nombre: nombre.slice(0, 120),
+        owner_nombre: nombre.slice(0, 80),
+        owner_whatsapp: whatsapp,
+        resumen_frecuencia: 'mensual',
+      });
+      const passwordHash = await hashPassword(password);
+      const emp = await createEmployee(db, {
+        company_id: company.id, nombre: nombre.slice(0, 80), usuario: email,
+        password_hash: passwordHash, rol: 'admin', activo: true,
+      });
+      const token = signToken({ kind: 'employee', companyId: company.id, employeeId: emp.id });
+      res.json({ ok: true, token, employee: { id: emp.id, nombre: emp.nombre }, company: { id: company.id, nombre: company.nombre } });
+    } catch (e) {
+      console.error('[onboarding/register-app]', e.message);
       res.status(500).json({ error: 'No se pudo crear la cuenta' });
     }
   });
@@ -415,44 +450,55 @@ function createOnboardingRouter({ db }) {
       // Buscar usuario por email o por WhatsApp del dueño de empresa.
       // waPhoneId/waToken: credenciales de WhatsApp que la propia empresa conectó;
       // las reusamos para enviarle el link a su dueño (no hay número central del sistema).
-      let user = null, company = null, destEmail = null, destWa = null, waPhoneId = null, waToken = null;
-      // Intento 1: por email exacto
+      // subject: a quién le restablecemos la clave — 'user' (dueño del panel) o
+      // 'employee' (login de la APK). companyId nos da el WhatsApp para enviar el link.
+      let subject = null, company = null, destEmail = null, destWa = null, waPhoneId = null, waToken = null;
+      // Intento 1: dueño (panel) por email exacto
       const byEmail = await getUserByEmail(db, ident);
       if (byEmail) {
-        user = byEmail;
-        company = await getCompany(db, user.company_id);
-        destEmail = user.email;
-        destWa = company && company.owner_whatsapp;
-        waPhoneId = company && company.wa_phone_number_id;
-        waToken = company && company.wa_token;
+        subject = { kind: 'user', id: byEmail.id, companyId: byEmail.company_id };
+        company = await getCompany(db, byEmail.company_id);
+        destEmail = byEmail.email;
       } else {
-        // Intento 2: por WhatsApp (limpiado)
+        // Intento 2: dueño (panel) por WhatsApp de la empresa
         const phone = ident.replace(/[^+\d]/g, '');
         if (phone.length >= 8) {
           const r = await db.query(
-            'SELECT c.id as cid, c.owner_whatsapp, c.wa_phone_number_id, c.wa_token, u.id as uid, u.email FROM companies c JOIN users u ON u.company_id=c.id WHERE c.owner_whatsapp=$1 LIMIT 1',
+            'SELECT c.id as cid, u.id as uid, u.email FROM companies c JOIN users u ON u.company_id=c.id WHERE c.owner_whatsapp=$1 LIMIT 1',
             [phone]
           );
           if (r.rows[0]) {
-            user = { id: r.rows[0].uid, company_id: r.rows[0].cid, email: r.rows[0].email };
-            destEmail = user.email;
-            destWa = r.rows[0].owner_whatsapp;
-            waPhoneId = r.rows[0].wa_phone_number_id;
-            waToken = r.rows[0].wa_token;
+            subject = { kind: 'user', id: r.rows[0].uid, companyId: r.rows[0].cid };
+            company = await getCompany(db, r.rows[0].cid);
+            destEmail = r.rows[0].email;
+          }
+        }
+        // Intento 3: empleado (APK) por su usuario (suele ser el email)
+        if (!subject) {
+          const emp = await getEmployeeByUsuario(db, ident);
+          if (emp) {
+            subject = { kind: 'employee', id: emp.id, companyId: emp.company_id };
+            company = await getCompany(db, emp.company_id);
+            destEmail = /.+@.+\..+/.test(emp.usuario) ? emp.usuario : null;
           }
         }
       }
 
       // Responder ok siempre — no revelar si existe
-      if (!user) return res.json({ ok: true });
+      if (!subject) return res.json({ ok: true });
+      if (company) {
+        destWa = destWa || company.owner_whatsapp;
+        waPhoneId = company.wa_phone_number_id;
+        waToken = company.wa_token;
+      }
 
       // Generar token seguro, guardar su hash en DB
       const rawToken = crypto.randomBytes(32).toString('hex');
       const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
       const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hora
       await db.query(
-        'INSERT INTO password_resets(user_id, token_hash, expires_at) VALUES($1,$2,$3)',
-        [user.id, tokenHash, expiresAt]
+        'INSERT INTO password_resets(user_id, token_hash, expires_at, subject_kind) VALUES($1,$2,$3,$4)',
+        [subject.id, tokenHash, expiresAt, subject.kind]
       );
 
       const resetUrl = PANEL + '?reset=' + rawToken;
@@ -493,7 +539,7 @@ function createOnboardingRouter({ db }) {
 
       const tokenHash = crypto.createHash('sha256').update(String(token)).digest('hex');
       const r = await db.query(
-        'SELECT id, user_id, expires_at, used_at FROM password_resets WHERE token_hash=$1',
+        'SELECT id, user_id, expires_at, used_at, subject_kind FROM password_resets WHERE token_hash=$1',
         [tokenHash]
       );
       const row = r.rows[0];
@@ -502,7 +548,9 @@ function createOnboardingRouter({ db }) {
       if (new Date(row.expires_at) < new Date()) return res.status(400).json({ error: 'token_expirado' });
 
       const hash = await hashPassword(String(nueva_password));
-      await db.query('UPDATE users SET password_hash=$1 WHERE id=$2', [hash, row.user_id]);
+      // Restablecemos en la tabla correcta según el tipo de cuenta.
+      const tabla = row.subject_kind === 'employee' ? 'employees' : 'users';
+      await db.query(`UPDATE ${tabla} SET password_hash=$1 WHERE id=$2`, [hash, row.user_id]);
       await db.query('UPDATE password_resets SET used_at=now() WHERE id=$1', [row.id]);
 
       return res.json({ ok: true });

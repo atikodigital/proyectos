@@ -145,6 +145,9 @@ const PASSWORD_RESETS_DDL = [
     expires_at timestamptz NOT NULL,
     used_at timestamptz
   )`,
+  // subject_kind: 'user' (dueño del panel web) | 'employee' (login de la APK).
+  // user_id guarda el id del sujeto correspondiente.
+  "ALTER TABLE password_resets ADD COLUMN IF NOT EXISTS subject_kind text NOT NULL DEFAULT 'user'",
   'CREATE UNIQUE INDEX IF NOT EXISTS idx_password_resets_token ON password_resets(token_hash)',
   'CREATE INDEX IF NOT EXISTS idx_password_resets_user ON password_resets(user_id)',
 ];
