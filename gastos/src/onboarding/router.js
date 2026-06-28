@@ -443,6 +443,7 @@ function createOnboardingRouter({ db }) {
       const patch = { nombre: nombre.slice(0, 120) };
       if (b.owner_nombre) patch.owner_nombre = String(b.owner_nombre).trim().slice(0, 80);
       if (b.owner_whatsapp) patch.owner_whatsapp = String(b.owner_whatsapp).replace(/[^+\d]/g, '').slice(0, 20);
+      if (b.idioma) patch.idioma = b.idioma;
       await updateCompany(db, req.user.companyId, patch);
       try { await db.query('UPDATE companies SET needs_setup=false WHERE id=$1', [req.user.companyId]); } catch (e) {}
       const company = await getCompany(db, req.user.companyId);
@@ -458,10 +459,16 @@ function createOnboardingRouter({ db }) {
   // Es saltable: si el usuario no lo pone, queda en 0 hasta que lo configure.
   router.post('/personal-income', requireAuth, async (req, res) => {
     try {
-      const sueldo = parseInt((req.body && req.body.sueldo_mensual), 10);
-      if (!sueldo || sueldo <= 0) return res.status(400).json({ error: 'sueldo_invalido' });
-      await updateCompany(db, req.user.companyId, { sueldo_mensual: sueldo });
-      try { await db.query('UPDATE companies SET needs_setup=false WHERE id=$1', [req.user.companyId]); } catch (e) {}
+      const b = req.body || {};
+      const sueldo = parseInt(b.sueldo_mensual, 10) || 0;
+      // Acepta ingreso y/o idioma. Si no viene ninguno, no hay nada que guardar.
+      if (sueldo <= 0 && !b.idioma) return res.status(400).json({ error: 'nada_que_guardar' });
+      const patch = {};
+      if (sueldo > 0) patch.sueldo_mensual = sueldo;
+      if (b.idioma) patch.idioma = b.idioma;
+      await updateCompany(db, req.user.companyId, patch);
+      // Solo marcamos "configurado" cuando ya hay ingreso.
+      if (sueldo > 0) { try { await db.query('UPDATE companies SET needs_setup=false WHERE id=$1', [req.user.companyId]); } catch (e) {} }
       return res.json({ ok: true });
     } catch (e) {
       console.error('[onboarding/personal-income]', e.message);

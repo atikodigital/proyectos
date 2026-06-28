@@ -50,6 +50,7 @@ export default function GastosApp() {
       try {
         const resp = await api.getCompany();
         setCompany(resp);
+        try { localStorage.setItem('hash_idioma', resp.idioma || 'es'); } catch (_) {}
         setProductos(Array.isArray(resp.productos) ? resp.productos : []);
         if (!resp.onboarded_at && !saltado) setMostrarOnboarding(true);
       } catch { /* no romper el render */ }

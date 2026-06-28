@@ -1730,22 +1730,28 @@
       + '<p style="margin:0;color:#d0c6ab;font-size:13px;">¿Cuánto ganas al mes? Lo usamos para tu balance. Puedes saltarlo y ponerlo después.</p>'
       + '<label style="' + lbl + '">Sueldo o ingresos mensuales ($CLP)</label>'
       + '<input id="piSueldo" inputmode="numeric" placeholder="Ej: 800000" style="' + inp + '" />'
+      + '<label style="' + lbl + '">Idioma / Language</label>'
+      + '<select id="piIdioma" style="' + inp + '"><option value="es">Español</option><option value="en">English</option><option value="pt">Português</option></select>'
       + '<p id="piMsg" style="color:#ffb4ab;font-size:12px;margin:8px 0 0;min-height:14px;"></p>'
       + '<button id="piSave" style="width:100%;margin-top:12px;background:linear-gradient(to right,#ffd700,#e9c400);color:#3a3000;border:none;border-radius:10px;padding:11px;font-weight:800;cursor:pointer;">Guardar</button>'
       + '<button id="piSkip" style="width:100%;margin-top:8px;background:transparent;color:#9d9da0;border:none;padding:6px;font-size:12px;cursor:pointer;text-decoration:underline;">Lo configuro después</button>'
       + '</div>';
     document.body.appendChild(m);
     var sueldoEl = m.querySelector('#piSueldo'); sueldoEl.focus();
-    m.querySelector('#piSkip').onclick = function () { document.body.removeChild(m); showApp(); };
-    async function guardar() {
-      var sueldo = parseInt((sueldoEl.value || '').replace(/\D/g, ''), 10);
-      if (!sueldo) { m.querySelector('#piMsg').textContent = 'Escribe un monto o salta este paso.'; return; }
+    function idiomaSel() { var s = m.querySelector('#piIdioma'); return s ? s.value : 'es'; }
+    async function postIncome(body) {
       try {
         await fetch('/api/onboarding/personal-income', {
           method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token() },
-          body: JSON.stringify({ sueldo_mensual: sueldo })
+          body: JSON.stringify(body)
         });
       } catch (e) { /* si falla, igual entra; lo configura en la app */ }
+    }
+    m.querySelector('#piSkip').onclick = async function () { await postIncome({ idioma: idiomaSel() }); document.body.removeChild(m); showApp(); };
+    async function guardar() {
+      var sueldo = parseInt((sueldoEl.value || '').replace(/\D/g, ''), 10);
+      if (!sueldo) { m.querySelector('#piMsg').textContent = 'Escribe un monto o salta este paso.'; return; }
+      await postIncome({ sueldo_mensual: sueldo, idioma: idiomaSel() });
       document.body.removeChild(m); showApp();
     }
     m.querySelector('#piSave').onclick = guardar;
@@ -1766,6 +1772,8 @@
       + '<input id="bnNombre" placeholder="Ej: José Olguín" style="' + inp + '" />'
       + '<label style="' + lbl + '">Número de contacto (WhatsApp)</label>'
       + '<input id="bnContacto" type="tel" placeholder="Ej: +56 9 1234 5678" style="' + inp + '" />'
+      + '<label style="' + lbl + '">Idioma / Language</label>'
+      + '<select id="bnIdioma" style="' + inp + '"><option value="es">Español</option><option value="en">English</option><option value="pt">Português</option></select>'
       + '<p id="bnMsg" style="color:#ffb4ab;font-size:12px;margin:8px 0 0;min-height:14px;"></p>'
       + '<button id="bnSave" style="width:100%;margin-top:12px;background:linear-gradient(to right,#ffd700,#e9c400);color:#3a3000;border:none;border-radius:10px;padding:11px;font-weight:800;cursor:pointer;">Empezar</button>'
       + '</div>';
@@ -1779,9 +1787,10 @@
       if (nombre.length < 2) { m.querySelector('#bnMsg').textContent = 'Escribe el nombre de tu negocio.'; return; }
       if (contacto.replace(/[^\d]/g, '').length < 8) { m.querySelector('#bnMsg').textContent = 'Escribe un número de contacto válido.'; return; }
       try {
+        var idiomaEl = m.querySelector('#bnIdioma');
         await fetch('/api/onboarding/business-name', {
           method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token() },
-          body: JSON.stringify({ nombre: nombre, owner_nombre: ownerNombre, owner_whatsapp: contacto })
+          body: JSON.stringify({ nombre: nombre, owner_nombre: ownerNombre, owner_whatsapp: contacto, idioma: idiomaEl ? idiomaEl.value : 'es' })
         });
       } catch (e) { /* si falla, igual entra; puede completar en configuración */ }
       document.body.removeChild(m);

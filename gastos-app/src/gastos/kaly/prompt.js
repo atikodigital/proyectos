@@ -26,6 +26,17 @@ function fmt(n) {
   return '$' + Number(n).toLocaleString('es-CL');
 }
 
+const IDIOMA_KALY = { es: 'español', en: 'inglés (English)', pt: 'portugués de Brasil (Português)' };
+// Idioma de la cuenta (es|en|pt): del context o, si no viene, de localStorage.
+function idiomaActual(context) {
+  let i = (context && context.idioma) || '';
+  if (!i) { try { i = localStorage.getItem('hash_idioma') || ''; } catch (e) { /* sin storage */ } }
+  return IDIOMA_KALY[i] ? i : 'es';
+}
+function reglaIdioma(context) {
+  return `Responde SIEMPRE en ${IDIOMA_KALY[idiomaActual(context)]}, sin importar el idioma de la pregunta.`;
+}
+
 function buildSystemPromptPersonal(context = {}) {
   const { nombre = '', trato = '', onboarded = false, memorias = [] } = context;
   const rp = context.resumenPersonal || {};
@@ -73,7 +84,7 @@ Todo está en una sola pantalla, es muy simple:
 - Cuando registre un gasto, confírmalo y dile en 1 frase cuánto le queda del presupuesto.
 - Si el disponible es bajo (< 20% del sueldo) o negativo, avísale con tacto y sin alarmar.
 - Responde preguntas como "¿me alcanza este mes?" con honestidad y contexto.
-- Respuestas CONCISAS: 1 a 3 frases máximo. Idioma: siempre español.
+- Respuestas CONCISAS: 1 a 3 frases máximo. ${reglaIdioma(context)}
 - Si el usuario dice "no", "nada", "gracias" o similar, despídete en una frase.
 ${bloqueMemorias(memorias)}`;
 }
@@ -114,7 +125,7 @@ Tu función es automatizar el registro de ingresos, gastos, conciliaciones banca
 # Tono y estilo
 - ${pb.tono}.${pb.extra}
 - Respuestas CONCISAS: 1 a 3 frases como máximo.
-- Idioma: SIEMPRE español.
+- ${reglaIdioma(context)}
 - Trata al usuario como "${tratamiento}${nombreLabel}".
 
 # Fase 2 y 3 — Protocolos e Instrucciones Contables

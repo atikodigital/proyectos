@@ -5,6 +5,7 @@ export default function OnboardingPersonal({ company, onDone }) {
   const [step, setStep] = useState(1);
   const [sueldo, setSueldo] = useState(String(company?.sueldo_mensual || ''));
   const [diaPago, setDiaPago] = useState(String(company?.dia_pago || '1'));
+  const [idioma, setIdioma] = useState(company?.idioma || 'es');
   const [loading, setLoading] = useState(false);
 
   async function goStep2() {
@@ -12,7 +13,8 @@ export default function OnboardingPersonal({ company, onDone }) {
     if (!sueldoNum || sueldoNum <= 0) return;
     setLoading(true);
     try {
-      await api.updateCompany({ sueldo_mensual: sueldoNum });
+      await api.updateCompany({ sueldo_mensual: sueldoNum, idioma });
+      try { localStorage.setItem('hash_idioma', idioma); } catch (_) {}
       setStep(2);
     } finally { setLoading(false); }
   }
@@ -74,6 +76,12 @@ export default function OnboardingPersonal({ company, onDone }) {
       <p style={{ fontSize: 12, opacity: 0.5, margin: 0 }}>KALY lo usará para calcular cuánto te queda cada mes.</p>
       <input style={input} inputMode="numeric" placeholder="Ej: 800000"
         value={sueldo} onChange={(e) => setSueldo(e.target.value)} />
+      <label style={{ fontSize: 12, opacity: 0.6, margin: 0 }}>Idioma / Language</label>
+      <select style={{ ...input, fontSize: 16 }} value={idioma} onChange={(e) => setIdioma(e.target.value)}>
+        <option value="es">Español</option>
+        <option value="en">English</option>
+        <option value="pt">Português</option>
+      </select>
       <button style={btn} disabled={loading} onClick={goStep2}>
         {loading ? 'Guardando…' : 'Continuar →'}
       </button>

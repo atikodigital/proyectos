@@ -12,6 +12,7 @@ export default function OnboardingWizard({ onDone, onSkip, onIrAlChat, onCrearPe
   const [nombre, setNombre] = useState('');
   const [giro, setGiro] = useState('');
   const [whatsapp, setWhatsapp] = useState('');
+  const [idioma, setIdioma] = useState('es');
   const [nProductos, setNProductos] = useState(0);
   const [ivaIncluido, setIvaIncluido] = useState(true);
   const [haceDelivery, setHaceDelivery] = useState(false);
@@ -24,7 +25,7 @@ export default function OnboardingWizard({ onDone, onSkip, onIrAlChat, onCrearPe
     (async () => {
       try {
         const c = await api.getCompany();
-        setNombre(c?.nombre || ''); setGiro(c?.giro || ''); setWhatsapp(c?.owner_whatsapp || '');
+        setNombre(c?.nombre || ''); setGiro(c?.giro || ''); setWhatsapp(c?.owner_whatsapp || ''); setIdioma(c?.idioma || 'es');
         const cfg = await api.getPedidoConfig();
         if (cfg && cfg.pedido_iva_incluido != null) setIvaIncluido(!!cfg.pedido_iva_incluido);
         const prods = await api.listProducts(true);
@@ -37,7 +38,7 @@ export default function OnboardingWizard({ onDone, onSkip, onIrAlChat, onCrearPe
   async function guardarNegocio() {
     setErr('');
     if (!nombre.trim()) { setErr('Pon el nombre de tu negocio'); return false; }
-    try { await api.updateCompany({ nombre: nombre.trim(), giro: giro.trim(), owner_whatsapp: whatsapp.trim() }); return true; }
+    try { await api.updateCompany({ nombre: nombre.trim(), giro: giro.trim(), owner_whatsapp: whatsapp.trim(), idioma }); try { localStorage.setItem('hash_idioma', idioma); } catch (_) {} return true; }
     catch (e) { setErr('No pude guardar, reintenta'); return false; }
   }
   async function guardarIva() { try { await api.setPedidoConfig({ pedido_iva_incluido: ivaIncluido }); return true; } catch { setErr('No pude guardar el IVA'); return false; } }
@@ -171,6 +172,11 @@ export default function OnboardingWizard({ onDone, onSkip, onIrAlChat, onCrearPe
           <input placeholder="Nombre de tu negocio" value={nombre} onChange={(e) => setNombre(e.target.value)} style={inp} />
           <input placeholder="Rubro (ej. pastelería)" value={giro} onChange={(e) => setGiro(e.target.value)} style={inp} />
           <input placeholder="WhatsApp del dueño (569…)" value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} style={inp} />
+          <select value={idioma} onChange={(e) => setIdioma(e.target.value)} style={inp}>
+            <option value="es">Idioma: Español</option>
+            <option value="en">Language: English</option>
+            <option value="pt">Idioma: Português</option>
+          </select>
         </div>
       )}
       {i === 1 && (

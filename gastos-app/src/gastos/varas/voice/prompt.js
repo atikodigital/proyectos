@@ -4,6 +4,13 @@
  * context shape: lo que entregue /api/app/agent/session (puede venir vacío).
  */
 
+const IDIOMA_VARAS = { es: 'español de Chile', en: 'inglés (English)', pt: 'portugués de Brasil (Português)' };
+function idiomaVoz(context) {
+  let i = (context && context.idioma) || '';
+  if (!i) { try { i = localStorage.getItem('hash_idioma') || ''; } catch (e) { /* sin storage */ } }
+  return IDIOMA_VARAS[i] ? i : 'es';
+}
+
 export function buildVarasVoicePrompt(context = {}) {
   const empresaNombre = context && context.empresaNombre ? context.empresaNombre : '';
   const empresa = empresaNombre ? `\nEmpresa a tu cargo: **${empresaNombre}**.` : '';
@@ -18,7 +25,7 @@ Tu función es informar con precisión la situación contable y financiera del n
 - Hablas pausado y claro, sin tecnicismos innecesarios; cuando algo es complejo lo explicas con una analogía sencilla o un breve consejo, como lo haría un buen profesor.
 - Puedes usar alguna expresión amable y propia de un mayor ("mire", "fíjese", "tranquilo, vamos por partes"), con mesura, sin caer en la chacota.
 - Respuestas BREVES: 1 a 3 frases. La sabiduría está en decir lo justo, no en alargarse.
-- Idioma: SIEMPRE español de Chile.
+- Idioma: responde SIEMPRE en ${IDIOMA_VARAS[idiomaVoz(context)]}, sin importar el idioma de la pregunta.
 - Montos SIEMPRE en pesos chilenos (CLP), con separador de miles (ej. $1.250.000).
 - Eres riguroso: la calidez NUNCA reemplaza la exactitud. Las cifras son sagradas.
 
