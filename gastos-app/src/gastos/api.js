@@ -159,15 +159,19 @@ export const api = {
   },
   // Login social nativo: el plugin obtiene el token del proveedor en el teléfono y
   // el backend lo verifica (mismo endpoint que usa la web). Crea/encuentra la cuenta.
-  async loginGoogle(idToken) {
-    const data = await req('/api/onboarding/oauth/google', { method: 'POST', auth: false, body: { idToken } });
+  async loginGoogle(idToken, tipo) {
+    const data = await req('/api/onboarding/oauth/google', { method: 'POST', auth: false, body: { idToken, tipo } });
     if (data && data.token) setToken(data.token);
     return data;
   },
-  async loginFacebook(accessToken) {
-    const data = await req('/api/onboarding/oauth/facebook', { method: 'POST', auth: false, body: { accessToken } });
+  async loginFacebook(accessToken, tipo) {
+    const data = await req('/api/onboarding/oauth/facebook', { method: 'POST', auth: false, body: { accessToken, tipo } });
     if (data && data.token) setToken(data.token);
     return data;
+  },
+  // Guarda el ingreso de una cuenta personal creada por login social (saltable).
+  personalIncome(sueldo_mensual) {
+    return req('/api/onboarding/personal-income', { method: 'POST', body: { sueldo_mensual } });
   },
   bspStatus() { return req('/api/onboarding/bsp-status'); },
   connectWhatsApp({ code, phone_number_id, waba_id, register, pin, label }) {

@@ -136,6 +136,19 @@ const PERSONAL_COLUMNS = [
   "ALTER TABLE companies ADD COLUMN IF NOT EXISTS dia_pago INTEGER NOT NULL DEFAULT 1",
 ];
 
+// Login social para cuentas PERSONALES: la cuenta personal vive en employees
+// (kind=employee). Para que entren con Google/Facebook ligamos el id del proveedor
+// al empleado, igual que ya se hace en users para las cuentas de negocio.
+const SOCIAL_EMPLOYEE_DDL = [
+  "ALTER TABLE employees ADD COLUMN IF NOT EXISTS auth_provider text NOT NULL DEFAULT 'email'",
+  "ALTER TABLE employees ADD COLUMN IF NOT EXISTS google_sub text",
+  "ALTER TABLE employees ADD COLUMN IF NOT EXISTS facebook_id text",
+];
+const SOCIAL_EMPLOYEE_INDEXES = [
+  "CREATE UNIQUE INDEX IF NOT EXISTS idx_employees_google_sub ON employees(google_sub) WHERE google_sub IS NOT NULL",
+  "CREATE UNIQUE INDEX IF NOT EXISTS idx_employees_facebook_id ON employees(facebook_id) WHERE facebook_id IS NOT NULL",
+];
+
 const BILLING_MULTIMONEDA_COLUMNS = [
   "ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS procesador TEXT NOT NULL DEFAULT 'mp'",
   "ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS moneda TEXT NOT NULL DEFAULT 'CLP'",
@@ -200,6 +213,12 @@ async function migrate(db) {
   }
   for (const stmt of PERSONAL_COLUMNS) {
     try { await db.query(stmt); } catch (e) { /* pg-mem / ya existe */ }
+  }
+  for (const stmt of SOCIAL_EMPLOYEE_DDL) {
+    try { await db.query(stmt); } catch (e) { /* pg-mem / ya existe */ }
+  }
+  for (const stmt of SOCIAL_EMPLOYEE_INDEXES) {
+    try { await db.query(stmt); } catch (e) { /* pg-mem: índice parcial no soportado */ }
   }
   for (const stmt of BILLING_MULTIMONEDA_COLUMNS) {
     try { await db.query(stmt); } catch (e) { /* pg-mem / ya existe */ }

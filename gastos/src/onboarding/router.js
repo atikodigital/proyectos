@@ -10,7 +10,7 @@
 const crypto = require('crypto');
 const express = require('express');
 const mc = require('./meta-connect');
-const { createCompany, getCompany, updateCompany, createEmployee, getEmployeeByUsuario } = require('../companies/repo');
+const { createCompany, getCompany, updateCompany, createEmployee, getEmployeeByUsuario, getEmployeeByProvider, linkProviderEmployee } = require('../companies/repo');
 const { createUser, getUserByEmail, getUserByProvider, linkProvider } = require('../users/repo');
 const { hashPassword } = require('../auth/password');
 const { signToken, verifyToken } = require('../auth/jwt');
@@ -75,6 +75,62 @@ async function findOrCreateSocialUser(db, perfil) {
 
 function tokenParaUsuario(user) {
   return signToken({ kind: 'user', companyId: user.company_id, userId: user.id, rol: user.rol || 'owner' });
+}
+
+function tokenParaEmpleado(emp) {
+  return signToken({ kind: 'employee', companyId: emp.company_id, employeeId: emp.id });
+}
+
+// Igual que findOrCreateSocialUser pero para cuentas PERSONALES: la cuenta vive en
+// employees (kind=employee, lo que exige la app personal). La empresa nace con
+// tipo_cuenta='personal' y sueldo 0 (needs_setup=true) — el ingreso se pide después
+// y es saltable. Identidad estable = id del proveedor (google_sub/facebook_id).
+async function findOrCreatePersonalSocialUser(db, perfil) {
+  const { provider, providerId, email, name } = perfil;
+  if (!providerId) { const err = new Error('sin_identidad'); err.code = 'sin_identidad'; throw err; }
+  // 1) por id de proveedor (ya entró antes)
+  let emp = await getEmployeeByProvider(db, provider, providerId);
+  if (emp) {
+    const company = await getCompany(db, emp.company_id);
+    return { employee: emp, company, needsIncome: await companyNeedsSetup(db, emp.company_id) };
+  }
+  // 2) por correo (ya tenía cuenta personal por email → enlazar el proveedor)
+  if (email) {
+    const existing = await getEmployeeByUsuario(db, email);
+    if (existing) {
+      emp = (await linkProviderEmployee(db, existing.id, provider, providerId)) || existing;
+      const company = await getCompany(db, emp.company_id);
+      return { employee: emp, company, needsIncome: await companyNeedsSetup(db, emp.company_id) };
+    }
+  }
+  // 3) cuenta personal nueva: empresa personal provisional + empleado admin social
+  const company = await createCompany(db, {
+    nombre: name ? String(name).trim().slice(0, 120) : 'Mi cuenta',
+    tipo_cuenta: 'personal',
+    sueldo_mensual: 0,
+    dia_pago: 1,
+  });
+  try { await db.query('UPDATE companies SET needs_setup=true WHERE id=$1', [company.id]); } catch (e) { /* col nueva */ }
+  emp = await createEmployee(db, {
+    company_id: company.id,
+    nombre: name ? String(name).trim().slice(0, 80) : 'Yo',
+    usuario: email || null,
+    rol: 'admin',
+    activo: true,
+    auth_provider: provider,
+    [provider === 'google' ? 'google_sub' : 'facebook_id']: providerId,
+  });
+  return { employee: emp, company, needsIncome: true };
+}
+
+// Lee la intención de registro ('personal' | 'negocio') desde cookie, query o body.
+// Web: cookie `signup_tipo` (Google redirect) o `state` (Facebook). APK: body.tipo.
+function intentTipo(req) {
+  const fromBody = req.body && req.body.tipo;
+  const fromQuery = req.query && req.query.tipo;
+  const fromState = req.query && req.query.state && String(req.query.state).indexOf('personal') > -1 ? 'personal' : null;
+  const fromCookie = leerCookie(req.headers.cookie, 'signup_tipo');
+  return (fromBody || fromQuery || fromState || fromCookie) === 'personal' ? 'personal' : 'negocio';
 }
 
 // Lee una cookie puntual del header Cookie (sin dependencias).
@@ -237,6 +293,10 @@ function createOnboardingRouter({ db }) {
       try { perfil = await verifyGoogleIdToken(idToken); }
       catch (e) { return res.status(401).json({ error: 'google_invalido', detalle: e.message }); }
       if (!perfil.email) return res.status(422).json({ error: 'sin_email', mensaje: 'No pudimos obtener tu correo. Regístrate con email.' });
+      if (intentTipo(req) === 'personal') {
+        const { employee, company, needsIncome } = await findOrCreatePersonalSocialUser(db, perfil);
+        return res.json({ ok: true, token: tokenParaEmpleado(employee), tipo: 'personal', needsIncome, company: { id: company.id, nombre: company.nombre } });
+      }
       const { user, company, needsBusinessName } = await findOrCreateSocialUser(db, perfil);
       return res.json({
         ok: true,
@@ -270,6 +330,10 @@ function createOnboardingRouter({ db }) {
       try { perfil = await verifyGoogleIdToken(idToken); }
       catch (e) { return res.redirect(panel + '#sso_error=google_invalido'); }
       if (!perfil.email) return res.redirect(panel + '#sso_error=sin_email');
+      if (intentTipo(req) === 'personal') {
+        const { employee, needsIncome } = await findOrCreatePersonalSocialUser(db, perfil);
+        return res.redirect(panel + '#sso=' + encodeURIComponent(tokenParaEmpleado(employee)) + '&perfil=personal&income=' + (needsIncome ? '1' : '0'));
+      }
       const { user, needsBusinessName } = await findOrCreateSocialUser(db, perfil);
       const token = tokenParaUsuario(user);
       const nombreQs = (needsBusinessName && perfil.name) ? '&nombre=' + encodeURIComponent(perfil.name) : '';
@@ -290,10 +354,12 @@ function createOnboardingRouter({ db }) {
     if (!appId) return res.status(503).send('Facebook no configurado');
     const panel = (process.env.PANEL_BASE_URL || 'https://gastos.atikodigital.cl') + '/panel/';
     const redirectUri = (process.env.PANEL_BASE_URL || 'https://gastos.atikodigital.cl') + '/api/onboarding/oauth/facebook-callback';
+    const tipo = (req.query && req.query.tipo) === 'personal' ? 'personal' : 'negocio';
     const url = 'https://www.facebook.com/v19.0/dialog/oauth'
       + '?client_id=' + encodeURIComponent(appId)
       + '&redirect_uri=' + encodeURIComponent(redirectUri)
       + '&scope=public_profile'
+      + '&state=' + encodeURIComponent('tipo:' + tipo)
       + '&response_type=code';
     res.redirect(url);
   });
@@ -320,6 +386,10 @@ function createOnboardingRouter({ db }) {
       try { perfil = await verifyFacebookToken(tokData.access_token); }
       catch (e) { return res.redirect(panel + '#sso_error=facebook_invalido'); }
       // El correo es opcional para Facebook (sólo pedimos public_profile): identidad = facebook_id.
+      if (intentTipo(req) === 'personal') {
+        const { employee, needsIncome } = await findOrCreatePersonalSocialUser(db, perfil);
+        return res.redirect(panel + '#sso=' + encodeURIComponent(tokenParaEmpleado(employee)) + '&perfil=personal&income=' + (needsIncome ? '1' : '0') + '&via=fb');
+      }
       const { user, needsBusinessName } = await findOrCreateSocialUser(db, perfil);
       const token = tokenParaUsuario(user);
       const nombreQs = (needsBusinessName && perfil.name) ? '&nombre=' + encodeURIComponent(perfil.name) : '';
@@ -339,6 +409,10 @@ function createOnboardingRouter({ db }) {
       try { perfil = await verifyFacebookToken(accessToken); }
       catch (e) { return res.status(401).json({ error: 'facebook_invalido', detalle: e.message }); }
       // Correo opcional para Facebook (sólo public_profile): identidad = facebook_id.
+      if (intentTipo(req) === 'personal') {
+        const { employee, company, needsIncome } = await findOrCreatePersonalSocialUser(db, perfil);
+        return res.json({ ok: true, token: tokenParaEmpleado(employee), tipo: 'personal', needsIncome, company: { id: company.id, nombre: company.nombre } });
+      }
       const { user, company, needsBusinessName } = await findOrCreateSocialUser(db, perfil);
       return res.json({
         ok: true,
@@ -369,6 +443,22 @@ function createOnboardingRouter({ db }) {
       return res.json({ ok: true, company: { id: company.id, nombre: company.nombre } });
     } catch (e) {
       console.error('[onboarding/business-name]', e.message);
+      res.status(500).json({ error: 'No se pudo guardar' });
+    }
+  });
+
+  // ── PRIVADO: completar el ingreso tras un registro PERSONAL social ──
+  // La cuenta personal (empleado) nace con sueldo 0; aquí se guarda el ingreso.
+  // Es saltable: si el usuario no lo pone, queda en 0 hasta que lo configure.
+  router.post('/personal-income', requireAuth, async (req, res) => {
+    try {
+      const sueldo = parseInt((req.body && req.body.sueldo_mensual), 10);
+      if (!sueldo || sueldo <= 0) return res.status(400).json({ error: 'sueldo_invalido' });
+      await updateCompany(db, req.user.companyId, { sueldo_mensual: sueldo });
+      try { await db.query('UPDATE companies SET needs_setup=false WHERE id=$1', [req.user.companyId]); } catch (e) {}
+      return res.json({ ok: true });
+    } catch (e) {
+      console.error('[onboarding/personal-income]', e.message);
       res.status(500).json({ error: 'No se pudo guardar' });
     }
   });
@@ -582,4 +672,4 @@ function createOnboardingRouter({ db }) {
   return router;
 }
 
-module.exports = { createOnboardingRouter, findOrCreateSocialUser };
+module.exports = { createOnboardingRouter, findOrCreateSocialUser, findOrCreatePersonalSocialUser };

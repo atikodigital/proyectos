@@ -14,7 +14,7 @@ async function createCompany(db, data) {
 }
 
 async function createEmployee(db, data) {
-  const cols = ['company_id', 'nombre', 'phone', 'usuario', 'password_hash', 'rol', 'activo']
+  const cols = ['company_id', 'nombre', 'phone', 'usuario', 'password_hash', 'rol', 'activo', 'auth_provider', 'google_sub', 'facebook_id']
     .filter((f) => data[f] !== undefined);
   const ph = cols.map((_, i) => `$${i + 1}`).join(', ');
   const r = await db.query(
@@ -22,6 +22,22 @@ async function createEmployee(db, data) {
     cols.map((f) => data[f])
   );
   return r.rows[0];
+}
+
+// Busca un empleado (cuenta personal) por el id del proveedor social.
+async function getEmployeeByProvider(db, provider, providerId) {
+  const col = provider === 'google' ? 'google_sub' : provider === 'facebook' ? 'facebook_id' : null;
+  if (!col || !providerId) return null;
+  const r = await db.query(`SELECT * FROM employees WHERE ${col}=$1 AND activo=true LIMIT 1`, [providerId]);
+  return r.rows[0] || null;
+}
+
+// Vincula un proveedor social a un empleado existente (entró antes por correo).
+async function linkProviderEmployee(db, employeeId, provider, providerId) {
+  const col = provider === 'google' ? 'google_sub' : provider === 'facebook' ? 'facebook_id' : null;
+  if (!col || !providerId) return null;
+  const r = await db.query(`UPDATE employees SET ${col}=$2, auth_provider=$3 WHERE id=$1 RETURNING *`, [employeeId, providerId, provider]);
+  return r.rows[0] || null;
 }
 
 async function getCompanyByPhoneNumberId(db, phoneNumberId) {
@@ -181,7 +197,7 @@ async function setOnboarded(db, companyId) {
 }
 
 module.exports = {
-  createCompany, createEmployee, getCompanyByPhoneNumberId, getEmployeeByPhone, getEmployeeByUsuario,
+  createCompany, createEmployee, getEmployeeByProvider, linkProviderEmployee, getCompanyByPhoneNumberId, getEmployeeByPhone, getEmployeeByUsuario,
   listEmployees, updateEmployee, deactivateEmployee, getCompany, updateCompany, getCompanyWa,
   getAgentPrefs, setAgentPrefs, getOwnerAgentPrefs, setOwnerAgentPrefs, getGiro, setGiro,
   getCompanyProfile, setOnboarded, ensureCompanyOnboarding, setKalyPersona,

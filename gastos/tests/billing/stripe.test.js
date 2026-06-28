@@ -46,7 +46,7 @@ test('crearCheckoutSuscripcion pyme USD — llama Stripe con params correctos', 
   expect(params.get('success_url')).toBe('https://s');
   expect(params.get('cancel_url')).toBe('https://c');
   expect(params.get('line_items[0][price_data][currency]')).toBe('usd');
-  expect(params.get('line_items[0][price_data][unit_amount]')).toBe('2900'); // 29 USD × 100
+  expect(params.get('line_items[0][price_data][unit_amount]')).toBe('3500'); // 35 USD × 100
   expect(params.get('line_items[0][price_data][recurring][interval]')).toBe('month');
   expect(params.get('line_items[0][quantity]')).toBe('1');
   // product name should reference PLAN_LABELS (Hash IA Pyme)
@@ -54,7 +54,7 @@ test('crearCheckoutSuscripcion pyme USD — llama Stripe con params correctos', 
 });
 
 // ── Test 2: crearCheckoutSuscripcion basico EUR ────────────────────────────
-test('crearCheckoutSuscripcion basico EUR — unit_amount=1100 currency=eur', async () => {
+test('crearCheckoutSuscripcion basico EUR — unit_amount=1500 currency=eur', async () => {
   mockFetch(200, { id: 'cs_456', url: 'https://checkout.stripe.com/c/cs_456' });
 
   await crearCheckoutSuscripcion({
@@ -67,7 +67,7 @@ test('crearCheckoutSuscripcion basico EUR — unit_amount=1100 currency=eur', as
 
   const params = new URLSearchParams(global.fetch.mock.calls[0][1].body);
   expect(params.get('line_items[0][price_data][currency]')).toBe('eur');
-  expect(params.get('line_items[0][price_data][unit_amount]')).toBe('1100'); // 11 EUR × 100
+  expect(params.get('line_items[0][price_data][unit_amount]')).toBe('1500'); // 15 EUR × 100
 });
 
 // ── Test 3: rechaza CLP ───────────────────────────────────────────────────
