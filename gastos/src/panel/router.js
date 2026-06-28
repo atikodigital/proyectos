@@ -103,6 +103,7 @@ function createPanelRouter({ db, sendText, sendImage, varasGemini } = {}) {
           plan, moneda, payerEmail: owner.email,
           successUrl: `${base}/panel/#plan`,
           cancelUrl: `${base}/panel/#plan`,
+          companyId: req.auth.companyId,
         });
         id = result.id;
         url = result.url;

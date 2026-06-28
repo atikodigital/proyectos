@@ -33,8 +33,9 @@ async function stripeFetch(path, { method = 'POST', form } = {}) {
 // ── crearCheckoutSuscripcion ────────────────────────────────────────────────
 // plan: 'basico'|'pyme'|'empresa'
 // moneda: 'USD'|'EUR'  (CLP → usar MercadoPago)
+// companyId: opcional — se embebe en metadata para que el webhook mapee la empresa
 // Returns: { id, url }
-async function crearCheckoutSuscripcion({ plan, moneda, payerEmail, successUrl, cancelUrl }) {
+async function crearCheckoutSuscripcion({ plan, moneda, payerEmail, successUrl, cancelUrl, companyId }) {
   if (moneda === 'CLP') {
     throw new Error('Stripe no maneja CLP (usar MercadoPago)');
   }
@@ -54,6 +55,16 @@ async function crearCheckoutSuscripcion({ plan, moneda, payerEmail, successUrl, 
   form.set('line_items[0][price_data][unit_amount]', String(monto * 100));
   form.set('line_items[0][price_data][recurring][interval]', 'month');
   form.set('line_items[0][price_data][product_data][name]', nombre);
+
+  // Metadata en el session (disponible en checkout.session.completed).
+  if (companyId) form.set('metadata[company_id]', String(companyId));
+  form.set('metadata[plan]', plan);
+  form.set('metadata[moneda]', moneda);
+
+  // Metadata en la suscripción (disponible en renewal/cancel events sobre el Subscription).
+  if (companyId) form.set('subscription_data[metadata][company_id]', String(companyId));
+  form.set('subscription_data[metadata][plan]', plan);
+  form.set('subscription_data[metadata][moneda]', moneda);
 
   const r = await stripeFetch('/v1/checkout/sessions', { method: 'POST', form });
   return { id: r.id, url: r.url };

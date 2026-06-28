@@ -7,6 +7,8 @@ const express = require('express');
 const { createRateLimiter } = require('./middleware/rate-limit');
 const { createWebhookRouter } = require('./whatsapp/webhook');
 const { validarFirmaMP, procesarEventoMP } = require('./billing/webhook-mp');
+const { verificarFirmaStripe } = require('./billing/stripe');
+const { procesarEventoStripe } = require('./billing/webhook-stripe');
 const { createAppRouter } = require('./app/router');
 const { createPanelRouter } = require('./panel/router');
 const { createAdminRouter } = require('./admin/router');
@@ -90,6 +92,32 @@ app.post('/api/pagos/mp/webhook', async (req, res) => {
   } catch (e) {
     console.error('[mp-webhook] error:', e.message);
     return res.status(500).json({ error: 'webhook_error' });
+  }
+});
+// Webhook público de Stripe: raw body para verificar firma HMAC-SHA256.
+// express.json() global ya capturó el rawBody via verify callback → lo reutilizamos.
+// El payload parseado está en req.body; el Buffer crudo en req.rawBody.
+app.post('/api/pagos/stripe/webhook', async (req, res) => {
+  try {
+    // req.rawBody capturado por el verify callback de express.json() global.
+    const rawBuf = req.rawBody;
+    const rawStr = rawBuf ? rawBuf.toString('utf8') : JSON.stringify(req.body || {});
+    const sig = req.headers['stripe-signature'];
+    const secret = process.env.STRIPE_WEBHOOK_SECRET;
+    if (secret) {
+      if (!verificarFirmaStripe(rawStr, sig, secret)) {
+        console.warn('[stripe-webhook] firma inválida');
+        return res.status(400).json({ error: 'firma_invalida' });
+      }
+    }
+    const evento = req.body && req.body.type ? req.body : JSON.parse(rawStr);
+    const db = getPool();
+    const r = await procesarEventoStripe(db, evento);
+    console.log('[stripe-webhook] evento', evento.type, '→', r.accion || r.razon);
+    return res.json(r);
+  } catch (e) {
+    console.error('[stripe-webhook]', e.message);
+    return res.status(200).json({ ok: false });
   }
 });
 app.use('/api/app', createAppRouter({ db: getPool() }));
