@@ -1697,10 +1697,47 @@
     }
     if (mSso) {
       var mNombre = h.match(/[#&]nombre=([^&]+)/);
+      var esPersonal = /[#&]perfil=personal/.test(h);
+      var pideIngreso = /[#&]income=1/.test(h);
       setToken(decodeURIComponent(mSso[1]));
+      try { document.cookie = 'signup_tipo=negocio; path=/; max-age=600; samesite=lax'; } catch (e) {}
       try { history.replaceState(null, '', location.pathname); } catch (e) {}
-      if (mNew && mNew[1] === '1') pedirNombreNegocio(mNombre ? decodeURIComponent(mNombre[1]) : ''); else showApp();
+      if (esPersonal) { if (pideIngreso) pedirIngresoPersonal(); else showApp(); }
+      else if (mNew && mNew[1] === '1') pedirNombreNegocio(mNombre ? decodeURIComponent(mNombre[1]) : '');
+      else showApp();
     }
+  }
+  // Tras un registro PERSONAL social, pedimos (saltable) el sueldo o ingresos.
+  function pedirIngresoPersonal() {
+    var m = document.createElement('div');
+    m.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
+    var inp = 'width:100%;box-sizing:border-box;border-radius:8px;padding:10px;border:1px solid #343535;background:rgba(41,42,42,.5);color:#e3e2e2;outline:none;margin-top:4px;';
+    var lbl = 'display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#d0c6ab;margin-top:12px;';
+    m.innerHTML = '<div style="background:#1b1c1c;border:1px solid #343535;border-radius:16px;padding:22px;max-width:380px;width:100%;box-shadow:0 8px 40px rgba(0,0,0,.6);">'
+      + '<h3 style="margin:0 0 4px;font-weight:900;color:#ffd700;">¡Bienvenido! 👋</h3>'
+      + '<p style="margin:0;color:#d0c6ab;font-size:13px;">¿Cuánto ganas al mes? Lo usamos para tu balance. Puedes saltarlo y ponerlo después.</p>'
+      + '<label style="' + lbl + '">Sueldo o ingresos mensuales ($CLP)</label>'
+      + '<input id="piSueldo" inputmode="numeric" placeholder="Ej: 800000" style="' + inp + '" />'
+      + '<p id="piMsg" style="color:#ffb4ab;font-size:12px;margin:8px 0 0;min-height:14px;"></p>'
+      + '<button id="piSave" style="width:100%;margin-top:12px;background:linear-gradient(to right,#ffd700,#e9c400);color:#3a3000;border:none;border-radius:10px;padding:11px;font-weight:800;cursor:pointer;">Guardar</button>'
+      + '<button id="piSkip" style="width:100%;margin-top:8px;background:transparent;color:#9d9da0;border:none;padding:6px;font-size:12px;cursor:pointer;text-decoration:underline;">Lo configuro después</button>'
+      + '</div>';
+    document.body.appendChild(m);
+    var sueldoEl = m.querySelector('#piSueldo'); sueldoEl.focus();
+    m.querySelector('#piSkip').onclick = function () { document.body.removeChild(m); showApp(); };
+    async function guardar() {
+      var sueldo = parseInt((sueldoEl.value || '').replace(/\D/g, ''), 10);
+      if (!sueldo) { m.querySelector('#piMsg').textContent = 'Escribe un monto o salta este paso.'; return; }
+      try {
+        await fetch('/api/onboarding/personal-income', {
+          method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token() },
+          body: JSON.stringify({ sueldo_mensual: sueldo })
+        });
+      } catch (e) { /* si falla, igual entra; lo configura en la app */ }
+      document.body.removeChild(m); showApp();
+    }
+    m.querySelector('#piSave').onclick = guardar;
+    m.addEventListener('keydown', function (e) { if (e.key === 'Enter') guardar(); });
   }
   // Tras un registro social, pedimos el nombre del negocio antes de entrar.
   function pedirNombreNegocio(prefillNombre) {
@@ -1759,10 +1796,16 @@
       : '<label style="' + lbl + '">Nombre completo</label><input id="rgNombre" placeholder="Ej: María Pérez" style="' + inp + '" />'
         + '<label style="' + lbl + '">Correo</label><input id="rgEmail" type="email" placeholder="tu@correo.cl" style="' + inp + '" />'
         + '<label style="' + lbl + '">Contraseña (mín. 6)</label><input id="rgPass" type="password" style="' + inp + '" />'
-        + '<label style="' + lbl + '">Sueldo mensual ($CLP)</label><input id="rgSueldo" inputmode="numeric" placeholder="Ej: 800000" style="' + inp + '" />';
+        + '<label style="' + lbl + '">Sueldo o ingresos mensuales ($CLP)</label><input id="rgSueldo" inputmode="numeric" placeholder="Ej: 800000" style="' + inp + '" />';
+    // Botones de Google/Facebook solo en el registro PERSONAL (atajo: sin formulario).
+    var social = esNeg ? '' :
+      '<div id="rgGoogleBtn" style="display:flex;justify-content:center;margin-top:14px;min-height:40px;"></div>'
+      + '<a href="/api/onboarding/oauth/facebook-start?tipo=personal" style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:10px;background:#1877F2;color:#fff;border-radius:999px;font-size:14px;font-weight:600;text-decoration:none;margin-top:8px;box-sizing:border-box;">Continuar con Facebook</a>'
+      + '<div style="display:flex;align-items:center;gap:8px;margin:14px 0 2px;"><div style="flex:1;height:1px;background:#343535;"></div><span style="font-size:10px;color:#d0c6ab;opacity:.6;text-transform:uppercase;letter-spacing:.04em;">o con tu correo</span><div style="flex:1;height:1px;background:#343535;"></div></div>';
     m.innerHTML = '<div style="background:#1b1c1c;border:1px solid #343535;border-radius:16px;padding:22px;max-width:380px;width:100%;box-shadow:0 8px 40px rgba(0,0,0,.6);max-height:90vh;overflow:auto;">'
       + '<h3 style="margin:0 0 4px;font-weight:900;color:#ffd700;">' + (esNeg ? 'Crea tu cuenta de negocio 🏢' : 'Crea tu cuenta personal 👤') + '</h3>'
       + '<p style="margin:0;color:#d0c6ab;font-size:13px;">' + (esNeg ? 'Para tu pequeña o mediana empresa.' : 'Para controlar tus finanzas personales.') + '</p>'
+      + social
       + campos
       + '<p id="rgMsg" style="color:#ffb4ab;font-size:12px;margin:8px 0 0;min-height:14px;"></p>'
       + '<button id="rgSave" style="width:100%;margin-top:14px;background:linear-gradient(to right,#ffd700,#e9c400);color:#3a3000;border:none;border-radius:10px;padding:11px;font-weight:800;cursor:pointer;">Crear mi cuenta</button>'
@@ -1770,7 +1813,18 @@
       + '</div>';
     document.body.appendChild(m);
     var msg = m.querySelector('#rgMsg');
-    m.querySelector('#rgCancel').onclick = function () { document.body.removeChild(m); };
+    // Registro personal: marca la intención (cookie que leen los endpoints sociales
+    // en la redirección) y dibuja el botón de Google dentro del modal.
+    if (!esNeg) {
+      try { document.cookie = 'signup_tipo=personal; path=/; max-age=600; samesite=lax'; } catch (e) {}
+      (function renderG(intentos) {
+        if (window.google && google.accounts && google.accounts.id && m.querySelector('#rgGoogleBtn')) {
+          try { google.accounts.id.renderButton(m.querySelector('#rgGoogleBtn'), { theme: 'filled_black', size: 'large', text: 'continue_with', shape: 'pill', logo_alignment: 'left', width: 320 }); } catch (e) {}
+        } else if ((intentos || 0) < 20) { setTimeout(function () { renderG((intentos || 0) + 1); }, 200); }
+      })(0);
+    }
+    function cerrar() { try { document.cookie = 'signup_tipo=negocio; path=/; max-age=600; samesite=lax'; } catch (e) {} document.body.removeChild(m); }
+    m.querySelector('#rgCancel').onclick = cerrar;
     async function guardar() {
       var email = (m.querySelector('#rgEmail').value || '').trim().toLowerCase();
       var pass = m.querySelector('#rgPass').value || '';
