@@ -7,9 +7,9 @@ import { Capacitor } from '@capacitor/core';
 // audience = este id, que es el GOOGLE_CLIENT_ID que el backend ya valida.
 const GOOGLE_WEB_CLIENT_ID = '790192917762-b6vt4u7ijukim3qlaastuhim20o9gof4.apps.googleusercontent.com';
 const FB_APP_ID = '2190451791731005';
-// Client Token de Meta (Configuración → Avanzada → Token de cliente). Sin esto,
-// Facebook nativo queda deshabilitado (el botón no se muestra) pero Google sí funciona.
-const FB_CLIENT_TOKEN = '';
+// Client Token de Meta (Configuración → Avanzada → Token de cliente). Es un valor
+// pensado para apps cliente (no es el App Secret), seguro de incluir en la APK.
+const FB_CLIENT_TOKEN = 'ca26f3755d7d456d3ef97dc697401514';
 
 let _plugin = null;
 async function ensureInit() {
