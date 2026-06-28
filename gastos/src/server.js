@@ -69,7 +69,11 @@ app.use('/api/whatsapp/webhook', createWebhookRouter({ db: getPool() }));
 // Webhook público de Mercado Pago: valida firma HMAC antes de procesar.
 app.post('/api/pagos/mp/webhook', async (req, res) => {
   const secret = process.env.MP_WEBHOOK_SECRET;
-  if (secret) {
+  if (!secret) {
+    console.warn('[mp-webhook] MP_WEBHOOK_SECRET no configurado — rechazado (fail-closed)');
+    return res.status(503).json({ error: 'webhook_no_configurado' });
+  }
+  {
     const dataId = (req.body && req.body.data && req.body.data.id) || '';
     if (!validarFirmaMP(req.headers, dataId, secret)) {
       console.warn('[mp-webhook] firma inválida');
@@ -104,11 +108,13 @@ app.post('/api/pagos/stripe/webhook', async (req, res) => {
     const rawStr = rawBuf ? rawBuf.toString('utf8') : JSON.stringify(req.body || {});
     const sig = req.headers['stripe-signature'];
     const secret = process.env.STRIPE_WEBHOOK_SECRET;
-    if (secret) {
-      if (!verificarFirmaStripe(rawStr, sig, secret)) {
-        console.warn('[stripe-webhook] firma inválida');
-        return res.status(400).json({ error: 'firma_invalida' });
-      }
+    if (!secret) {
+      console.warn('[stripe-webhook] STRIPE_WEBHOOK_SECRET no configurado — rechazado (fail-closed)');
+      return res.status(503).json({ error: 'webhook_no_configurado' });
+    }
+    if (!verificarFirmaStripe(rawStr, sig, secret)) {
+      console.warn('[stripe-webhook] firma inválida');
+      return res.status(400).json({ error: 'firma_invalida' });
     }
     const evento = req.body && req.body.type ? req.body : JSON.parse(rawStr);
     const db = getPool();
