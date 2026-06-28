@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from './api';
+import { t } from './i18n';
 import PedidoBuilder from './pedido/PedidoBuilder';
 import ProductosView from './ProductosView.jsx';
 import EvidenceIntake from '../components/EvidenceIntake.jsx';
@@ -44,29 +45,29 @@ function Ficha({ conv, onCrearPedido }) {
     let vivo = true;
     api.chatContacto(conv.channel, conv.contact)
       .then((f) => { if (!vivo) return; setFicha(f || {}); setEmail(f.email || ''); setUbic(f.ubicacion || ''); setNotas(f.notas || ''); })
-      .catch(() => { if (vivo) setErr('No se pudo cargar la ficha.'); });
+      .catch(() => { if (vivo) setErr(t('app.ficha_err_cargar')); });
     return () => { vivo = false; };
   }, [conv]);
 
   async function guardar() {
     setGuardando(true);
     try { await api.chatContactoGuardar({ channel: conv.channel, contact: conv.contact, email, ubicacion: ubic, notas }); }
-    catch (e) { setErr('No se pudo guardar.'); }
+    catch (e) { setErr(t('app.ficha_err_guardar')); }
     setGuardando(false);
   }
 
   async function enviarEvidencia() {
     setErr('');
-    if (String(conv.channel || '').toLowerCase() !== 'whatsapp') { setErr('Enviar imagen al cliente solo está disponible por WhatsApp.'); return; }
+    if (String(conv.channel || '').toLowerCase() !== 'whatsapp') { setErr(t('app.evid_solo_whatsapp')); return; }
     const imgs = (evidencias || []).filter((e) => e.imageBase64 && !e.isDoc);
-    if (!imgs.length) { setErr('No hay imágenes para enviar (los documentos no se envían como imagen).'); return; }
+    if (!imgs.length) { setErr(t('app.evid_sin_imagenes')); return; }
     setEnviando(true);
     try {
       for (const im of imgs) {
         await api.chatResponderImagen({ channel: conv.channel, contact: conv.contact, imageBase64: im.imageBase64, mimeType: im.imageMimeType || 'image/jpeg' });
       }
       setEvidencias([]);
-    } catch (e) { setErr('No se pudo enviar la imagen al cliente.'); }
+    } catch (e) { setErr(t('app.evid_err_enviar')); }
     setEnviando(false);
   }
 
@@ -76,35 +77,35 @@ function Ficha({ conv, onCrearPedido }) {
   const inp = 'w-full rounded-lg border px-2 py-1.5 text-sm mt-0.5';
 
   if (err && !ficha) return <div className="px-4 py-3 text-sm text-red-600">{err}</div>;
-  if (!ficha) return <div className="px-4 py-3 text-sm opacity-60">Cargando ficha…</div>;
+  if (!ficha) return <div className="px-4 py-3 text-sm opacity-60">{t('app.ficha_cargando')}</div>;
   return (
     <div className="px-4 py-3 border-b bg-black/[0.02] max-h-[55vh] overflow-y-auto">
       <div className="grid gap-1 mb-3">
-        {fila('Teléfono', ficha.telefono)}
-        {fila('Canal', (CANALES[conv.channel] || CANALES.compartido).n)}
-        {fila('Primer contacto', (ficha.primerContacto || '').slice(0, 10))}
-        {fila('Último contacto', (ficha.ultimoContacto || '').slice(0, 10))}
-        {fila('Mensajes', String(ficha.nMensajes || 0))}
+        {fila(t('app.ficha_telefono'), ficha.telefono)}
+        {fila(t('app.ficha_canal'), (CANALES[conv.channel] || CANALES.compartido).n)}
+        {fila(t('app.ficha_primer_contacto'), (ficha.primerContacto || '').slice(0, 10))}
+        {fila(t('app.ficha_ultimo_contacto'), (ficha.ultimoContacto || '').slice(0, 10))}
+        {fila(t('app.ficha_mensajes'), String(ficha.nMensajes || 0))}
       </div>
-      <label className="text-[11px] uppercase opacity-50">Email</label>
-      <input value={email} onChange={(e) => setEmail(e.target.value)} className={inp} placeholder="correo@cliente.cl" />
-      <label className="text-[11px] uppercase opacity-50 block mt-2">Ubicación</label>
-      <input value={ubic} onChange={(e) => setUbic(e.target.value)} className={inp} placeholder="Comuna / dirección" />
-      <label className="text-[11px] uppercase opacity-50 block mt-2">Notas</label>
-      <textarea value={notas} onChange={(e) => setNotas(e.target.value)} rows={2} className={inp} placeholder="Notas internas" />
+      <label className="text-[11px] uppercase opacity-50">{t('app.ficha_email')}</label>
+      <input value={email} onChange={(e) => setEmail(e.target.value)} className={inp} placeholder={t('app.ficha_email_ph')} />
+      <label className="text-[11px] uppercase opacity-50 block mt-2">{t('app.ficha_ubicacion')}</label>
+      <input value={ubic} onChange={(e) => setUbic(e.target.value)} className={inp} placeholder={t('app.ficha_ubicacion_ph')} />
+      <label className="text-[11px] uppercase opacity-50 block mt-2">{t('app.ficha_notas')}</label>
+      <textarea value={notas} onChange={(e) => setNotas(e.target.value)} rows={2} className={inp} placeholder={t('app.ficha_notas_ph')} />
       {err ? <div className="text-xs text-red-600 mt-1">{err}</div> : null}
-      <button onClick={guardar} disabled={guardando} className="w-full rounded-xl font-black py-2 text-black mt-2 disabled:opacity-50" style={{ background: GOLD }}>{guardando ? 'Guardando…' : 'Guardar datos'}</button>
+      <button onClick={guardar} disabled={guardando} className="w-full rounded-xl font-black py-2 text-black mt-2 disabled:opacity-50" style={{ background: GOLD }}>{guardando ? t('app.guardando') : t('app.ficha_guardar_datos')}</button>
       <div className="grid grid-cols-2 gap-2 mt-3">
-        <button onClick={onCrearPedido} className="rounded-xl font-black py-2.5 text-black" style={{ background: GOLD }}>🧾 Crear pedido</button>
-        <button onClick={() => setCapturando((v) => !v)} className="rounded-xl font-black py-2.5 border" style={{ borderColor: GOLD, color: GOLD }}>📷 Captura</button>
+        <button onClick={onCrearPedido} className="rounded-xl font-black py-2.5 text-black" style={{ background: GOLD }}>🧾 {t('app.crear_pedido')}</button>
+        <button onClick={() => setCapturando((v) => !v)} className="rounded-xl font-black py-2.5 border" style={{ borderColor: GOLD, color: GOLD }}>📷 {t('app.captura')}</button>
       </div>
       {capturando ? (
         <div className="mt-3">
           <EvidenceIntake value={evidencias} onChange={setEvidencias} showNativeCapture maxEvidence={6} />
           {evidencias.length ? (
             <>
-              <p className="text-xs opacity-60 mt-1">{evidencias.length} adjunto(s). Quedan disponibles para el pedido.</p>
-              <button onClick={enviarEvidencia} disabled={enviando} className="w-full rounded-xl font-black py-2 text-white mt-1 disabled:opacity-50" style={{ background: '#16A34A' }}>{enviando ? 'Enviando…' : '📤 Enviar imágenes al cliente'}</button>
+              <p className="text-xs opacity-60 mt-1">{evidencias.length} {t('app.evid_adjuntos')}</p>
+              <button onClick={enviarEvidencia} disabled={enviando} className="w-full rounded-xl font-black py-2 text-white mt-1 disabled:opacity-50" style={{ background: '#16A34A' }}>{enviando ? t('app.enviando') : '📤 ' + t('app.evid_enviar')}</button>
             </>
           ) : null}
         </div>
@@ -138,14 +139,14 @@ function Conversacion({ conv, onBack }) {
       <div className="p-4 pb-2 shrink-0 flex items-center gap-2 border-b">
         <button onClick={onBack} className="text-base font-black" style={{ color: GOLD }}>←</button>
         <button onClick={() => setFichaOpen((v) => !v)} className="flex-1 flex items-center gap-1 min-w-0 text-left">
-          <span className="font-black truncate">{conv.contact || 'Sin nombre'}</span>
+          <span className="font-black truncate">{conv.contact || t('app.sin_nombre')}</span>
           <span className="text-xs" style={{ color: GOLD }}>{fichaOpen ? '▴' : '▾'}</span>
         </button>
       </div>
       {fichaOpen ? <Ficha conv={conv} onCrearPedido={() => setArmando(true)} /> : null}
       <div className="flex-1 min-h-0 overflow-y-auto p-4 grid gap-2 content-start">
-        {msgs === null ? <div className="opacity-60 text-sm">Cargando…</div>
-          : (msgs.length === 0 && mias.length === 0) ? <div className="opacity-60 text-sm">Sin mensajes capturados aún.</div>
+        {msgs === null ? <div className="opacity-60 text-sm">{t('app.cargando')}</div>
+          : (msgs.length === 0 && mias.length === 0) ? <div className="opacity-60 text-sm">{t('app.sin_mensajes')}</div>
             : (
               <>
                 {msgs.map((m, i) => <div key={'r' + i} className="justify-self-start max-w-[85%] rounded-xl bg-black/5 p-2 text-sm whitespace-pre-wrap">{m.text}</div>)}
@@ -159,12 +160,12 @@ function Conversacion({ conv, onBack }) {
             value={reply}
             onChange={(e) => setReply(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter') responder(); }}
-            placeholder="Escribe una respuesta…"
+            placeholder={t('app.escribe_respuesta')}
             className="flex-1 rounded-xl border px-3 py-2 text-sm"
           />
-          <button onClick={responder} disabled={!reply.trim()} className="rounded-xl font-black px-3 py-2 text-white disabled:opacity-40 text-sm" style={{ background: '#16A34A' }}>Responder por WhatsApp</button>
+          <button onClick={responder} disabled={!reply.trim()} className="rounded-xl font-black px-3 py-2 text-white disabled:opacity-40 text-sm" style={{ background: '#16A34A' }}>{t('app.responder_whatsapp')}</button>
         </div>
-        <button onClick={() => setArmando(true)} className="w-full rounded-xl font-black py-3 text-black" style={{ background: GOLD }}>🧾 Crear pedido</button>
+        <button onClick={() => setArmando(true)} className="w-full rounded-xl font-black py-3 text-black" style={{ background: GOLD }}>🧾 {t('app.crear_pedido')}</button>
       </div>
     </div>
   );
@@ -204,10 +205,10 @@ export default function ChatView() {
   return (
     <div className="h-full flex flex-col">
       <div className="p-4 pb-2 shrink-0">
-        <h2 className="text-xl font-black" style={{ color: GOLD }}>Chat</h2>
+        <h2 className="text-xl font-black" style={{ color: GOLD }}>{t('app.chat_titulo')}</h2>
         <div className="flex gap-2 mt-2">
-          {segBtn('conversaciones', 'Conversaciones')}
-          {segBtn('productos', 'Productos')}
+          {segBtn('conversaciones', t('app.tab_conversaciones'))}
+          {segBtn('productos', t('app.tab_productos'))}
         </div>
       </div>
 
@@ -217,17 +218,17 @@ export default function ChatView() {
         <>
           {plugin() && !notif ? (
             <div className="mx-4 mb-2 rounded-xl border p-3 shrink-0" style={{ borderColor: GOLD }}>
-              <div className="font-bold text-sm mb-1">Activa la captura de chats</div>
-              <p className="text-xs opacity-70 mb-2">Permite que Hash IA lea los mensajes que te llegan, para llenar la bandeja sola.</p>
-              <button onClick={async () => { try { await plugin().openNotificationAccessSettings(); } catch (_e) { /* noop */ } }} className="rounded-lg font-black text-black px-3 py-1.5 text-xs" style={{ background: GOLD }}>Activar notificaciones</button>
+              <div className="font-bold text-sm mb-1">{t('app.captura_titulo')}</div>
+              <p className="text-xs opacity-70 mb-2">{t('app.captura_desc')}</p>
+              <button onClick={async () => { try { await plugin().openNotificationAccessSettings(); } catch (_e) { /* noop */ } }} className="rounded-lg font-black text-black px-3 py-1.5 text-xs" style={{ background: GOLD }}>{t('app.activar_notif')}</button>
             </div>
           ) : null}
 
           <div className="flex-1 min-h-0 overflow-y-auto px-4 pb-3 grid gap-2 content-start">
-            {convs === null ? <div className="opacity-60 text-sm">Cargando…</div>
+            {convs === null ? <div className="opacity-60 text-sm">{t('app.cargando')}</div>
               : convs.length === 0 ? (
                 <div className="opacity-60 text-sm">
-                  Aún no hay conversaciones. Activa la captura arriba, o en WhatsApp mantén presionado un mensaje → <b>Compartir</b> → <b>Hash IA</b>.
+                  {t('app.sin_conversaciones')} <b>{t('app.compartir')}</b> → <b>Hash IA</b>.
                 </div>
               ) : convs.map((c, i) => {
                 const ca = CANALES[c.channel] || CANALES.compartido;
@@ -235,7 +236,7 @@ export default function ChatView() {
                   <button key={i} onClick={() => setSel(c)} className="text-left rounded-xl border p-3 flex items-center gap-3">
                     <span className="text-lg">{ca.ic}</span>
                     <div className="min-w-0 flex-1">
-                      <div className="font-bold truncate">{c.contact || 'Sin nombre'} <span className="text-[10px] opacity-50">· {ca.n}</span></div>
+                      <div className="font-bold truncate">{c.contact || t('app.sin_nombre')} <span className="text-[10px] opacity-50">· {ca.n}</span></div>
                       <div className="text-xs opacity-60 truncate">{c.ultimo}</div>
                     </div>
                     <span className="text-[10px] opacity-50">{c.n}</span>

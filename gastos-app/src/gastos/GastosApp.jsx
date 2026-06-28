@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { getToken, clearToken } from './session';
 import { api } from './api';
+import { t } from './i18n';
 import LoginScreen from './LoginScreen.jsx';
 import ConfirmScreen from './ConfirmScreen.jsx';
 import MyExpenses from './MyExpenses.jsx';
@@ -19,11 +20,11 @@ import { AgentInteractionProvider } from './agente/AgentInteractionProvider.jsx'
 function clp(n) { return '$' + (Math.round(Number(n) || 0)).toLocaleString('es-CL'); }
 function fechaCorta(v) { if (!v) return ''; const s = String(v); return s.length >= 10 ? s.slice(0, 10) : s; }
 function motivoText(m) {
-  if (m === 'folio') return 'es la misma factura/boleta (mismo folio y RUT del proveedor)';
-  if (m === 'nro_operacion') return 'es el mismo comprobante (mismo N° de operación)';
-  if (m === 'imagen') return 'es exactamente la misma foto';
-  if (m === 'monto_fecha_proveedor') return 'coincide el monto, la fecha y el proveedor con otro ya registrado';
-  return 'ya existe un movimiento igual registrado';
+  if (m === 'folio') return t('app.motivo_folio');
+  if (m === 'nro_operacion') return t('app.motivo_nro_operacion');
+  if (m === 'imagen') return t('app.motivo_imagen');
+  if (m === 'monto_fecha_proveedor') return t('app.motivo_monto_fecha_proveedor');
+  return t('app.motivo_generico');
 }
 
 export default function GastosApp() {
@@ -124,10 +125,10 @@ export default function GastosApp() {
         <span className="font-black" style={{ color: '#C9A24B' }}>Hash IA <span className="text-xs font-normal opacity-50">{APP_VERSION}</span></span>
         <div className="flex items-center gap-2">
           {!mostrarOnboarding && (
-            <button className="text-xs opacity-60 border border-current rounded px-2 py-0.5" onClick={() => setMostrarOnboarding(true)}>Configurar mi negocio</button>
+            <button className="text-xs opacity-60 border border-current rounded px-2 py-0.5" onClick={() => setMostrarOnboarding(true)}>{t('app.configurar_negocio')}</button>
           )}
-          <button className="text-xs opacity-60 border border-current rounded px-2 py-0.5" onClick={() => setMostrarMemoria(true)}>Memoria KALY</button>
-          <button className="text-xs opacity-60" onClick={() => { clearToken(); setAuthed(false); }}>Salir</button>
+          <button className="text-xs opacity-60 border border-current rounded px-2 py-0.5" onClick={() => setMostrarMemoria(true)}>{t('app.memoria_kaly')}</button>
+          <button className="text-xs opacity-60" onClick={() => { clearToken(); setAuthed(false); }}>{t('app.salir')}</button>
         </div>
       </header>
       <main className="flex-1 min-h-0 flex flex-col overflow-hidden">
@@ -139,57 +140,57 @@ export default function GastosApp() {
         <div className="flex-1 min-h-0">
         {esVenta ? (
           <div className="h-full overflow-y-auto p-6 max-w-sm mx-auto grid gap-3 content-start">
-            <h2 className="text-xl font-black" style={{ color: '#C9A24B' }}>📤 Factura de venta</h2>
+            <h2 className="text-xl font-black" style={{ color: '#C9A24B' }}>📤 {t('app.venta_titulo')}</h2>
             <div className="rounded-2xl bg-black/5 p-4 border text-sm grid gap-2">
-              <div>Eres el <b>emisor</b> de esta factura. Se registrará como ingreso <b>pendiente de cobro</b> hasta confirmarlo con la cartola.</div>
+              <div>{t('app.venta_desc')}</div>
               {esVenta.info.receptor_nombre || esVenta.info.receptor_rut ? (
-                <div className="opacity-80">Cliente: <b>{esVenta.info.receptor_nombre || esVenta.info.receptor_rut}</b></div>
+                <div className="opacity-80">{t('app.cliente')}: <b>{esVenta.info.receptor_nombre || esVenta.info.receptor_rut}</b></div>
               ) : null}
               {esVenta.info.preview && esVenta.info.preview.total > 0 ? (
                 <div className="opacity-80">
-                  Total: {clp(esVenta.info.preview.total)}
-                  {esVenta.info.preview.folio ? ` · folio ${esVenta.info.preview.folio}` : ''}
+                  {t('app.total')}: {clp(esVenta.info.preview.total)}
+                  {esVenta.info.preview.folio ? ` · ${t('app.folio')} ${esVenta.info.preview.folio}` : ''}
                 </div>
               ) : null}
             </div>
-            <button onClick={() => submit(esVenta.imageBase64, esVenta.mimeType, false, false, true)} className="rounded-xl font-black py-3 text-black" style={{ background: '#C9A24B' }}>Registrar como ingreso</button>
-            <button onClick={() => setEsVenta(null)} className="rounded-xl font-black py-3 bg-black/10 border">Descartar</button>
+            <button onClick={() => submit(esVenta.imageBase64, esVenta.mimeType, false, false, true)} className="rounded-xl font-black py-3 text-black" style={{ background: '#C9A24B' }}>{t('app.registrar_ingreso')}</button>
+            <button onClick={() => setEsVenta(null)} className="rounded-xl font-black py-3 bg-black/10 border">{t('app.descartar')}</button>
           </div>
         ) : receptorAjeno ? (
           <div className="h-full overflow-y-auto p-6 max-w-sm mx-auto grid gap-3 content-start">
-            <h2 className="text-xl font-black" style={{ color: '#C9A24B' }}>⚠️ Factura de otra empresa</h2>
+            <h2 className="text-xl font-black" style={{ color: '#C9A24B' }}>⚠️ {t('app.receptor_titulo')}</h2>
             <div className="rounded-2xl bg-black/5 p-4 border text-sm grid gap-2">
-              <div>Esta factura está dirigida a <b>{receptorAjeno.info.receptor_nombre || receptorAjeno.info.receptor_rut}</b>, que no coincide con el RUT de tu empresa.</div>
+              <div>{t('app.receptor_desc1')} <b>{receptorAjeno.info.receptor_nombre || receptorAjeno.info.receptor_rut}</b>{t('app.receptor_desc2')}</div>
               {receptorAjeno.info.preview && receptorAjeno.info.preview.proveedor ? (
-                <div className="opacity-80">Proveedor: {receptorAjeno.info.preview.proveedor} · {clp(receptorAjeno.info.preview.total)}</div>
+                <div className="opacity-80">{t('app.proveedor')}: {receptorAjeno.info.preview.proveedor} · {clp(receptorAjeno.info.preview.total)}</div>
               ) : null}
-              <div>¿Registrarla igual?</div>
+              <div>{t('app.registrar_igual_q')}</div>
             </div>
-            <button onClick={() => submit(receptorAjeno.imageBase64, receptorAjeno.mimeType, false, true)} className="rounded-xl font-black py-3 text-black" style={{ background: '#C9A24B' }}>Sí, registrar igual</button>
-            <button onClick={() => setReceptorAjeno(null)} className="rounded-xl font-black py-3 bg-black/10 border">Descartar</button>
+            <button onClick={() => submit(receptorAjeno.imageBase64, receptorAjeno.mimeType, false, true)} className="rounded-xl font-black py-3 text-black" style={{ background: '#C9A24B' }}>{t('app.si_registrar_igual')}</button>
+            <button onClick={() => setReceptorAjeno(null)} className="rounded-xl font-black py-3 bg-black/10 border">{t('app.descartar')}</button>
           </div>
         ) : dup ? (
           <div className="h-full overflow-y-auto p-6 max-w-sm mx-auto grid gap-3 content-start">
-            <h2 className="text-xl font-black" style={{ color: '#C9A24B' }}>🚫 No lo registré</h2>
+            <h2 className="text-xl font-black" style={{ color: '#C9A24B' }}>🚫 {t('app.dup_titulo')}</h2>
             <div className="rounded-2xl bg-black/5 p-4 border text-sm grid gap-2">
-              <div><b>Por qué:</b> {motivoText(dup.info && dup.info.motivo)}.</div>
+              <div><b>{t('app.por_que')}:</b> {motivoText(dup.info && dup.info.motivo)}.</div>
               {dup.info && dup.info.existente ? (
-                <div className="opacity-80">Ya estaba registrado{dup.info.existente.fecha ? ' (' + fechaCorta(dup.info.existente.fecha) + ')' : ''}: {dup.info.existente.proveedor || 's/proveedor'} · {clp(dup.info.existente.total)}{dup.info.existente.folio ? ' · folio ' + dup.info.existente.folio : ''}{dup.info.existente.nro_operacion ? ' · N° op ' + dup.info.existente.nro_operacion : ''}.</div>
+                <div className="opacity-80">{t('app.dup_ya_registrado')}{dup.info.existente.fecha ? ' (' + fechaCorta(dup.info.existente.fecha) + ')' : ''}: {dup.info.existente.proveedor || t('app.sin_proveedor')} · {clp(dup.info.existente.total)}{dup.info.existente.folio ? ' · ' + t('app.folio') + ' ' + dup.info.existente.folio : ''}{dup.info.existente.nro_operacion ? ' · ' + t('app.nro_op') + ' ' + dup.info.existente.nro_operacion : ''}.</div>
               ) : null}
-              <div>Para no registrar/pagar dos veces, no lo guardé. ¿Registrarlo igual de todas formas?</div>
+              <div>{t('app.dup_pregunta')}</div>
             </div>
-            <button onClick={() => submit(dup.imageBase64, dup.mimeType, true)} className="rounded-xl font-black py-3 text-black" style={{ background: '#C9A24B' }}>Registrar igual</button>
-            <button onClick={() => setDup(null)} className="rounded-xl font-black py-3 bg-black/10 border">Descartar</button>
+            <button onClick={() => submit(dup.imageBase64, dup.mimeType, true)} className="rounded-xl font-black py-3 text-black" style={{ background: '#C9A24B' }}>{t('app.registrar_igual')}</button>
+            <button onClick={() => setDup(null)} className="rounded-xl font-black py-3 bg-black/10 border">{t('app.descartar')}</button>
           </div>
         ) : pending ? (
           <div className="h-full overflow-y-auto">
             <ConfirmScreen expense={pending.exp} photo={{ base64: pending.img, mime: pending.mime }} onDone={() => { setPending(null); setRefreshKey((k) => k + 1); setTab('mis'); }} />
           </div>
         ) : tab === 'capturar' ? (
-          busy ? <div className="p-6">Procesando…</div>
+          busy ? <div className="p-6">{t('app.procesando')}</div>
                : <div className="h-full overflow-y-auto p-4">
                    <p className="px-2 mb-2 opacity-70 text-xs font-bold">
-                     {esPersonal ? 'Registra tu gasto:' : 'Captura la boleta, factura o comprobante:'}
+                     {esPersonal ? t('app.captura_gasto_personal') : t('app.captura_comprobante')}
                    </p>
                    <EvidenceIntake maxEvidence={1} value={[]} onChange={onChange} showNativeCapture />
                    {esPersonal && <BalanceCard key={refreshKey} />}
@@ -211,21 +212,21 @@ export default function GastosApp() {
       {!pending && !dup && (
         <nav className="flex border-t border-slate-300 bg-white shadow-lg justify-around items-stretch h-14">
           <button className={`flex-1 flex flex-col justify-center items-center text-[10.5px] font-bold border-r border-slate-300 transition-all duration-200 ${tab === 'capturar' ? 'text-[#C9A24B] bg-slate-50/50' : 'text-neutral-500 opacity-60 hover:opacity-100'}`} onClick={() => setTab('capturar')}>
-            <span>Captura</span>
+            <span>{t('app.tab_captura')}</span>
           </button>
           <button className={`flex-1 flex flex-col justify-center items-center text-[10.5px] font-bold border-r border-slate-300 transition-all duration-200 ${tab === 'mis' ? 'text-[#C9A24B] bg-slate-50/50' : 'text-neutral-500 opacity-60 hover:opacity-100'}`} onClick={() => setTab('mis')}>
-            <span>Movimientos</span>
+            <span>{t('app.tab_movimientos')}</span>
           </button>
           <button className={`flex-1 flex flex-col justify-center items-center text-[10.5px] font-bold border-r border-slate-300 transition-all duration-200 ${tab === 'transaccional' ? 'text-[#C9A24B] bg-slate-50/50' : 'text-neutral-500 opacity-60 hover:opacity-100'}`} onClick={() => setTab('transaccional')}>
-            <span>Transaccional</span>
+            <span>{t('app.tab_transaccional')}</span>
           </button>
           {chatHabilitado && (
           <button className={`flex-1 flex flex-col justify-center items-center text-[10.5px] font-bold border-r border-slate-300 transition-all duration-200 ${tab === 'chat' ? 'text-[#C9A24B] bg-slate-50/50' : 'text-neutral-500 opacity-60 hover:opacity-100'}`} onClick={() => setTab('chat')}>
-            <span>Chat</span>
+            <span>{t('app.tab_chat')}</span>
           </button>
           )}
           <button className={`flex-1 flex flex-col justify-center items-center text-[10.5px] font-bold transition-all duration-200 ${tab === 'match' ? 'bg-[#b91c1c] text-white font-bold' : 'text-[#b91c1c] opacity-80 hover:opacity-100 hover:bg-red-50/30'}`} onClick={() => setTab('match')}>
-            <span>Match</span>
+            <span>{t('app.tab_match')}</span>
           </button>
         </nav>
       )}

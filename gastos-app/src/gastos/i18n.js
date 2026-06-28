@@ -1,3 +1,5 @@
+import { EXTRA } from './i18n-extra';
+
 // i18n del APK Hash IA. Idioma resuelto en este orden:
 //   localStorage 'hash_idioma' (cuenta) → idioma del dispositivo → 'es'.
 // Para textos nuevos: agrega la clave en los 3 diccionarios y usa t('clave').
@@ -169,6 +171,9 @@ const DICT = {
     'idioma.label': 'Idioma',
   },
 };
+
+// Fusiona las traducciones extra (Fase 2) en el diccionario principal.
+for (const _l of ['es', 'en', 'pt']) { Object.assign(DICT[_l], (EXTRA && EXTRA[_l]) || {}); }
 
 export function getIdioma() {
   let i = '';

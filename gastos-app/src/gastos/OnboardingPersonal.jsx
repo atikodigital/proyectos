@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { api } from './api';
+import { t } from './i18n';
 
 export default function OnboardingPersonal({ company, onDone }) {
   const [step, setStep] = useState(1);
@@ -71,9 +72,9 @@ export default function OnboardingPersonal({ company, onDone }) {
 
   if (step === 1) return (
     <div style={container}>
-      <h2 style={{ color: '#C9A24B', fontWeight: 900, fontSize: 22, margin: 0 }}>Paso 1 de 3</h2>
-      <p style={{ opacity: 0.7, margin: 0 }}>¿Cuánto es tu sueldo mensual?</p>
-      <p style={{ fontSize: 12, opacity: 0.5, margin: 0 }}>KALY lo usará para calcular cuánto te queda cada mes.</p>
+      <h2 style={{ color: '#C9A24B', fontWeight: 900, fontSize: 22, margin: 0 }}>{t('onb.paso1_titulo')}</h2>
+      <p style={{ opacity: 0.7, margin: 0 }}>{t('onb.sueldo_q')}</p>
+      <p style={{ fontSize: 12, opacity: 0.5, margin: 0 }}>{t('onb.sueldo_help')}</p>
       <input style={input} inputMode="numeric" placeholder="Ej: 800000"
         value={sueldo} onChange={(e) => setSueldo(e.target.value)} />
       <label style={{ fontSize: 12, opacity: 0.6, margin: 0 }}>Idioma / Language</label>
@@ -83,32 +84,32 @@ export default function OnboardingPersonal({ company, onDone }) {
         <option value="pt">Português</option>
       </select>
       <button style={btn} disabled={loading} onClick={goStep2}>
-        {loading ? 'Guardando…' : 'Continuar →'}
+        {loading ? t('onb.guardando') : t('onb.continuar')}
       </button>
     </div>
   );
 
   if (step === 2) return (
     <div style={container}>
-      <h2 style={{ color: '#C9A24B', fontWeight: 900, fontSize: 22, margin: 0 }}>Paso 2 de 3</h2>
-      <p style={{ opacity: 0.7, margin: 0 }}>¿Qué día te depositan el sueldo?</p>
+      <h2 style={{ color: '#C9A24B', fontWeight: 900, fontSize: 22, margin: 0 }}>{t('onb.paso2_titulo')}</h2>
+      <p style={{ opacity: 0.7, margin: 0 }}>{t('onb.dia_pago_q')}</p>
       <select style={{ ...input, fontSize: 16 }} value={diaPago} onChange={(e) => setDiaPago(e.target.value)}>
         {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
-          <option key={d} value={d}>Día {d}</option>
+          <option key={d} value={d}>{t('onb.dia')} {d}</option>
         ))}
       </select>
       <button style={btn} disabled={loading} onClick={goStep3}>
-        {loading ? 'Guardando…' : 'Continuar →'}
+        {loading ? t('onb.guardando') : t('onb.continuar')}
       </button>
     </div>
   );
 
   return (
     <div style={container}>
-      <h2 style={{ color: '#7CFC9B', fontWeight: 900, fontSize: 22, margin: 0 }}>¡Listo! 🎉</h2>
-      <p style={{ opacity: 0.7, margin: 0 }}>KALY ya sabe tu presupuesto. Registra tu primer gasto y verás cuánto te queda automáticamente.</p>
+      <h2 style={{ color: '#7CFC9B', fontWeight: 900, fontSize: 22, margin: 0 }}>{t('onb.listo_personal')}</h2>
+      <p style={{ opacity: 0.7, margin: 0 }}>{t('onb.listo_personal_sub')}</p>
       <button style={btn} disabled={loading} onClick={finish}>
-        {loading ? 'Un momento…' : 'Empezar →'}
+        {loading ? t('onb.un_momento') : t('onb.empezar')}
       </button>
     </div>
   );

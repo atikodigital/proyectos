@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../api';
+import { t } from '../i18n';
 import ProductosView from '../ProductosView.jsx';
 
 const GOLD = '#C9A24B';
-const PASOS = ['Tu negocio', 'Tu catálogo', 'IVA', 'Despacho', 'Conecta WhatsApp', '¡Listo!'];
 
 export default function OnboardingWizard({ onDone, onSkip, onIrAlChat, onCrearPedido }) {
+  const PASOS = [t('onb.paso_negocio'), t('onb.paso_catalogo'), t('onb.paso_iva'), t('onb.paso_despacho'), t('onb.paso_whatsapp'), t('onb.paso_listo')];
   const [i, setI] = useState(0);
   const [cargando, setCargando] = useState(true);
   const [err, setErr] = useState('');
@@ -37,11 +38,11 @@ export default function OnboardingWizard({ onDone, onSkip, onIrAlChat, onCrearPe
 
   async function guardarNegocio() {
     setErr('');
-    if (!nombre.trim()) { setErr('Pon el nombre de tu negocio'); return false; }
+    if (!nombre.trim()) { setErr(t('onb.err_nombre')); return false; }
     try { await api.updateCompany({ nombre: nombre.trim(), giro: giro.trim(), owner_whatsapp: whatsapp.trim(), idioma }); try { localStorage.setItem('hash_idioma', idioma); } catch (_) {} return true; }
-    catch (e) { setErr('No pude guardar, reintenta'); return false; }
+    catch (e) { setErr(t('onb.err_guardar')); return false; }
   }
-  async function guardarIva() { try { await api.setPedidoConfig({ pedido_iva_incluido: ivaIncluido }); return true; } catch { setErr('No pude guardar el IVA'); return false; } }
+  async function guardarIva() { try { await api.setPedidoConfig({ pedido_iva_incluido: ivaIncluido }); return true; } catch { setErr(t('onb.err_iva')); return false; } }
   async function guardarDespacho() {
     try {
       const delivery = haceDelivery
@@ -49,7 +50,7 @@ export default function OnboardingWizard({ onDone, onSkip, onIrAlChat, onCrearPe
         : { zonas: [], gratis_desde: null };
       await api.setPedidoConfig({ delivery });
       return true;
-    } catch { setErr('No pude guardar el despacho'); return false; }
+    } catch { setErr(t('onb.err_despacho')); return false; }
   }
 
   async function siguiente() {
@@ -89,12 +90,12 @@ export default function OnboardingWizard({ onDone, onSkip, onIrAlChat, onCrearPe
     });
   }
   async function connectWA() {
-    setEsStatus({ text: 'Abriendo Embedded Signup de WhatsApp…', kind: '' });
+    setEsStatus({ text: t('onb.es_abriendo_wa'), kind: '' });
     const FB = await loadFB();
     const configId = bspStatus && bspStatus.embedded_signup_config_id;
     if (!configId) {
       setEsStatus({
-        text: '⚠️ Falta config_id de Embedded Signup. El admin debe crear la configuración en developers.facebook.com → Atiko Agente → WhatsApp → Embedded Signup y agregar META_WA_ES_CONFIG_ID al .env del servidor.',
+        text: t('onb.es_falta_config'),
         kind: 'err',
       });
       return;
@@ -113,19 +114,19 @@ export default function OnboardingWizard({ onDone, onSkip, onIrAlChat, onCrearPe
     window.addEventListener('message', onMsg);
     FB.login(async (resp) => {
       if (!resp.authResponse || !resp.authResponse.code) {
-        setEsStatus({ text: '✕ Autorización cancelada.', kind: 'err' });
+        setEsStatus({ text: t('onb.es_autorizacion_cancelada'), kind: 'err' });
         return;
       }
       let phoneId = session.phone_number_id;
       const wabaId = session.waba_id;
       if (!phoneId) {
-        phoneId = window.prompt('Pega el phone_number_id (no se pudo extraer automáticamente):');
-        if (!phoneId) { setEsStatus({ text: '✕ Sin phone_number_id no se puede conectar.', kind: 'err' }); return; }
+        phoneId = window.prompt(t('onb.es_prompt_phone_id'));
+        if (!phoneId) { setEsStatus({ text: t('onb.es_sin_phone_id'), kind: 'err' }); return; }
       }
       try {
-        setEsStatus({ text: 'Guardando conexión…', kind: '' });
+        setEsStatus({ text: t('onb.es_guardando_conexion'), kind: '' });
         await api.connectWhatsApp({ code: resp.authResponse.code, phone_number_id: phoneId, waba_id: wabaId, label: 'WhatsApp Hash' });
-        setEsStatus({ text: '✓ WhatsApp conectado (phone_number_id: ' + phoneId + ').', kind: 'ok' });
+        setEsStatus({ text: t('onb.es_wa_conectado') + ' (phone_number_id: ' + phoneId + ').', kind: 'ok' });
         try { setBspStatus(await api.bspStatus()); } catch {}
       } catch (e) {
         setEsStatus({ text: '✕ ' + (e.data && e.data.error || e.message || 'Error'), kind: 'err' });
@@ -133,17 +134,17 @@ export default function OnboardingWizard({ onDone, onSkip, onIrAlChat, onCrearPe
     }, { config_id: configId, response_type: 'code', override_default_response_type: true });
   }
   async function connectFB() {
-    setEsStatus({ text: 'Abriendo login de Facebook…', kind: '' });
+    setEsStatus({ text: t('onb.es_abriendo_fb'), kind: '' });
     const FB = await loadFB();
     FB.login(async (resp) => {
       if (!resp.authResponse || !resp.authResponse.accessToken) {
-        setEsStatus({ text: '✕ Cancelado.', kind: 'err' });
+        setEsStatus({ text: t('onb.es_cancelado'), kind: 'err' });
         return;
       }
       try {
         const r = await api.connectFacebook({ userToken: resp.authResponse.accessToken });
         const lista = (r.conectadas || []).map((c) => c.page_name).join(', ');
-        setEsStatus({ text: '✓ Páginas conectadas: ' + (lista || 'ninguna'), kind: 'ok' });
+        setEsStatus({ text: t('onb.es_paginas_conectadas') + ' ' + (lista || t('onb.es_ninguna')), kind: 'ok' });
       } catch (e) {
         setEsStatus({ text: '✕ ' + (e.data && e.data.error || e.message || 'Error'), kind: 'err' });
       }
@@ -154,13 +155,13 @@ export default function OnboardingWizard({ onDone, onSkip, onIrAlChat, onCrearPe
   }
   async function terminar() { try { await api.updateCompany({ onboarded: true }); } catch {} onDone && onDone(); }
 
-  if (cargando) return <div style={{ padding: 24, color: '#cfeaf3' }}>Cargando…</div>;
+  if (cargando) return <div style={{ padding: 24, color: '#cfeaf3' }}>{t('onb.cargando')}</div>;
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: '#0a0a0f', color: '#e7eef2', overflowY: 'auto', zIndex: 50, padding: 20 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ fontSize: 12, opacity: 0.7 }}>Paso {i + 1} de {PASOS.length}</div>
-        <button onClick={() => onSkip && onSkip()} style={{ background: 'transparent', color: '#9aa', border: 0 }}>Saltar por ahora</button>
+        <div style={{ fontSize: 12, opacity: 0.7 }}>{t('onb.paso')} {i + 1} {t('onb.de')} {PASOS.length}</div>
+        <button onClick={() => onSkip && onSkip()} style={{ background: 'transparent', color: '#9aa', border: 0 }}>{t('onb.saltar_por_ahora')}</button>
       </div>
       <div style={{ height: 4, background: '#ffffff14', borderRadius: 4, margin: '10px 0 18px' }}>
         <div style={{ width: `${((i + 1) / PASOS.length) * 100}%`, height: '100%', background: GOLD, borderRadius: 4 }} />
@@ -168,10 +169,10 @@ export default function OnboardingWizard({ onDone, onSkip, onIrAlChat, onCrearPe
 
       {i === 0 && (
         <div>
-          <h2 style={{ color: GOLD }}>Tu negocio</h2>
-          <input placeholder="Nombre de tu negocio" value={nombre} onChange={(e) => setNombre(e.target.value)} style={inp} />
-          <input placeholder="Rubro (ej. pastelería)" value={giro} onChange={(e) => setGiro(e.target.value)} style={inp} />
-          <input placeholder="WhatsApp del dueño (569…)" value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} style={inp} />
+          <h2 style={{ color: GOLD }}>{t('onb.paso_negocio')}</h2>
+          <input placeholder={t('onb.ph_nombre')} value={nombre} onChange={(e) => setNombre(e.target.value)} style={inp} />
+          <input placeholder={t('onb.ph_rubro')} value={giro} onChange={(e) => setGiro(e.target.value)} style={inp} />
+          <input placeholder={t('onb.ph_whatsapp')} value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} style={inp} />
           <select value={idioma} onChange={(e) => setIdioma(e.target.value)} style={inp}>
             <option value="es">Idioma: Español</option>
             <option value="en">Language: English</option>
@@ -181,56 +182,55 @@ export default function OnboardingWizard({ onDone, onSkip, onIrAlChat, onCrearPe
       )}
       {i === 1 && (
         <div>
-          <h2 style={{ color: GOLD }}>Tu catálogo</h2>
-          <p style={{ fontSize: 13, opacity: 0.75 }}>Cárgalos por foto, por voz con KALY o a mano. Llevas {nProductos}.</p>
+          <h2 style={{ color: GOLD }}>{t('onb.paso_catalogo')}</h2>
+          <p style={{ fontSize: 13, opacity: 0.75 }}>{t('onb.catalogo_help')} {t('onb.llevas')} {nProductos}.</p>
           <ProductosView />
         </div>
       )}
       {i === 2 && (
         <div>
-          <h2 style={{ color: GOLD }}>IVA</h2>
+          <h2 style={{ color: GOLD }}>{t('onb.paso_iva')}</h2>
           <label style={{ display: 'flex', gap: 10, alignItems: 'center', marginTop: 10 }}>
             <input type="checkbox" checked={ivaIncluido} onChange={(e) => setIvaIncluido(e.target.checked)} />
-            Mis precios YA incluyen IVA
+            {t('onb.iva_incluido_label')}
           </label>
-          <p style={{ fontSize: 12, opacity: 0.6 }}>Si lo desmarcas, al pedido se le agrega 19%.</p>
+          <p style={{ fontSize: 12, opacity: 0.6 }}>{t('onb.iva_help')}</p>
         </div>
       )}
       {i === 3 && (
         <div>
-          <h2 style={{ color: GOLD }}>Despacho</h2>
+          <h2 style={{ color: GOLD }}>{t('onb.paso_despacho')}</h2>
           <label style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-            <input type="checkbox" checked={haceDelivery} onChange={(e) => setHaceDelivery(e.target.checked)} /> Hago delivery
+            <input type="checkbox" checked={haceDelivery} onChange={(e) => setHaceDelivery(e.target.checked)} /> {t('onb.hago_delivery')}
           </label>
           {haceDelivery && (
             <div style={{ marginTop: 10 }}>
-              <input placeholder="Costo del despacho" type="number" value={costoEnvio} onChange={(e) => setCostoEnvio(e.target.value)} style={inp} />
-              <input placeholder="Gratis desde $ (opcional)" type="number" value={gratisDesde} onChange={(e) => setGratisDesde(e.target.value)} style={inp} />
-              <p style={{ fontSize: 12, opacity: 0.6 }}>Las zonas por comuna se configuran después en el panel.</p>
+              <input placeholder={t('onb.ph_costo_despacho')} type="number" value={costoEnvio} onChange={(e) => setCostoEnvio(e.target.value)} style={inp} />
+              <input placeholder={t('onb.ph_gratis_desde')} type="number" value={gratisDesde} onChange={(e) => setGratisDesde(e.target.value)} style={inp} />
+              <p style={{ fontSize: 12, opacity: 0.6 }}>{t('onb.despacho_help')}</p>
             </div>
           )}
         </div>
       )}
       {i === 4 && (
         <div>
-          <h2 style={{ color: GOLD }}>Conecta tu WhatsApp</h2>
+          <h2 style={{ color: GOLD }}>{t('onb.wa_titulo')}</h2>
           <p style={{ fontSize: 14, opacity: 0.85, marginTop: 6 }}>
-            Autoriza tu cuenta de WhatsApp Business desde Meta. Los mensajes y boletas que te lleguen
-            caerán automáticamente en Hash, y Kaly los registrará por ti.
+            {t('onb.wa_desc')}
           </p>
           {bspStatus && !bspStatus.app_secret_configured && (
             <div style={{ background: 'rgba(255,107,107,.08)', border: '1px solid #ff6b6b40', padding: 10, borderRadius: 8, marginTop: 12, fontSize: 13 }}>
-              ⚠️ El servidor aún no tiene META_APP_SECRET configurado. Pide al admin de Atiko/Hash que lo agregue.
+              {t('onb.wa_falta_secret')}
             </div>
           )}
           {bspStatus && bspStatus.connected_whatsapp && (
             <div style={{ background: 'rgba(46,204,113,.08)', border: '1px solid #2ecc7140', padding: 10, borderRadius: 8, marginTop: 12, fontSize: 13, color: '#a7f3d0' }}>
-              ✓ Ya tienes un WhatsApp conectado. Puedes reconectar para reemplazarlo o seguir al siguiente paso.
+              {t('onb.wa_ya_conectado')}
             </div>
           )}
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 14 }}>
-            <button onClick={connectWA} style={{ ...btnGold, flex: 1, minWidth: 140 }}>📱 Conectar WhatsApp</button>
-            <button onClick={connectFB} style={{ ...btnOutline, flex: 1, minWidth: 140 }}>📘 Facebook / Instagram</button>
+            <button onClick={connectWA} style={{ ...btnGold, flex: 1, minWidth: 140 }}>📱 {t('onb.btn_conectar_wa')}</button>
+            <button onClick={connectFB} style={{ ...btnOutline, flex: 1, minWidth: 140 }}>📘 {t('onb.btn_facebook_ig')}</button>
           </div>
           {esStatus.text && (
             <div style={{
@@ -239,20 +239,20 @@ export default function OnboardingWizard({ onDone, onSkip, onIrAlChat, onCrearPe
             }}>{esStatus.text}</div>
           )}
           <p style={{ fontSize: 12, opacity: 0.55, marginTop: 14 }}>
-            ¿Aún no tienes WhatsApp Business o Meta no aprueba? Puedes saltar este paso y conectarlo más tarde desde Configuración.
+            {t('onb.wa_saltar_help')}
           </p>
         </div>
       )}
       {i === 5 && (
         <div>
-          <h2 style={{ color: GOLD }}>¡Listo!</h2>
-          <p>Tienes {nProductos} producto(s). IVA {ivaIncluido ? 'incluido' : 'se agrega 19%'}. {haceDelivery ? `Despacho $${Math.round(Number(costoEnvio) || 0)}` : 'Sin despacho'}.</p>
+          <h2 style={{ color: GOLD }}>{t('onb.paso_listo')}</h2>
+          <p>{t('onb.resumen_tienes')} {nProductos} {t('onb.resumen_productos')}. {t('onb.resumen_iva')} {ivaIncluido ? t('onb.resumen_iva_incluido') : t('onb.resumen_iva_agrega')}. {haceDelivery ? `${t('onb.resumen_despacho')} $${Math.round(Number(costoEnvio) || 0)}` : t('onb.resumen_sin_despacho')}.</p>
           {bspStatus && bspStatus.connected_whatsapp && (
-            <p style={{ color: '#a7f3d0', fontSize: 14, marginTop: 6 }}>✓ WhatsApp conectado — los mensajes entrarán automáticamente.</p>
+            <p style={{ color: '#a7f3d0', fontSize: 14, marginTop: 6 }}>{t('onb.resumen_wa_conectado')}</p>
           )}
           <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
-            <button onClick={() => { terminar(); onIrAlChat && onIrAlChat(); }} style={btnGold}>Ir al Chat</button>
-            <button onClick={() => { terminar(); onCrearPedido && onCrearPedido(); }} style={btnOutline}>Crear pedido de prueba</button>
+            <button onClick={() => { terminar(); onIrAlChat && onIrAlChat(); }} style={btnGold}>{t('onb.ir_al_chat')}</button>
+            <button onClick={() => { terminar(); onCrearPedido && onCrearPedido(); }} style={btnOutline}>{t('onb.crear_pedido_prueba')}</button>
           </div>
         </div>
       )}
@@ -261,8 +261,8 @@ export default function OnboardingWizard({ onDone, onSkip, onIrAlChat, onCrearPe
 
       {i < 5 && (
         <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 22 }}>
-          <button onClick={() => setI((x) => Math.max(0, x - 1))} disabled={i === 0} style={{ ...btnOutline, opacity: i === 0 ? 0.4 : 1 }}>Atrás</button>
-          <button onClick={siguiente} style={btnGold}>{i === 4 ? 'Continuar' : 'Siguiente'}</button>
+          <button onClick={() => setI((x) => Math.max(0, x - 1))} disabled={i === 0} style={{ ...btnOutline, opacity: i === 0 ? 0.4 : 1 }}>{t('onb.atras')}</button>
+          <button onClick={siguiente} style={btnGold}>{i === 4 ? t('onb.continuar_btn') : t('onb.siguiente')}</button>
         </div>
       )}
     </div>

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { api } from './api';
+import { t } from './i18n';
 
 function fmt(n) {
   if (n == null) return '$0';
@@ -27,20 +28,20 @@ export default function BalanceCard() {
       border: '1px solid #1a4a28',
     }}>
       <div style={{ color: '#aaa', fontSize: 10, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 2 }}>
-        Te quedan este mes
+        {t('exp.balance.te_quedan')}
       </div>
       <div style={{ color: disponibleNeg ? '#ff6b6b' : '#7CFC9B', fontSize: 26, fontWeight: 900, marginBottom: 2 }}>
         {fmt(resumen.disponible)}
       </div>
       <div style={{ color: '#666', fontSize: 10, marginBottom: 8 }}>
-        de {fmt(resumen.sueldo_mensual)} · gasté {fmt(resumen.gastado_mes)}
+        {t('exp.balance.de')} {fmt(resumen.sueldo_mensual)} · {t('exp.balance.gaste')} {fmt(resumen.gastado_mes)}
       </div>
       <div style={{ height: 5, background: '#0d1f14', borderRadius: 3, overflow: 'hidden', marginBottom: 3 }}>
         <div style={{ width: `${pct}%`, height: '100%', background: 'linear-gradient(90deg,#E7C46B,#c8962a)' }} />
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', color: '#555', fontSize: 9, marginBottom: resumen.categorias?.length ? 10 : 0 }}>
-        <span>{pct}% gastado</span>
-        <span>{resumen.dias_restantes_mes} días restantes</span>
+        <span>{pct}% {t('exp.balance.gastado')}</span>
+        <span>{resumen.dias_restantes_mes} {t('exp.balance.dias_restantes')}</span>
       </div>
       {resumen.categorias && resumen.categorias.length > 0 && (
         <div style={{ display: 'flex', gap: 6 }}>

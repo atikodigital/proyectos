@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { api } from './api';
+import { t } from './i18n';
 
 const CATEGORIES = [
   'Mercadería e insumos del giro', 'Alimentación y representación', 'Combustible y transporte',
@@ -16,52 +17,52 @@ function DetalleCards({ e }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const cards = useMemo(() => [
     {
-      id: 'monto', title: 'Monto', icon: '💰',
+      id: 'monto', title: t('exp.card.monto'), icon: '💰',
       gradient: 'linear-gradient(135deg,#0f766e,#0e7490)',
       fields: [
-        ['Total', clp(e.total)],
-        e.neto ? ['Neto', clp(e.neto)] : null,
-        e.iva  ? ['IVA',  clp(e.iva)]  : null,
+        [t('exp.field.total'), clp(e.total)],
+        e.neto ? [t('exp.field.neto'), clp(e.neto)] : null,
+        e.iva  ? [t('exp.field.iva'),  clp(e.iva)]  : null,
       ].filter(Boolean),
     },
     {
-      id: 'empresa', title: esIngreso ? 'Pagador' : 'Proveedor', icon: '🏢',
+      id: 'empresa', title: esIngreso ? t('exp.field.pagador') : t('exp.field.proveedor'), icon: '🏢',
       gradient: 'linear-gradient(135deg,#1d4ed8,#4338ca)',
       fields: [
-        e.proveedor        ? [esIngreso ? 'Pagador' : 'Proveedor', e.proveedor] : null,
-        e.rut_emisor       ? ['RUT',      e.rut_emisor]        : null,
-        e.direccion_emisor ? ['Dirección', e.direccion_emisor] : null,
-        e.wa_sender_name   ? ['WhatsApp',  [e.wa_sender_name, e.wa_sender_phone].filter(Boolean).join(' · ')] : null,
-        e.canal            ? ['Canal',    e.canal]             : null,
+        e.proveedor        ? [esIngreso ? t('exp.field.pagador') : t('exp.field.proveedor'), e.proveedor] : null,
+        e.rut_emisor       ? [t('exp.field.rut'),      e.rut_emisor]        : null,
+        e.direccion_emisor ? [t('exp.field.direccion'), e.direccion_emisor] : null,
+        e.wa_sender_name   ? [t('exp.field.whatsapp'),  [e.wa_sender_name, e.wa_sender_phone].filter(Boolean).join(' · ')] : null,
+        e.canal            ? [t('exp.field.canal'),    e.canal]             : null,
       ].filter(Boolean),
     },
     {
-      id: 'documento', title: 'Documento', icon: '📄',
+      id: 'documento', title: t('exp.card.documento'), icon: '📄',
       gradient: 'linear-gradient(135deg,#7c3aed,#6d28d9)',
       fields: [
-        e.tipo_documento ? ['Tipo',    e.tipo_documento]         : null,
-        e.folio          ? ['Folio',   e.folio]                  : null,
-        e.nro_operacion  ? ['N° op.',  e.nro_operacion]          : null,
-        e.fecha          ? ['Emisión', fechaCorta(e.fecha)]      : null,
-        e.created_at     ? ['Carga',   fechaCorta(e.created_at)] : null,
+        e.tipo_documento ? [t('exp.field.tipo'),    e.tipo_documento]         : null,
+        e.folio          ? [t('exp.field.folio'),   e.folio]                  : null,
+        e.nro_operacion  ? [t('exp.field.nro_op'),  e.nro_operacion]          : null,
+        e.fecha          ? [t('exp.field.emision'), fechaCorta(e.fecha)]      : null,
+        e.created_at     ? [t('exp.field.carga'),   fechaCorta(e.created_at)] : null,
       ].filter(Boolean),
     },
     {
-      id: 'clasificacion', title: 'Clasificación', icon: '🏷️',
+      id: 'clasificacion', title: t('exp.card.clasificacion'), icon: '🏷️',
       gradient: 'linear-gradient(135deg,#d97706,#b45309)',
       fields: [
-        (!esIngreso && e.categoria)   ? ['Categoría',  e.categoria]   : null,
-        e.glosa                        ? ['Glosa',      e.glosa]        : null,
-        e.cuenta_sii_codigo            ? ['Cuenta SII', e.cuenta_sii_codigo + (e.cuenta_sii_nombre ? ' ' + e.cuenta_sii_nombre : '')] : null,
+        (!esIngreso && e.categoria)   ? [t('exp.field.categoria'),  e.categoria]   : null,
+        e.glosa                        ? [t('exp.field.glosa'),      e.glosa]        : null,
+        e.cuenta_sii_codigo            ? [t('exp.field.cuenta_sii'), e.cuenta_sii_codigo + (e.cuenta_sii_nombre ? ' ' + e.cuenta_sii_nombre : '')] : null,
       ].filter(Boolean),
     },
     {
-      id: 'estado', title: 'Estado', icon: '✅',
+      id: 'estado', title: t('exp.card.estado'), icon: '✅',
       gradient: 'linear-gradient(135deg,#15803d,#166534)',
       fields: [
-        ['Tipo',  esIngreso ? 'Ingreso' : 'Gasto'],
-        e.estado      ? ['Estado', e.estado]      : null,
-        e.estado_pago ? ['Pago',   e.estado_pago] : null,
+        [t('exp.field.tipo'),  esIngreso ? t('exp.tipo.ingreso') : t('exp.tipo.gasto')],
+        e.estado      ? [t('exp.field.estado'), e.estado]      : null,
+        e.estado_pago ? [t('exp.field.pago'),   e.estado_pago] : null,
       ].filter(Boolean),
     },
   ].filter(c => c.fields.length > 0), [e, esIngreso]);
@@ -126,33 +127,33 @@ function EditForm({ e, onSaved, onCancel }) {
   }
   return (
     <div className="grid gap-2">
-      <h3 className="font-black" style={{ color: '#C9A24B' }}>Editar movimiento</h3>
-      <label className="text-xs opacity-60">Tipo</label>
-      <select className={cls} value={f.tipo} onChange={set('tipo')}><option value="gasto">Gasto</option><option value="ingreso">Ingreso</option></select>
-      <label className="text-xs opacity-60">{esIngreso ? 'Pagador / origen' : 'Proveedor'}</label>
+      <h3 className="font-black" style={{ color: '#C9A24B' }}>{t('exp.edit.titulo')}</h3>
+      <label className="text-xs opacity-60">{t('exp.field.tipo')}</label>
+      <select className={cls} value={f.tipo} onChange={set('tipo')}><option value="gasto">{t('exp.tipo.gasto')}</option><option value="ingreso">{t('exp.tipo.ingreso')}</option></select>
+      <label className="text-xs opacity-60">{esIngreso ? t('exp.edit.pagador_origen') : t('exp.field.proveedor')}</label>
       <input className={cls} value={f.proveedor} onChange={set('proveedor')} />
-      <label className="text-xs opacity-60">Monto</label>
+      <label className="text-xs opacity-60">{t('exp.field.monto')}</label>
       <input className={cls} type="number" value={f.total} onChange={set('total')} />
-      <label className="text-xs opacity-60">Fecha (aaaa-mm-dd)</label>
+      <label className="text-xs opacity-60">{t('exp.edit.fecha_formato')}</label>
       <input className={cls} value={f.fecha} onChange={set('fecha')} placeholder="2026-06-01" />
       {!esIngreso ? (
         <>
-          <label className="text-xs opacity-60">Categoría</label>
+          <label className="text-xs opacity-60">{t('exp.field.categoria')}</label>
           <select className={cls} value={f.categoria} onChange={set('categoria')}>
             <option value="">—</option>
             {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
           </select>
-          <label className="text-xs opacity-60">Folio (N° doc)</label>
+          <label className="text-xs opacity-60">{t('exp.edit.folio_doc')}</label>
           <input className={cls} value={f.folio} onChange={set('folio')} />
         </>
       ) : (
         <>
-          <label className="text-xs opacity-60">N° operación (voucher)</label>
+          <label className="text-xs opacity-60">{t('exp.edit.nro_op_voucher')}</label>
           <input className={cls} value={f.nro_operacion} onChange={set('nro_operacion')} />
         </>
       )}
-      <button disabled={busy} onClick={save} className="rounded-xl font-black py-3 text-black disabled:opacity-50" style={{ background: '#C9A24B' }}>Guardar cambios</button>
-      <button disabled={busy} onClick={onCancel} className="rounded-xl font-black py-2 bg-black/10 border">Cancelar</button>
+      <button disabled={busy} onClick={save} className="rounded-xl font-black py-3 text-black disabled:opacity-50" style={{ background: '#C9A24B' }}>{t('exp.edit.guardar_cambios')}</button>
+      <button disabled={busy} onClick={onCancel} className="rounded-xl font-black py-2 bg-black/10 border">{t('exp.edit.cancelar')}</button>
     </div>
   );
 }
@@ -166,9 +167,9 @@ function Detalle({ e: e0, onBack, onReload }) {
   const [fotoMsg, setFotoMsg] = useState('');
   const esIngreso = e.tipo === 'ingreso';
   async function verFoto() {
-    setFotoMsg('Cargando foto…');
+    setFotoMsg(t('exp.detalle.cargando_foto'));
     const url = await api.fotoUrl(e.id);
-    if (url) { setFotoUrl(url); setFotoMsg(''); } else { setFotoMsg('Sin foto disponible (se guarda 2 meses y luego se elimina).'); }
+    if (url) { setFotoUrl(url); setFotoMsg(''); } else { setFotoMsg(t('exp.detalle.sin_foto')); }
   }
   async function anular() {
     setBusy(true);
@@ -176,30 +177,30 @@ function Detalle({ e: e0, onBack, onReload }) {
   }
   return (
     <div className="p-4 grid gap-3">
-      <button onClick={onBack} className="text-sm font-black w-fit" style={{ color: '#C9A24B' }}>← Volver</button>
+      <button onClick={onBack} className="text-sm font-black w-fit" style={{ color: '#C9A24B' }}>{t('exp.detalle.volver')}</button>
       {editing ? (
         <EditForm e={e} onSaved={(upd) => { setE({ ...e, ...upd }); setEditing(false); onReload(); }} onCancel={() => setEditing(false)} />
       ) : (
         <>
-          <span className="text-xs font-black w-fit px-2 py-0.5 rounded-full" style={{ background: esIngreso ? '#1f7a3f' : '#7a1f1f', color: '#fff' }}>{esIngreso ? 'INGRESO' : 'GASTO'}</span>
+          <span className="text-xs font-black w-fit px-2 py-0.5 rounded-full" style={{ background: esIngreso ? '#1f7a3f' : '#7a1f1f', color: '#fff' }}>{esIngreso ? t('exp.badge.ingreso') : t('exp.badge.gasto')}</span>
           <div className="text-2xl font-black" style={{ color: '#C9A24B' }}>{clp(e.total)}</div>
           <DetalleCards e={e} />
           {fotoUrl ? (
-            <img alt="factura" src={fotoUrl} className="rounded-xl border w-full max-h-80 object-contain bg-black/20" />
+            <img alt={t('exp.confirm.alt_factura')} src={fotoUrl} className="rounded-xl border w-full max-h-80 object-contain bg-black/20" />
           ) : (
-            <button onClick={verFoto} className="rounded-xl font-black py-2 bg-black/10 border text-sm">📷 Ver foto de la factura</button>
+            <button onClick={verFoto} className="rounded-xl font-black py-2 bg-black/10 border text-sm">{t('exp.detalle.ver_foto')}</button>
           )}
           {fotoMsg ? <div className="text-xs opacity-60">{fotoMsg}</div> : null}
           {confirmAnular ? (
             <div className="rounded-xl border p-3 grid gap-2" style={{ borderColor: '#7a1f1f' }}>
-              <div className="text-sm">¿Anular este movimiento? Dejará de contar en los totales y el Excel (queda el registro).</div>
-              <button disabled={busy} onClick={anular} className="rounded-xl font-black py-2 text-white disabled:opacity-50" style={{ background: '#7a1f1f' }}>Sí, anular</button>
-              <button disabled={busy} onClick={() => setConfirmAnular(false)} className="rounded-xl font-black py-2 bg-black/10 border">Cancelar</button>
+              <div className="text-sm">{t('exp.detalle.anular_confirm')}</div>
+              <button disabled={busy} onClick={anular} className="rounded-xl font-black py-2 text-white disabled:opacity-50" style={{ background: '#7a1f1f' }}>{t('exp.detalle.si_anular')}</button>
+              <button disabled={busy} onClick={() => setConfirmAnular(false)} className="rounded-xl font-black py-2 bg-black/10 border">{t('exp.edit.cancelar')}</button>
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-2">
-              <button onClick={() => setEditing(true)} className="rounded-xl font-black py-3 bg-black/10 border">✏️ Editar</button>
-              <button onClick={() => setConfirmAnular(true)} className="rounded-xl font-black py-3 border" style={{ borderColor: '#7a1f1f', color: '#ff8a8a' }}>🗑️ Anular</button>
+              <button onClick={() => setEditing(true)} className="rounded-xl font-black py-3 bg-black/10 border">{t('exp.detalle.editar')}</button>
+              <button onClick={() => setConfirmAnular(true)} className="rounded-xl font-black py-3 border" style={{ borderColor: '#7a1f1f', color: '#ff8a8a' }}>{t('exp.detalle.anular')}</button>
             </div>
           )}
         </>
@@ -263,7 +264,7 @@ function MovimientosCards({ rows, onSelect }) {
               {!isActive ? (
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
                   <span style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)', color: 'rgba(255,255,255,0.85)', fontSize: 10, fontWeight: 700, whiteSpace: 'nowrap', userSelect: 'none', maxHeight: '55%', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {e.proveedor || (esIngreso ? 'Ingreso' : 'Gasto')}
+                    {e.proveedor || (esIngreso ? t('exp.tipo.ingreso') : t('exp.tipo.gasto'))}
                   </span>
                   <span style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)', color: esIngreso ? '#7CFC9B' : '#E7C46B', fontSize: 9, fontWeight: 800 }}>
                     {esIngreso ? '+' : '−'}{clp(e.total)}
@@ -273,17 +274,17 @@ function MovimientosCards({ rows, onSelect }) {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
                   <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
                     <span style={{ fontSize: 10, fontWeight: 800, padding: '2px 8px', borderRadius: 20, background: esIngreso ? '#1f7a3f' : '#6d28d9', color: '#fff' }}>
-                      {esIngreso ? 'INGRESO' : 'GASTO'}
+                      {esIngreso ? t('exp.badge.ingreso') : t('exp.badge.gasto')}
                     </span>
                     {e.estado ? <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 20, background: 'rgba(255,255,255,0.15)', color: '#fff', textTransform: 'capitalize' }}>{e.estado}</span> : null}
                     {e.estado_pago ? <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 20, background: 'rgba(255,255,255,0.12)', color: '#fff' }}>{e.estado_pago}</span> : null}
                   </div>
-                  <div style={{ color: '#fff', fontWeight: 800, fontSize: 14, lineHeight: 1.2 }}>{e.proveedor || (esIngreso ? 'Sin pagador' : 'Sin proveedor')}</div>
+                  <div style={{ color: '#fff', fontWeight: 800, fontSize: 14, lineHeight: 1.2 }}>{e.proveedor || (esIngreso ? t('exp.confirm.sin_pagador') : t('exp.confirm.sin_proveedor'))}</div>
                   <div style={{ fontWeight: 900, fontSize: 24, color: esIngreso ? '#7CFC9B' : '#E7C46B' }}>{esIngreso ? '+' : '−'}{clp(e.total)}</div>
                   {(e.fecha || e.glosa) ? <div style={{ color: 'rgba(255,255,255,0.65)', fontSize: 11 }}>{e.fecha ? fechaCorta(e.fecha) : ''}{e.glosa ? (e.fecha ? ' · ' : '') + e.glosa : ''}</div> : null}
                   {!esIngreso && e.categoria ? <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11 }}>{e.categoria}</div> : null}
                   <button onClick={(ev) => { ev.stopPropagation(); onSelect(e); }} style={{ alignSelf: 'flex-start', marginTop: 4, fontSize: 11, fontWeight: 800, color: '#5ad7ff', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
-                    Ver detalle ›
+                    {t('exp.lista.ver_detalle')}
                   </button>
                 </div>
               )}
@@ -309,16 +310,16 @@ export default function MyExpenses() {
       .catch(() => {}).finally(() => { if (alive) setLoading(false); });
     return () => { alive = false; };
   }, []);
-  if (loading) return <div className="p-6">Cargando…</div>;
+  if (loading) return <div className="p-6">{t('exp.lista.cargando')}</div>;
   if (sel) return <Detalle e={sel} onBack={() => setSel(null)} onReload={load} />;
   const visibles = rows.filter((e) => enPeriodo(e, filtro));
   const N = visibles.length;
   return (
     <div className="h-full flex flex-col">
       <div className="p-4 pb-2 grid gap-3 shrink-0">
-        <h2 className="text-xl font-black px-2" style={{ color: '#C9A24B' }}>Mis movimientos</h2>
+        <h2 className="text-xl font-black px-2" style={{ color: '#C9A24B' }}>{t('exp.lista.titulo')}</h2>
         <div className="flex gap-2 px-2">
-          {[['mes', 'Este mes'], ['anio', 'Este año'], ['todos', 'Todos']].map(function (o) {
+          {[['mes', t('exp.filtro.mes')], ['anio', t('exp.filtro.anio')], ['todos', t('exp.filtro.todos')]].map(function (o) {
             return (
               <button key={o[0]} onClick={() => setFiltro(o[0])} className="text-xs font-black px-3 py-1 rounded-full border" style={filtro === o[0] ? { background: '#C9A24B', color: '#000' } : { opacity: 0.6 }}>{o[1]}</button>
             );
@@ -326,7 +327,7 @@ export default function MyExpenses() {
         </div>
       </div>
       {N === 0 ? (
-        <p className="px-6 opacity-60">{rows.length ? 'Sin movimientos en este período.' : 'Aún no tienes movimientos.'}</p>
+        <p className="px-6 opacity-60">{rows.length ? t('exp.lista.sin_periodo') : t('exp.lista.sin_movimientos')}</p>
       ) : (
         <div className="flex-1 min-h-0 px-4 pb-4">
           <MovimientosCards rows={visibles} onSelect={setSel} />
