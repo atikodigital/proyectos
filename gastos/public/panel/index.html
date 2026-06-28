@@ -888,54 +888,54 @@
       </div>
       <div>
         <h1 class="text-xl font-bold text-[#ffd700] tracking-wide font-['Hanken_Grotesk'] leading-tight">Hash IA</h1>
-        <p class="text-[9px] font-bold text-[#d0c6ab] tracking-widest uppercase">Executive Control</p>
+        <p class="text-[9px] font-bold text-[#d0c6ab] tracking-widest uppercase" data-i18n="login.exec">Executive Control</p>
       </div>
     </div>
     <!-- Selector Negocio vs Persona (misma diferencia que el APK) -->
-    <p class="text-[11px] font-bold text-[#d0c6ab] uppercase tracking-wider text-center mb-2">¿Cómo vas a usar Hash IA?</p>
+    <p class="text-[11px] font-bold text-[#d0c6ab] uppercase tracking-wider text-center mb-2" data-i18n="login.howUse">¿Cómo vas a usar Hash IA?</p>
     <div class="grid grid-cols-2 gap-3 mb-5">
       <button type="button" id="selNegocio" class="rounded-xl border-2 border-[#ffd700]/70 p-3 flex flex-col items-center gap-1 hover:border-[#ffd700] hover:bg-[#ffd700]/10 transition-all">
         <span class="text-2xl" aria-hidden="true">🏢</span>
-        <span class="text-sm font-bold text-white">Negocio</span>
-        <span class="text-[10px] text-[#d0c6ab]/70 text-center leading-tight">Pequeña y mediana empresa</span>
+        <span class="text-sm font-bold text-white" data-i18n="login.negocio">Negocio</span>
+        <span class="text-[10px] text-[#d0c6ab]/70 text-center leading-tight" data-i18n="login.negocioSub">Pequeña y mediana empresa</span>
       </button>
       <button type="button" id="selPersonal" class="rounded-xl border-2 border-[#ffd700]/70 p-3 flex flex-col items-center gap-1 hover:border-[#ffd700] hover:bg-[#ffd700]/10 transition-all">
         <span class="text-2xl" aria-hidden="true">👤</span>
-        <span class="text-sm font-bold text-white">Personal</span>
-        <span class="text-[10px] text-[#d0c6ab]/70 text-center leading-tight">Persona natural</span>
+        <span class="text-sm font-bold text-white" data-i18n="login.personal">Personal</span>
+        <span class="text-[10px] text-[#d0c6ab]/70 text-center leading-tight" data-i18n="login.personalSub">Persona natural</span>
       </button>
     </div>
     <div class="flex items-center gap-2 mb-3">
       <div class="flex-1 h-px bg-[#343535]"></div>
-      <span class="text-[10px] text-[#d0c6ab]/60 uppercase tracking-wider">¿ya tienes cuenta?</span>
+      <span class="text-[10px] text-[#d0c6ab]/60 uppercase tracking-wider" data-i18n="login.haveAccount">¿ya tienes cuenta?</span>
       <div class="flex-1 h-px bg-[#343535]"></div>
     </div>
     <div class="space-y-4">
       <div>
-        <label for="email" class="text-[10px] font-bold text-[#d0c6ab] uppercase tracking-wider block mb-1">Correo</label>
+        <label for="email" class="text-[10px] font-bold text-[#d0c6ab] uppercase tracking-wider block mb-1" data-i18n="login.email">Correo</label>
         <input id="email" type="email" class="w-full bg-[#292a2a]/50 border border-[#343535] rounded-xl px-3 py-2 text-sm text-on-surface focus:border-[#ffd700] focus:ring-1 focus:ring-[#ffd700]/50 outline-none transition-all" autocapitalize="none" />
       </div>
       <div>
-        <label for="password" class="text-[10px] font-bold text-[#d0c6ab] uppercase tracking-wider block mb-1">Contraseña</label>
+        <label for="password" class="text-[10px] font-bold text-[#d0c6ab] uppercase tracking-wider block mb-1" data-i18n="login.password">Contraseña</label>
         <div class="relative">
           <input id="password" type="password" class="w-full bg-[#292a2a]/50 border border-[#343535] rounded-xl px-3 py-2 text-sm text-on-surface focus:border-[#ffd700] focus:ring-1 focus:ring-[#ffd700]/50 outline-none transition-all" />
           <button type="button" id="togglePass" aria-label="Mostrar contraseña" class="absolute right-3 top-1/2 -translate-y-1/2 text-lg text-[#d0c6ab] hover:text-[#ffd700] transition-colors">👁️</button>
         </div>
       </div>
       <p id="loginErr" class="text-xs text-[#ffb4ab] font-semibold mt-1"></p>
-      <button id="loginBtn" class="w-full bg-gradient-to-r from-[#ffd700] to-[#e9c400] text-[#3a3000] hover:shadow-[0_0_20px_rgba(255,215,0,0.4)] transition-all py-2.5 rounded-xl text-sm font-bold mt-2">Entrar</button>
-      <p class="text-center mt-2"><button type="button" id="abrirOlvidaste" class="text-xs text-[#9d9da0] hover:text-[#ffd700] underline underline-offset-2 transition-colors">¿Olvidaste tu contraseña?</button></p>
+      <button id="loginBtn" class="w-full bg-gradient-to-r from-[#ffd700] to-[#e9c400] text-[#3a3000] hover:shadow-[0_0_20px_rgba(255,215,0,0.4)] transition-all py-2.5 rounded-xl text-sm font-bold mt-2" data-i18n="login.enter">Entrar</button>
+      <p class="text-center mt-2"><button type="button" id="abrirOlvidaste" class="text-xs text-[#9d9da0] hover:text-[#ffd700] underline underline-offset-2 transition-colors" data-i18n="login.forgot">¿Olvidaste tu contraseña?</button></p>
 
       <!-- Separador + login social (Google). Los botones aparecen solos si el navegador carga GIS. -->
       <div class="flex items-center gap-2 my-1">
         <div class="flex-1 h-px bg-[#343535]"></div>
-        <span class="text-[10px] text-[#d0c6ab]/60 uppercase tracking-wider">o</span>
+        <span class="text-[10px] text-[#d0c6ab]/60 uppercase tracking-wider" data-i18n="login.or">o</span>
         <div class="flex-1 h-px bg-[#343535]"></div>
       </div>
       <div id="googleBtn" class="flex justify-center min-h-[40px]"></div>
       <a id="fbBtn" href="/api/onboarding/oauth/facebook-start" style="display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:10px 16px;background:#1877F2;color:#fff;border-radius:999px;font-size:14px;font-weight:600;text-decoration:none;margin-top:8px;">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073C0 18.1 4.388 23.094 10.125 24v-8.437H7.078v-3.49h3.047V9.41c0-3.025 1.792-4.697 4.533-4.697 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.93-1.956 1.886v2.286h3.328l-.532 3.49h-2.796V24C19.612 23.094 24 18.1 24 12.073z"/></svg>
-        Continuar con Facebook
+        <span data-i18n="login.fb">Continuar con Facebook</span>
       </a>
       <p id="socialErr" class="text-xs text-[#ffb4ab] font-semibold mt-1"></p>
     </div>
@@ -959,56 +959,56 @@
     <nav class="flex-1 flex flex-col gap-1 px-4 overflow-y-auto">
       <button class="side-tab active relative text-[#ffd700] bg-[#ffd700]/10 border border-[#ffd700]/20 rounded-xl flex items-center gap-3 px-4 py-3 transition-all duration-300 w-full text-left" data-tab="gastos">
         <span class="material-symbols-outlined text-[20px]">dashboard</span>
-        <span class="text-sm font-semibold">Gastos / Ingresos</span>
+        <span class="text-sm font-semibold" data-i18n="nav.gastos">Gastos / Ingresos</span>
         <div class="tab-bar-highlight absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-[#ffd700] rounded-r-full shadow-[0_0_8px_rgba(255,215,0,0.8)]"></div>
       </button>
 
       <button class="side-tab text-[#d0c6ab] hover:text-[#e3e2e2] hover:bg-[#343535]/50 transition-all duration-300 flex items-center gap-3 px-4 py-3 rounded-xl border border-transparent hover:border-[#343535] w-full text-left" data-tab="empleados">
         <span class="material-symbols-outlined text-[20px]">group</span>
-        <span class="text-sm">Empleados</span>
+        <span class="text-sm" data-i18n="nav.empleados">Empleados</span>
       </button>
 
       <button class="side-tab text-[#d0c6ab] hover:text-[#e3e2e2] hover:bg-[#343535]/50 transition-all duration-300 flex items-center gap-3 px-4 py-3 rounded-xl border border-transparent hover:border-[#343535] w-full text-left" data-tab="productos">
         <span class="material-symbols-outlined text-[20px]">inventory_2</span>
-        <span class="text-sm">Productos</span>
+        <span class="text-sm" data-i18n="nav.productos">Productos</span>
       </button>
 
       <button class="side-tab text-[#d0c6ab] hover:text-[#e3e2e2] hover:bg-[#343535]/50 transition-all duration-300 flex items-center gap-3 px-4 py-3 rounded-xl border border-transparent hover:border-[#343535] w-full text-left" data-tab="auxiliares">
         <span class="material-symbols-outlined text-[20px]">business_center</span>
-        <span class="text-sm">Auxiliares</span>
+        <span class="text-sm" data-i18n="nav.auxiliares">Auxiliares</span>
       </button>
 
       <button class="side-tab text-[#d0c6ab] hover:text-[#e3e2e2] hover:bg-[#343535]/50 transition-all duration-300 flex items-center gap-3 px-4 py-3 rounded-xl border border-transparent hover:border-[#343535] w-full text-left" data-tab="ajustes">
         <span class="material-symbols-outlined text-[20px]">settings</span>
-        <span class="text-sm">Ajustes</span>
+        <span class="text-sm" data-i18n="nav.ajustes">Ajustes</span>
       </button>
 
       <!-- COLLAPSIBLE CONTABILIDAD -->
       <div class="side-nav-group flex flex-col" id="groupContabilidadContainer">
         <button class="side-tab group-toggle text-[#d0c6ab] hover:text-[#e3e2e2] hover:bg-[#343535]/50 transition-all duration-300 flex items-center gap-3 px-4 py-3 rounded-xl border border-transparent hover:border-[#343535] w-full text-left" id="btnContabilidadGroup" data-tab="contabilidad">
           <span class="material-symbols-outlined text-[20px]">account_balance</span>
-          <span class="text-sm">Contabilidad</span>
+          <span class="text-sm" data-i18n="nav.contabilidad">Contabilidad</span>
         </button>
       </div>
 
       <!-- CRM -->
       <button class="side-tab text-[#d0c6ab] hover:text-[#e3e2e2] hover:bg-[#343535]/50 transition-all duration-300 flex items-center gap-3 px-4 py-3 rounded-xl border border-transparent hover:border-[#343535] w-full text-left" data-tab="crm">
         <span class="material-symbols-outlined text-[20px]">chat_bubble</span>
-        <span class="text-sm">CRM</span>
+        <span class="text-sm" data-i18n="nav.crm">CRM</span>
         <span class="ml-auto text-[9px] font-bold bg-green-500/20 text-green-400 border border-green-500/30 rounded-full px-2 py-0.5">3</span>
       </button>
 
       <!-- Agente IA -->
       <button class="side-tab text-[#d0c6ab] hover:text-[#e3e2e2] hover:bg-[#343535]/50 transition-all duration-300 flex items-center gap-3 px-4 py-3 rounded-xl border border-transparent hover:border-[#343535] w-full text-left" data-tab="agente">
         <span class="material-symbols-outlined text-[20px]">smart_toy</span>
-        <span class="text-sm">Agente IA</span>
+        <span class="text-sm" data-i18n="nav.agente">Agente IA</span>
         <span class="ml-auto text-[9px] font-bold bg-[#ffd700]/20 text-[#ffd700] border border-[#ffd700]/30 rounded-full px-2 py-0.5">Beta</span>
       </button>
 
       <!-- Mi Plan -->
       <button class="side-tab text-[#d0c6ab] hover:text-[#e3e2e2] hover:bg-[#343535]/50 transition-all duration-300 flex items-center gap-3 px-4 py-3 rounded-xl border border-transparent hover:border-[#343535] w-full text-left" data-tab="plan">
         <span class="material-symbols-outlined text-[20px]">credit_card</span>
-        <span class="text-sm">Mi Plan</span>
+        <span class="text-sm" data-i18n="nav.plan">Mi Plan</span>
       </button>
     </nav>
     
@@ -1020,11 +1020,11 @@
       <div class="h-[1px] w-full bg-gradient-to-r from-transparent via-[#343535] to-transparent my-2"></div>
       <button id="cambiarClaveBtn" class="text-[#d0c6ab] hover:text-[#ffd700] hover:bg-[#343535]/30 transition-all duration-300 flex items-center gap-3 px-4 py-2 rounded-xl w-full text-left">
         <span class="material-symbols-outlined text-[20px]">key</span>
-        <span class="text-sm">Cambiar contraseña</span>
+        <span class="text-sm" data-i18n="nav.cambiarClave">Cambiar contraseña</span>
       </button>
       <button id="logoutBtn" class="text-[#d0c6ab] hover:text-[#ffd700] hover:bg-[#343535]/30 transition-all duration-300 flex items-center gap-3 px-4 py-2 rounded-xl w-full text-left">
         <span class="material-symbols-outlined text-[20px]">logout</span>
-        <span class="text-sm">Salir</span>
+        <span class="text-sm" data-i18n="nav.salir">Salir</span>
       </button>
     </div>
   </aside>
@@ -1035,7 +1035,7 @@
       <div class="flex items-center gap-4">
         <div class="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#ffd700] to-[#fff6df] font-['Hanken_Grotesk']">Hash IA</div>
         <div class="h-6 w-[1px] bg-[#343535] mx-1"></div>
-        <span class="text-xs text-[#d0c6ab] font-medium uppercase tracking-widest font-['Hanken_Grotesk']">Panel de Control</span>
+        <span class="text-xs text-[#d0c6ab] font-medium uppercase tracking-widest font-['Hanken_Grotesk']" data-i18n="header.panel">Panel de Control</span>
       </div>
       <div class="flex items-center gap-6">
         <div class="flex flex-col items-end">
@@ -1045,7 +1045,7 @@
         <span id="saldoCreditos" class="text-[10px] font-mono text-[#d0c6ab]"></span>
         <div class="h-8 w-[1px] bg-[#343535]"></div>
         <button id="headerNewExpenseBtn" class="bg-gradient-to-r from-[#ffd700] to-[#e9c400] text-[#3a3000] hover:shadow-[0_0_20px_rgba(255,215,0,0.4)] transition-all px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1">
-          <span class="material-symbols-outlined text-[16px]">add</span> Nuevo Movimiento
+          <span class="material-symbols-outlined text-[16px]">add</span> <span data-i18n="header.nuevoMov">Nuevo Movimiento</span>
         </button>
       </div>
     </header>
@@ -1142,49 +1142,49 @@
           <div class="glass-panel rounded-2xl p-4 border border-[#343535]/50 order-3">
             <div class="flex flex-wrap items-end gap-3">
               <div class="flex flex-col gap-1">
-                <label class="text-[10px] font-bold text-[#d0c6ab] tracking-wider uppercase ml-1">Desde</label>
+                <label class="text-[10px] font-bold text-[#d0c6ab] tracking-wider uppercase ml-1" data-i18n="f.desde">Desde</label>
                 <input id="fFrom" type="date" class="bg-[#292a2a]/50 border border-[#343535] rounded-xl px-3 py-2 text-xs text-on-surface focus:border-[#ffd700] focus:ring-1 focus:ring-[#ffd700]/50 outline-none transition-all [color-scheme:dark]" />
               </div>
               <div class="flex flex-col gap-1">
-                <label class="text-[10px] font-bold text-[#d0c6ab] tracking-wider uppercase ml-1">Hasta</label>
+                <label class="text-[10px] font-bold text-[#d0c6ab] tracking-wider uppercase ml-1" data-i18n="f.hasta">Hasta</label>
                 <input id="fTo" type="date" class="bg-[#292a2a]/50 border border-[#343535] rounded-xl px-3 py-2 text-xs text-on-surface focus:border-[#ffd700] focus:ring-1 focus:ring-[#ffd700]/50 outline-none transition-all [color-scheme:dark]" />
               </div>
               <div class="flex flex-col gap-1">
-                <label class="text-[10px] font-bold text-[#d0c6ab] tracking-wider uppercase ml-1">Categoría</label>
-                <select id="fCategoria" class="bg-[#292a2a]/50 border border-[#343535] rounded-xl px-3 py-2 text-xs text-on-surface focus:border-[#ffd700] focus:ring-1 focus:ring-[#ffd700]/50 outline-none transition-all w-48 appearance-none"><option value="">Todas</option></select>
+                <label class="text-[10px] font-bold text-[#d0c6ab] tracking-wider uppercase ml-1" data-i18n="f.categoria">Categoría</label>
+                <select id="fCategoria" class="bg-[#292a2a]/50 border border-[#343535] rounded-xl px-3 py-2 text-xs text-on-surface focus:border-[#ffd700] focus:ring-1 focus:ring-[#ffd700]/50 outline-none transition-all w-48 appearance-none"><option value="" data-i18n="f.todas">Todas</option></select>
               </div>
               <div class="flex flex-col gap-1">
-                <label class="text-[10px] font-bold text-[#d0c6ab] tracking-wider uppercase ml-1">Estado</label>
+                <label class="text-[10px] font-bold text-[#d0c6ab] tracking-wider uppercase ml-1" data-i18n="f.estado">Estado</label>
                 <select id="fEstado" class="bg-[#292a2a]/50 border border-[#343535] rounded-xl px-3 py-2 text-xs text-on-surface focus:border-[#ffd700] focus:ring-1 focus:ring-[#ffd700]/50 outline-none transition-all w-36 appearance-none">
-                  <option value="">Todos</option>
-                  <option value="confirmado">Confirmado</option>
-                  <option value="pendiente_confirmacion">Pendiente</option>
-                  <option value="rechazado">Rechazado</option>
+                  <option value="" data-i18n="f.todos">Todos</option>
+                  <option value="confirmado" data-i18n="f.confirmado">Confirmado</option>
+                  <option value="pendiente_confirmacion" data-i18n="f.pendiente">Pendiente</option>
+                  <option value="rechazado" data-i18n="f.rechazado">Rechazado</option>
                 </select>
               </div>
               <div class="flex flex-col gap-1">
-                <label class="text-[10px] font-bold text-[#d0c6ab] tracking-wider uppercase ml-1">Tipo</label>
+                <label class="text-[10px] font-bold text-[#d0c6ab] tracking-wider uppercase ml-1" data-i18n="f.tipo">Tipo</label>
                 <select id="fTipo" class="bg-[#292a2a]/50 border border-[#343535] rounded-xl px-3 py-2 text-xs text-on-surface focus:border-[#ffd700] focus:ring-1 focus:ring-[#ffd700]/50 outline-none transition-all w-32 appearance-none">
-                  <option value="">Todos</option>
-                  <option value="gasto">Gastos</option>
-                  <option value="ingreso">Ingresos</option>
+                  <option value="" data-i18n="f.todos">Todos</option>
+                  <option value="gasto" data-i18n="f.gastos">Gastos</option>
+                  <option value="ingreso" data-i18n="f.ingresos">Ingresos</option>
                 </select>
               </div>
               <div class="flex flex-col gap-1">
-                <label class="text-[10px] font-bold text-[#d0c6ab] tracking-wider uppercase ml-1">Proveedor</label>
-                <input id="fProveedor" placeholder="Buscar..." class="bg-[#292a2a]/50 border border-[#343535] rounded-xl px-3 py-2 text-xs text-on-surface focus:border-[#ffd700] focus:ring-1 focus:ring-[#ffd700]/50 outline-none transition-all placeholder:text-[#d0c6ab]/40" />
+                <label class="text-[10px] font-bold text-[#d0c6ab] tracking-wider uppercase ml-1" data-i18n="f.proveedor">Proveedor</label>
+                <input id="fProveedor" placeholder="Buscar..." data-i18n-ph="f.buscar" class="bg-[#292a2a]/50 border border-[#343535] rounded-xl px-3 py-2 text-xs text-on-surface focus:border-[#ffd700] focus:ring-1 focus:ring-[#ffd700]/50 outline-none transition-all placeholder:text-[#d0c6ab]/40" />
               </div>
               <div class="flex flex-col gap-1">
-                <label class="text-[10px] font-bold text-[#d0c6ab] tracking-wider uppercase ml-1">Período</label>
+                <label class="text-[10px] font-bold text-[#d0c6ab] tracking-wider uppercase ml-1" data-i18n="f.periodo">Período</label>
                 <input id="fPeriodo" type="month" class="bg-[#292a2a]/50 border border-[#343535] rounded-xl px-3 py-2 text-xs text-on-surface focus:border-[#ffd700] focus:ring-1 focus:ring-[#ffd700]/50 outline-none transition-all [color-scheme:dark]" />
               </div>
-              <button id="applyBtn" class="bg-[#ffd700] text-[#3a3000] hover:bg-[#ffe16d] px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-sm">Aplicar</button>
-              <button id="mesBtn" class="bg-[#292a2a]/50 border border-[#343535] text-[#d0c6ab] hover:text-[#e3e2e2] px-3 py-2 rounded-xl text-xs transition-colors">Mes</button>
-              <button id="anioBtn" class="bg-[#292a2a]/50 border border-[#343535] text-[#d0c6ab] hover:text-[#e3e2e2] px-3 py-2 rounded-xl text-xs transition-colors">Año</button>
-              <button id="excelBtn" class="bg-[#292a2a]/50 border border-[#343535] text-[#d0c6ab] hover:text-[#e3e2e2] px-3 py-2 rounded-xl text-xs transition-colors">Excel</button>
-              <button id="resumenBtn" class="bg-[#292a2a]/50 border border-[#343535] text-[#d0c6ab] hover:text-[#e3e2e2] px-3 py-2 rounded-xl text-xs transition-colors">WhatsApp Resumen</button>
+              <button id="applyBtn" class="bg-[#ffd700] text-[#3a3000] hover:bg-[#ffe16d] px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-sm" data-i18n="f.aplicar">Aplicar</button>
+              <button id="mesBtn" class="bg-[#292a2a]/50 border border-[#343535] text-[#d0c6ab] hover:text-[#e3e2e2] px-3 py-2 rounded-xl text-xs transition-colors" data-i18n="f.mes">Mes</button>
+              <button id="anioBtn" class="bg-[#292a2a]/50 border border-[#343535] text-[#d0c6ab] hover:text-[#e3e2e2] px-3 py-2 rounded-xl text-xs transition-colors" data-i18n="f.anio">Año</button>
+              <button id="excelBtn" class="bg-[#292a2a]/50 border border-[#343535] text-[#d0c6ab] hover:text-[#e3e2e2] px-3 py-2 rounded-xl text-xs transition-colors" data-i18n="f.excel">Excel</button>
+              <button id="resumenBtn" class="bg-[#292a2a]/50 border border-[#343535] text-[#d0c6ab] hover:text-[#e3e2e2] px-3 py-2 rounded-xl text-xs transition-colors" data-i18n="f.waResumen">WhatsApp Resumen</button>
               <button id="newExpenseBtn" class="bg-gradient-to-r from-[#ffd700] to-[#e9c400] text-[#3a3000] hover:shadow-[0_0_20px_rgba(255,215,0,0.4)] transition-all px-3 py-1.5 rounded-lg text-[11px] font-bold flex items-center gap-1 ml-auto">
-                <span class="material-symbols-outlined text-[14px]">add</span> Nuevo Movimiento
+                <span class="material-symbols-outlined text-[14px]">add</span> <span data-i18n="header.nuevoMov">Nuevo Movimiento</span>
               </button>
             </div>
             <p id="resumenMsg" class="text-xs text-[#d0c6ab] mt-2"></p>
@@ -1512,26 +1512,26 @@
     <!-- AJUSTES -->
     <section id="settingsSection" class="hidden">
       <div class="card">
-        <h3 style="margin-top:0">Empresa</h3>
+        <h3 style="margin-top:0" data-i18n="set.empresa">Empresa</h3>
         <div class="row">
-          <div><label>Nombre</label><input id="cNombre" /></div>
-          <div><label>RUT</label><input id="cRut" /></div>
-          <div><label>WhatsApp del dueño</label><input id="cOwnerWa" placeholder="569…" /></div>
-          <div><label>Resumen</label>
+          <div><label data-i18n="set.nombre">Nombre</label><input id="cNombre" /></div>
+          <div><label data-i18n="set.rut">RUT</label><input id="cRut" /></div>
+          <div><label data-i18n="set.ownerWa">WhatsApp del dueño</label><input id="cOwnerWa" placeholder="569…" /></div>
+          <div><label data-i18n="set.resumen">Resumen</label>
             <select id="cFreq">
-              <option value="diario">Diario</option>
-              <option value="semanal">Semanal</option>
-              <option value="mensual">Mensual</option>
+              <option value="diario" data-i18n="set.diario">Diario</option>
+              <option value="semanal" data-i18n="set.semanal">Semanal</option>
+              <option value="mensual" data-i18n="set.mensual">Mensual</option>
             </select>
           </div>
-          <div><label>Idioma</label>
+          <div><label data-i18n="set.idioma">Idioma</label>
             <select id="cIdioma">
               <option value="es">Español</option>
               <option value="en">English</option>
               <option value="pt">Português</option>
             </select>
           </div>
-          <button id="saveCompanyBtn" class="btn-gold">Guardar</button>
+          <button id="saveCompanyBtn" class="btn-gold" data-i18n="set.guardar">Guardar</button>
         </div>
         <p id="settingsMsg" class="muted"></p>
       </div>
@@ -1594,6 +1594,212 @@
     'Gastos financieros','Otros gastos'
   ];
   var $ = function (id) { return document.getElementById(id); };
+
+  // ─────────────────────────────────────────────────────────────
+  //  i18n del panel (es / en / pt-BR). NO toca lógica ni IDs.
+  // ─────────────────────────────────────────────────────────────
+  var PANEL_I18N = {
+    es: {
+      // Login
+      'login.exec': 'Executive Control',
+      'login.howUse': '¿Cómo vas a usar Hash IA?',
+      'login.negocio': 'Negocio',
+      'login.negocioSub': 'Pequeña y mediana empresa',
+      'login.personal': 'Personal',
+      'login.personalSub': 'Persona natural',
+      'login.haveAccount': '¿ya tienes cuenta?',
+      'login.email': 'Correo',
+      'login.password': 'Contraseña',
+      'login.enter': 'Entrar',
+      'login.forgot': '¿Olvidaste tu contraseña?',
+      'login.or': 'o',
+      'login.fb': 'Continuar con Facebook',
+      // Sidebar / nav
+      'nav.gastos': 'Gastos / Ingresos',
+      'nav.empleados': 'Empleados',
+      'nav.productos': 'Productos',
+      'nav.auxiliares': 'Auxiliares',
+      'nav.ajustes': 'Ajustes',
+      'nav.contabilidad': 'Contabilidad',
+      'nav.crm': 'CRM',
+      'nav.agente': 'Agente IA',
+      'nav.plan': 'Mi Plan',
+      'nav.cambiarClave': 'Cambiar contraseña',
+      'nav.salir': 'Salir',
+      'header.panel': 'Panel de Control',
+      'header.nuevoMov': 'Nuevo Movimiento',
+      // Filtros Gastos
+      'f.desde': 'Desde',
+      'f.hasta': 'Hasta',
+      'f.categoria': 'Categoría',
+      'f.estado': 'Estado',
+      'f.tipo': 'Tipo',
+      'f.proveedor': 'Proveedor',
+      'f.periodo': 'Período',
+      'f.todas': 'Todas',
+      'f.todos': 'Todos',
+      'f.confirmado': 'Confirmado',
+      'f.pendiente': 'Pendiente',
+      'f.rechazado': 'Rechazado',
+      'f.gastos': 'Gastos',
+      'f.ingresos': 'Ingresos',
+      'f.buscar': 'Buscar...',
+      'f.aplicar': 'Aplicar',
+      'f.mes': 'Mes',
+      'f.anio': 'Año',
+      'f.excel': 'Excel',
+      'f.waResumen': 'WhatsApp Resumen',
+      'g.sinMovimientos': 'Sin movimientos para esos filtros.',
+      // Ajustes
+      'set.empresa': 'Empresa',
+      'set.nombre': 'Nombre',
+      'set.rut': 'RUT',
+      'set.ownerWa': 'WhatsApp del dueño',
+      'set.resumen': 'Resumen',
+      'set.diario': 'Diario',
+      'set.semanal': 'Semanal',
+      'set.mensual': 'Mensual',
+      'set.idioma': 'Idioma',
+      'set.guardar': 'Guardar'
+    },
+    en: {
+      'login.exec': 'Executive Control',
+      'login.howUse': 'How will you use Hash IA?',
+      'login.negocio': 'Business',
+      'login.negocioSub': 'Small and medium business',
+      'login.personal': 'Personal',
+      'login.personalSub': 'Individual',
+      'login.haveAccount': 'already have an account?',
+      'login.email': 'Email',
+      'login.password': 'Password',
+      'login.enter': 'Sign in',
+      'login.forgot': 'Forgot your password?',
+      'login.or': 'or',
+      'login.fb': 'Continue with Facebook',
+      'nav.gastos': 'Expenses / Income',
+      'nav.empleados': 'Employees',
+      'nav.productos': 'Products',
+      'nav.auxiliares': 'Auxiliaries',
+      'nav.ajustes': 'Settings',
+      'nav.contabilidad': 'Accounting',
+      'nav.crm': 'CRM',
+      'nav.agente': 'AI Agent',
+      'nav.plan': 'My Plan',
+      'nav.cambiarClave': 'Change password',
+      'nav.salir': 'Log out',
+      'header.panel': 'Control Panel',
+      'header.nuevoMov': 'New Entry',
+      'f.desde': 'From',
+      'f.hasta': 'To',
+      'f.categoria': 'Category',
+      'f.estado': 'Status',
+      'f.tipo': 'Type',
+      'f.proveedor': 'Supplier',
+      'f.periodo': 'Period',
+      'f.todas': 'All',
+      'f.todos': 'All',
+      'f.confirmado': 'Confirmed',
+      'f.pendiente': 'Pending',
+      'f.rechazado': 'Rejected',
+      'f.gastos': 'Expenses',
+      'f.ingresos': 'Income',
+      'f.buscar': 'Search...',
+      'f.aplicar': 'Apply',
+      'f.mes': 'Month',
+      'f.anio': 'Year',
+      'f.excel': 'Excel',
+      'f.waResumen': 'WhatsApp Summary',
+      'g.sinMovimientos': 'No entries for those filters.',
+      'set.empresa': 'Company',
+      'set.nombre': 'Name',
+      'set.rut': 'Tax ID',
+      'set.ownerWa': "Owner's WhatsApp",
+      'set.resumen': 'Summary',
+      'set.diario': 'Daily',
+      'set.semanal': 'Weekly',
+      'set.mensual': 'Monthly',
+      'set.idioma': 'Language',
+      'set.guardar': 'Save'
+    },
+    pt: {
+      'login.exec': 'Executive Control',
+      'login.howUse': 'Como você vai usar o Hash IA?',
+      'login.negocio': 'Empresa',
+      'login.negocioSub': 'Pequena e média empresa',
+      'login.personal': 'Pessoal',
+      'login.personalSub': 'Pessoa física',
+      'login.haveAccount': 'já tem uma conta?',
+      'login.email': 'E-mail',
+      'login.password': 'Senha',
+      'login.enter': 'Entrar',
+      'login.forgot': 'Esqueceu sua senha?',
+      'login.or': 'ou',
+      'login.fb': 'Continuar com o Facebook',
+      'nav.gastos': 'Despesas / Receitas',
+      'nav.empleados': 'Funcionários',
+      'nav.productos': 'Produtos',
+      'nav.auxiliares': 'Auxiliares',
+      'nav.ajustes': 'Configurações',
+      'nav.contabilidad': 'Contabilidade',
+      'nav.crm': 'CRM',
+      'nav.agente': 'Agente IA',
+      'nav.plan': 'Meu Plano',
+      'nav.cambiarClave': 'Alterar senha',
+      'nav.salir': 'Sair',
+      'header.panel': 'Painel de Controle',
+      'header.nuevoMov': 'Novo Lançamento',
+      'f.desde': 'De',
+      'f.hasta': 'Até',
+      'f.categoria': 'Categoria',
+      'f.estado': 'Status',
+      'f.tipo': 'Tipo',
+      'f.proveedor': 'Fornecedor',
+      'f.periodo': 'Período',
+      'f.todas': 'Todas',
+      'f.todos': 'Todos',
+      'f.confirmado': 'Confirmado',
+      'f.pendiente': 'Pendente',
+      'f.rechazado': 'Rejeitado',
+      'f.gastos': 'Despesas',
+      'f.ingresos': 'Receitas',
+      'f.buscar': 'Buscar...',
+      'f.aplicar': 'Aplicar',
+      'f.mes': 'Mês',
+      'f.anio': 'Ano',
+      'f.excel': 'Excel',
+      'f.waResumen': 'Resumo WhatsApp',
+      'g.sinMovimientos': 'Nenhum lançamento para esses filtros.',
+      'set.empresa': 'Empresa',
+      'set.nombre': 'Nome',
+      'set.rut': 'CNPJ/CPF',
+      'set.ownerWa': 'WhatsApp do dono',
+      'set.resumen': 'Resumo',
+      'set.diario': 'Diário',
+      'set.semanal': 'Semanal',
+      'set.mensual': 'Mensal',
+      'set.idioma': 'Idioma',
+      'set.guardar': 'Salvar'
+    }
+  };
+  function panelIdioma() {
+    try { var i = localStorage.getItem('hash_idioma'); if (i && PANEL_I18N[i]) return i; } catch (e) {}
+    var n = (navigator.language || '').slice(0, 2).toLowerCase();
+    return PANEL_I18N[n] ? n : 'es';
+  }
+  function tp(k) {
+    var i = panelIdioma();
+    return (PANEL_I18N[i] && PANEL_I18N[i][k]) || PANEL_I18N.es[k] || k;
+  }
+  function aplicarI18n() {
+    document.querySelectorAll('[data-i18n]').forEach(function (el) {
+      el.textContent = tp(el.getAttribute('data-i18n'));
+    });
+    document.querySelectorAll('[data-i18n-ph]').forEach(function (el) {
+      el.setAttribute('placeholder', tp(el.getAttribute('data-i18n-ph')));
+    });
+  }
+  window.aplicarI18n = aplicarI18n; window.tp = tp;
+
   function token() { try { return localStorage.getItem(TOKEN_KEY); } catch (e) { return null; } }
   function setToken(t) { try { localStorage.setItem(TOKEN_KEY, t); } catch (e) {} }
   function clearToken() { try { localStorage.removeItem(TOKEN_KEY); } catch (e) {} }
@@ -1609,7 +1815,7 @@
     return res;
   }
 
-  function showLogin() { $('loginView').classList.remove('hidden'); $('appView').classList.add('hidden'); }
+  function showLogin() { $('loginView').classList.remove('hidden'); $('appView').classList.add('hidden'); try { aplicarI18n(); } catch (e) {} }
   function ymActual() { var d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); }
   function updateSidebarUi(activeTab, activeSubTab) {
     var sideTabs = document.querySelectorAll('.side-tab[data-tab]');
@@ -1655,6 +1861,7 @@
     $('appView').classList.remove('hidden');
     if (!$('fPeriodo').value) $('fPeriodo').value = ymActual();
     updateSidebarUi('gastos', null);
+    try { aplicarI18n(); } catch (e) {}
     loadGastos();
     loadSaldoCreditos();
     try { window.dispatchEvent(new CustomEvent('panel:login')); } catch (_) {}
@@ -2052,7 +2259,7 @@
       lastRows = rows;
       renderSaldo(rows);
       $('expensesTable').innerHTML = rows.length ? PanelLib.expensesTableHtml(rows)
-        : '<p class="muted" style="padding:16px">Sin movimientos para esos filtros.</p>';
+        : '<p class="muted" style="padding:16px">' + tp('g.sinMovimientos') + '</p>';
       wirePayButtons();
       wireRowClicks();
     } catch (e) { if (e.message !== '401') $('expensesTable').innerHTML = '<p class="err" style="padding:16px">Error al cargar.</p>'; }
@@ -3527,6 +3734,7 @@
     catch (e) { alert('No se pudo abrir el PDF.'); }
   };
 
+  try { aplicarI18n(); } catch (e) {}
   if (token()) showApp(); else showLogin();
 })();
 </script>
