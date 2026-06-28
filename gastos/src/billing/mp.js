@@ -25,8 +25,9 @@ async function mpFetch(path, opts = {}) {
 
 // Crea un preapproval (suscripción recurrente) para el plan dado.
 // backUrl: URL de vuelta al panel tras autorizar.
+// payerEmail: email del dueño (requerido por MP Chile).
 // Returns: { id, init_point }
-async function createPreapproval(planNombre, backUrl) {
+async function createPreapproval(planNombre, backUrl, payerEmail) {
   const p = PLANES[planNombre];
   if (!p || !p.precio) throw new Error(`Plan no pagable: ${planNombre}`);
   const label = PLAN_LABELS[planNombre] || planNombre;
@@ -39,6 +40,7 @@ async function createPreapproval(planNombre, backUrl) {
       currency_id: 'CLP',
     },
     back_url: backUrl,
+    payer_email: payerEmail,
     status: 'pending',
   };
   const r = await mpFetch('/preapproval', { method: 'POST', body: JSON.stringify(body) });

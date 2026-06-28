@@ -82,9 +82,11 @@ function createPanelRouter({ db, sendText, sendImage, varasGemini } = {}) {
     const sub = await saldoCreditos(db, req.auth.companyId);
     if (sub.plan === 'ilimitado') return res.status(409).json({ error: 'plan_especial' });
     if (sub.estado === 'activa' && sub.plan === plan) return res.status(409).json({ error: 'ya_activa' });
+    const owner = await getUserById(db, req.auth.userId);
+    if (!owner || !owner.email) return res.status(400).json({ error: 'email_requerido' });
     try {
       const backUrl = `${process.env.PANEL_BASE_URL || 'https://gastos.atikodigital.cl'}/panel/#plan`;
-      const { id, init_point } = await createPreapproval(plan, backUrl);
+      const { id, init_point } = await createPreapproval(plan, backUrl, owner.email);
       await db.query(
         `UPDATE subscriptions SET external_id=$2, updated_at=now() WHERE company_id=$1`,
         [req.auth.companyId, id]);

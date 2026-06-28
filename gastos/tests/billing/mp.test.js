@@ -13,13 +13,14 @@ afterEach(() => { delete global.fetch; delete process.env.MP_ACCESS_TOKEN; jest.
 
 test('createPreapproval devuelve id + init_point con datos correctos', async () => {
   mockFetch(200, { id: 'PRE123', init_point: 'https://mp.cl/pay/PRE123' });
-  const r = await createPreapproval('pyme', 'https://gastos.atikodigital.cl/panel/#plan');
+  const r = await createPreapproval('pyme', 'https://gastos.atikodigital.cl/panel/#plan', 'dueno@empresa.cl');
   expect(r).toEqual({ id: 'PRE123', init_point: 'https://mp.cl/pay/PRE123' });
   const body = JSON.parse(global.fetch.mock.calls[0][1].body);
   expect(body.auto_recurring.transaction_amount).toBe(24900);
   expect(body.auto_recurring.currency_id).toBe('CLP');
   expect(body.auto_recurring.frequency_type).toBe('months');
   expect(body.auto_recurring.frequency).toBe(1);
+  expect(body.payer_email).toBe('dueno@empresa.cl');
 });
 
 test('createPreapproval lanza error para plan free (precio 0)', async () => {

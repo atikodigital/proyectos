@@ -5,6 +5,7 @@ const { newDb } = require('pg-mem');
 const { migrate } = require('../../src/db/migrate');
 const { createCompany } = require('../../src/companies/repo');
 const { hashPassword } = require('../../src/auth/password');
+const { signToken } = require('../../src/auth/jwt');
 const { createPanelRouter } = require('../../src/panel/router');
 
 async function freshDb() {
@@ -64,4 +65,58 @@ test('GET /api/panel/suscripcion sin token → 401', async () => {
   const app = buildApp(db);
   const res = await request(app).get('/api/panel/suscripcion');
   expect(res.status).toBe(401);
+});
+
+test('POST /suscripcion/crear pasa payer_email a MP y devuelve init_point', async () => {
+  const db = await freshDb();
+  const co = await createCompany(db, { nombre: 'TestCo3' });
+  await seedOwner(db, co.id);
+
+  // Stub MP_ACCESS_TOKEN and global.fetch to intercept the MP call
+  process.env.MP_ACCESS_TOKEN = 'TEST_TOKEN';
+  global.fetch = jest.fn().mockResolvedValue({
+    ok: true,
+    status: 200,
+    json: async () => ({ id: 'PRE-STUB', init_point: 'https://mp.cl/pay/PRE-STUB' }),
+  });
+
+  try {
+    const app = buildApp(db);
+    const tok = await getToken(app);
+
+    const res = await request(app)
+      .post('/api/panel/suscripcion/crear')
+      .set('Authorization', `Bearer ${tok}`)
+      .send({ plan: 'pyme' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.init_point).toBe('https://mp.cl/pay/PRE-STUB');
+
+    // Verify payer_email was included in the MP request body
+    const mpCall = global.fetch.mock.calls.find((c) => String(c[0]).includes('/preapproval'));
+    expect(mpCall).toBeTruthy();
+    const capturedBody = JSON.parse(mpCall[1].body);
+    expect(capturedBody.payer_email).toBe('owner@test.cl');
+  } finally {
+    delete global.fetch;
+    delete process.env.MP_ACCESS_TOKEN;
+  }
+});
+
+test('POST /suscripcion/crear → 400 email_requerido si usuario no existe en DB', async () => {
+  const db = await freshDb();
+  const co = await createCompany(db, { nombre: 'TestCo4' });
+
+  // Forge a token for a userId that doesn't exist in the users table
+  const ghostUserId = '99999999-0000-0000-0000-000000000000';
+  const tok = signToken({ kind: 'user', companyId: co.id, userId: ghostUserId, rol: 'owner' });
+
+  const app = buildApp(db);
+  const res = await request(app)
+    .post('/api/panel/suscripcion/crear')
+    .set('Authorization', `Bearer ${tok}`)
+    .send({ plan: 'pyme' });
+
+  expect(res.status).toBe(400);
+  expect(res.body.error).toBe('email_requerido');
 });
