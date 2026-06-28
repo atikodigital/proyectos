@@ -23,9 +23,9 @@ Cobrar las suscripciones de Hash IA en la moneda correcta según el cliente: **C
 | Plan | CLP | USD | EUR | créditos |
 |---|---|---|---|---|
 | free | 0 | 0 | 0 | 30 |
-| basico | 9.900 | 12 | 11 | 100 |
-| pyme | 24.900 | 29 | 27 | 210 |
-| empresa | 49.900 | 59 | 55 | 600 |
+| basico | 9.900 | 15 | 15 | 100 |
+| pyme | 24.900 | 35 | 35 | 210 |
+| empresa | 49.900 | 69 | 69 | 600 |
 | ilimitado | — | — | — | manual |
 
 ---

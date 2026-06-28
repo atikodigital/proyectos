@@ -16,15 +16,15 @@ test('creditosDe pondera por tipo y cantidad', () => {
 // --- Multi-currency: estructura precios ---
 
 test('PLANES.basico.precios tiene CLP/USD/EUR', () => {
-  expect(PLANES.basico.precios).toEqual({ CLP: 9900, USD: 12, EUR: 11 });
+  expect(PLANES.basico.precios).toEqual({ CLP: 9900, USD: 15, EUR: 15 });
 });
 
 test('PLANES.pyme.precios tiene CLP/USD/EUR', () => {
-  expect(PLANES.pyme.precios).toEqual({ CLP: 24900, USD: 29, EUR: 27 });
+  expect(PLANES.pyme.precios).toEqual({ CLP: 24900, USD: 35, EUR: 35 });
 });
 
 test('PLANES.empresa.precios tiene CLP/USD/EUR', () => {
-  expect(PLANES.empresa.precios).toEqual({ CLP: 49900, USD: 59, EUR: 55 });
+  expect(PLANES.empresa.precios).toEqual({ CLP: 49900, USD: 69, EUR: 69 });
 });
 
 test('PLANES.free.precios tiene todo en cero', () => {
@@ -34,9 +34,9 @@ test('PLANES.free.precios tiene todo en cero', () => {
 // --- precioDe ---
 
 test('precioDe devuelve precio correcto para plan y moneda', () => {
-  expect(precioDe('pyme', 'USD')).toBe(29);
+  expect(precioDe('pyme', 'USD')).toBe(35);
   expect(precioDe('basico', 'CLP')).toBe(9900);
-  expect(precioDe('empresa', 'EUR')).toBe(55);
+  expect(precioDe('empresa', 'EUR')).toBe(69);
   expect(precioDe('free', 'CLP')).toBe(0);
 });
 
