@@ -1788,11 +1788,8 @@
     var inp = 'width:100%;box-sizing:border-box;border-radius:8px;padding:10px;border:1px solid #343535;background:rgba(41,42,42,.5);color:#e3e2e2;outline:none;margin-top:4px;';
     var lbl = 'display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#d0c6ab;margin-top:12px;';
     var campos = esNeg
-      ? '<label style="' + lbl + '">Nombre del negocio</label><input id="rgNombreNeg" placeholder="Ej: Panadería Don José" style="' + inp + '" />'
-        + '<label style="' + lbl + '">Tu nombre (opcional)</label><input id="rgOwner" placeholder="Ej: José Olguín" style="' + inp + '" />'
-        + '<label style="' + lbl + '">Correo</label><input id="rgEmail" type="email" placeholder="tu@empresa.cl" style="' + inp + '" />'
+      ? '<label style="' + lbl + '">Correo</label><input id="rgEmail" type="email" placeholder="tu@empresa.cl" style="' + inp + '" />'
         + '<label style="' + lbl + '">Contraseña (mín. 8)</label><input id="rgPass" type="password" style="' + inp + '" />'
-        + '<label style="' + lbl + '">WhatsApp (opcional)</label><input id="rgWa" type="tel" placeholder="+56 9 1234 5678" style="' + inp + '" />'
       : '<label style="' + lbl + '">Nombre completo</label><input id="rgNombre" placeholder="Ej: María Pérez" style="' + inp + '" />'
         + '<label style="' + lbl + '">Correo</label><input id="rgEmail" type="email" placeholder="tu@correo.cl" style="' + inp + '" />'
         + '<label style="' + lbl + '">Contraseña (mín. 6)</label><input id="rgPass" type="password" style="' + inp + '" />'
@@ -1831,11 +1828,10 @@
       msg.textContent = '';
       var url, body;
       if (esNeg) {
-        var nn = (m.querySelector('#rgNombreNeg').value || '').trim();
-        if (nn.length < 2) { msg.textContent = 'Escribe el nombre de tu negocio.'; return; }
         if (pass.length < 8) { msg.textContent = 'La contraseña debe tener al menos 8 caracteres.'; return; }
         url = '/api/onboarding/register';
-        body = { nombre_negocio: nn, nombre_owner: (m.querySelector('#rgOwner').value || '').trim() || null, email: email, password: pass, owner_whatsapp: (m.querySelector('#rgWa').value || '').trim() || null };
+        // Sin nombre del negocio: se pide DESPUÉS de entrar (mismo formulario que el social).
+        body = { email: email, password: pass };
       } else {
         var nombre = (m.querySelector('#rgNombre').value || '').trim();
         var sueldo = parseInt((m.querySelector('#rgSueldo').value || '').replace(/\D/g, ''), 10);
@@ -1851,13 +1847,15 @@
         var r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
         var data = await r.json().catch(function () { return {}; });
         if (!r.ok || !data.token) {
-          if (data.error === 'email_en_uso') msg.textContent = 'Ese correo ya tiene una cuenta. Inicia sesión abajo.';
+          if (data.error === 'email_en_uso' || (data.error || '').indexOf('Ya existe') > -1) msg.textContent = 'Ese correo ya tiene una cuenta. Inicia sesión abajo.';
           else msg.textContent = 'No se pudo crear la cuenta. Intenta de nuevo.';
           btn.disabled = false; btn.textContent = prev; return;
         }
         setToken(data.token);
         document.body.removeChild(m);
-        showApp();
+        // Negocio: pedimos los datos (nombre, WhatsApp) DESPUÉS de entrar, igual que el social.
+        if (esNeg && data.needsBusinessName) pedirNombreNegocio('');
+        else showApp();
       } catch (e) {
         msg.textContent = 'No se pudo crear la cuenta. Revisa tu conexión.';
         btn.disabled = false; btn.textContent = prev;

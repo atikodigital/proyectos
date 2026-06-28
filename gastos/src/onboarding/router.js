@@ -172,8 +172,10 @@ function createOnboardingRouter({ db }) {
   router.post('/register', async (req, res) => {
     try {
       const { nombre_negocio, nombre_owner, email, password, owner_whatsapp } = req.body || {};
-      if (!nombre_negocio || !email || !password) {
-        return res.status(400).json({ error: 'nombre_negocio, email y password son obligatorios' });
+      // El nombre del negocio es OPCIONAL: si no viene, se pide DESPUÉS de entrar
+      // (mismo formulario que el login social), creando la empresa con needs_setup.
+      if (!email || !password) {
+        return res.status(400).json({ error: 'email y password son obligatorios' });
       }
       if (String(password).length < 8) {
         return res.status(400).json({ error: 'La contraseña debe tener al menos 8 caracteres' });
@@ -182,12 +184,14 @@ function createOnboardingRouter({ db }) {
       const existing = await getUserByEmail(db, emailNorm);
       if (existing) return res.status(409).json({ error: 'Ya existe una cuenta con ese correo' });
 
+      const diferido = !nombre_negocio;
       const company = await createCompany(db, {
-        nombre: String(nombre_negocio).trim().slice(0, 120),
+        nombre: nombre_negocio ? String(nombre_negocio).trim().slice(0, 120) : 'Mi negocio',
         owner_nombre: nombre_owner ? String(nombre_owner).trim().slice(0, 80) : null,
         owner_whatsapp: owner_whatsapp ? String(owner_whatsapp).replace(/[^+\d]/g, '').slice(0, 20) : null,
         resumen_frecuencia: 'mensual',
       });
+      if (diferido) { try { await db.query('UPDATE companies SET needs_setup=true WHERE id=$1', [company.id]); } catch (e) { /* col nueva */ } }
       const passwordHash = await hashPassword(password);
       const user = await createUser(db, {
         company_id: company.id, email: emailNorm, password_hash: passwordHash, rol: 'owner',
@@ -196,6 +200,7 @@ function createOnboardingRouter({ db }) {
       res.json({
         ok: true,
         token,
+        needsBusinessName: diferido,
         user: { id: user.id, email: user.email, rol: user.rol, companyId: company.id },
         company: { id: company.id, nombre: company.nombre },
       });

@@ -4,32 +4,24 @@ import { APP_VERSION } from './version';
 
 /**
  * Registro de clientes terceros para Hash IA (BSP).
- * Crea company + user owner en backend, devuelve JWT, levanta sesión.
+ * Solo pide correo + contraseña; el nombre del negocio, WhatsApp, etc. se piden
+ * DESPUÉS de entrar (OnboardingWizard), igual que cuando entras con Google/Facebook.
  */
 export default function RegisterScreen({ onRegistered, onBackToLogin }) {
-  const [nombreNegocio, setNombreNegocio] = useState('');
-  const [nombreOwner, setNombreOwner] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
-  const [ownerWa, setOwnerWa] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   async function submit(e) {
     e.preventDefault();
     setError('');
-    if (!nombreNegocio.trim()) return setError('Pon el nombre de tu negocio.');
     if (password.length < 8) return setError('La contraseña debe tener al menos 8 caracteres.');
     setLoading(true);
     try {
-      const data = await api.register({
-        nombre_negocio: nombreNegocio.trim(),
-        nombre_owner: nombreOwner.trim() || null,
-        email: email.trim().toLowerCase(),
-        password,
-        owner_whatsapp: ownerWa.trim() || null,
-      });
+      // Sin nombre del negocio: lo pide el OnboardingWizard tras entrar.
+      const data = await api.register({ email: email.trim().toLowerCase(), password });
       // Marca primer login para que el wizard se abra automáticamente
       try { localStorage.setItem('hash_first_login', '1'); } catch (_) {}
       onRegistered && onRegistered(data);
@@ -46,20 +38,12 @@ export default function RegisterScreen({ onRegistered, onBackToLogin }) {
         <h1 className="text-2xl font-black" style={{ color: '#C9A24B' }}>
           Hash IA <span className="text-xs font-normal opacity-50">{APP_VERSION}</span>
         </h1>
-        <p className="text-sm opacity-70 mt-1">Crea tu cuenta y conecta tu WhatsApp en 2 minutos.</p>
+        <p className="text-sm opacity-70 mt-1">Crea tu cuenta. Después te pedimos el nombre de tu negocio y tu WhatsApp.</p>
       </div>
-
-      <label className="text-sm" htmlFor="nombre-negocio">Nombre de tu negocio</label>
-      <input id="nombre-negocio" className="rounded-xl bg-black/10 px-4 py-3 border" value={nombreNegocio}
-        onChange={(e) => setNombreNegocio(e.target.value)} placeholder="Ej: Pizzería La Plaza" autoFocus />
-
-      <label className="text-sm" htmlFor="nombre-owner">Tu nombre (opcional)</label>
-      <input id="nombre-owner" className="rounded-xl bg-black/10 px-4 py-3 border" value={nombreOwner}
-        onChange={(e) => setNombreOwner(e.target.value)} placeholder="Cómo te llamas" autoCapitalize="words" />
 
       <label className="text-sm" htmlFor="email">Correo</label>
       <input id="email" type="email" className="rounded-xl bg-black/10 px-4 py-3 border" value={email}
-        onChange={(e) => setEmail(e.target.value)} placeholder="tu@empresa.cl" autoCapitalize="none" required />
+        onChange={(e) => setEmail(e.target.value)} placeholder="tu@empresa.cl" autoCapitalize="none" autoFocus required />
 
       <label className="text-sm" htmlFor="password">Contraseña (mín 8)</label>
       <div className="relative">
@@ -68,10 +52,6 @@ export default function RegisterScreen({ onRegistered, onBackToLogin }) {
         <button type="button" onClick={() => setShowPass((v) => !v)} aria-label={showPass ? 'Ocultar' : 'Mostrar'}
           className="absolute right-3 top-1/2 -translate-y-1/2 text-xl">{showPass ? '🙈' : '👁️'}</button>
       </div>
-
-      <label className="text-sm" htmlFor="owner-wa">WhatsApp del dueño (opcional)</label>
-      <input id="owner-wa" type="tel" className="rounded-xl bg-black/10 px-4 py-3 border" value={ownerWa}
-        onChange={(e) => setOwnerWa(e.target.value)} placeholder="+56 9 1234 5678" inputMode="tel" />
 
       {error && <p className="text-red-500 text-sm">{error}</p>}
 
