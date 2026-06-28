@@ -74,12 +74,12 @@ export default function LoginScreen({ onLoggedIn }) {
         <p className="text-sm font-bold text-center mb-3 opacity-80">¿Cómo vas a usar Hash IA?</p>
         <div className="grid grid-cols-2 gap-3">
           <button type="button" onClick={() => setMode('register')}
-            aria-label="Crear cuenta de empresa"
+            aria-label="Crear cuenta de negocio o empresa"
             className="rounded-2xl border-2 p-4 flex flex-col items-center gap-1 active:scale-95 transition"
             style={{ borderColor: '#C9A24B' }}>
             <span className="text-3xl" aria-hidden="true">🏢</span>
-            <span className="font-black text-sm">Empresa</span>
-            <span className="text-[11px] opacity-60 text-center leading-tight">Negocio / Pyme</span>
+            <span className="font-black text-sm">Negocio</span>
+            <span className="text-[11px] opacity-60 text-center leading-tight">Pequeña y mediana empresa</span>
           </button>
           <button type="button" onClick={() => setMode('personal')}
             aria-label="Crear cuenta personal"
@@ -87,7 +87,7 @@ export default function LoginScreen({ onLoggedIn }) {
             style={{ borderColor: '#C9A24B' }}>
             <span className="text-3xl" aria-hidden="true">👤</span>
             <span className="font-black text-sm">Personal</span>
-            <span className="text-[11px] opacity-60 text-center leading-tight">Persona natural · gratis</span>
+            <span className="text-[11px] opacity-60 text-center leading-tight">Persona natural</span>
           </button>
         </div>
       </div>
