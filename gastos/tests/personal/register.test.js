@@ -57,28 +57,33 @@ test('register-personal rechaza email duplicado', async () => {
   expect(res.body.error).toBe('email_en_uso');
 });
 
-test('register-personal valida campos requeridos', async () => {
+test('register-personal exige correo y contraseña (≥6); nombre y sueldo son opcionales', async () => {
   const db = await freshDb();
   const a = app(db);
+  // Falta correo → 400
   const r1 = await request(a).post('/api/onboarding/register-personal')
-    .send({ email: 'x@x.com', password: 'abc123', sueldo_mensual: 800000 });
+    .send({ password: 'abc123' });
   expect(r1.status).toBe(400); expect(r1.body.error).toBe('campos_requeridos');
-
+  // Falta contraseña → 400
   const r2 = await request(a).post('/api/onboarding/register-personal')
-    .send({ nombre: 'Juan', password: 'abc123', sueldo_mensual: 800000 });
+    .send({ email: 'j@j.com' });
   expect(r2.status).toBe(400); expect(r2.body.error).toBe('campos_requeridos');
-
+  // Contraseña corta → 400
   const r3 = await request(a).post('/api/onboarding/register-personal')
-    .send({ nombre: 'Juan', email: 'j@j.com', password: 'ab', sueldo_mensual: 800000 });
+    .send({ email: 'j@j.com', password: 'ab' });
   expect(r3.status).toBe(400); expect(r3.body.error).toBe('campos_requeridos');
 });
 
-test('register-personal valida sueldo_mensual > 0', async () => {
+test('register-personal SOLO con correo+contraseña: crea la cuenta y pide el ingreso después', async () => {
   const db = await freshDb();
   const a = app(db);
-  const r = await request(a).post('/api/onboarding/register-personal').send({
-    nombre: 'Juan', email: 'j@j.com', password: 'clave123', sueldo_mensual: 0,
-  });
-  expect(r.status).toBe(400);
-  expect(r.body.error).toBe('sueldo_invalido');
+  const r = await request(a).post('/api/onboarding/register-personal')
+    .send({ email: 'mini@x.cl', password: 'clave123' });
+  expect(r.status).toBe(200);
+  expect(r.body.token).toBeTruthy();
+  expect(r.body.needsIncome).toBe(true);
+  const { rows: [c] } = await db.query("SELECT tipo_cuenta, sueldo_mensual, needs_setup FROM companies WHERE nombre='Mi cuenta'");
+  expect(c.tipo_cuenta).toBe('personal');
+  expect(parseInt(c.sueldo_mensual)).toBe(0);
+  expect(c.needs_setup).toBe(true);
 });

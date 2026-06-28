@@ -1795,10 +1795,8 @@
     var campos = esNeg
       ? '<label style="' + lbl + '">Correo</label><input id="rgEmail" type="email" placeholder="tu@empresa.cl" style="' + inp + '" />'
         + '<label style="' + lbl + '">Contraseña (mín. 8)</label><input id="rgPass" type="password" style="' + inp + '" />'
-      : '<label style="' + lbl + '">Nombre completo</label><input id="rgNombre" placeholder="Ej: María Pérez" style="' + inp + '" />'
-        + '<label style="' + lbl + '">Correo</label><input id="rgEmail" type="email" placeholder="tu@correo.cl" style="' + inp + '" />'
-        + '<label style="' + lbl + '">Contraseña (mín. 6)</label><input id="rgPass" type="password" style="' + inp + '" />'
-        + '<label style="' + lbl + '">Sueldo o ingresos mensuales ($CLP)</label><input id="rgSueldo" inputmode="numeric" placeholder="Ej: 800000" style="' + inp + '" />';
+      : '<label style="' + lbl + '">Correo</label><input id="rgEmail" type="email" placeholder="tu@correo.cl" style="' + inp + '" />'
+        + '<label style="' + lbl + '">Contraseña (mín. 6)</label><input id="rgPass" type="password" style="' + inp + '" />';
     // Botones de Google/Facebook solo en el registro PERSONAL (atajo: sin formulario).
     var social = esNeg ? '' :
       '<div id="rgGoogleBtn" style="display:flex;justify-content:center;margin-top:14px;min-height:40px;"></div>'
@@ -1838,13 +1836,10 @@
         // Sin nombre del negocio: se pide DESPUÉS de entrar (mismo formulario que el social).
         body = { email: email, password: pass };
       } else {
-        var nombre = (m.querySelector('#rgNombre').value || '').trim();
-        var sueldo = parseInt((m.querySelector('#rgSueldo').value || '').replace(/\D/g, ''), 10);
-        if (nombre.length < 2) { msg.textContent = 'Escribe tu nombre.'; return; }
         if (pass.length < 6) { msg.textContent = 'La contraseña debe tener al menos 6 caracteres.'; return; }
-        if (!sueldo) { msg.textContent = 'Escribe tu sueldo mensual.'; return; }
         url = '/api/onboarding/register-personal';
-        body = { nombre: nombre, email: email, password: pass, sueldo_mensual: sueldo, dia_pago: 1 };
+        // Sin nombre ni ingreso: el ingreso se pide DESPUÉS de entrar (saltable).
+        body = { email: email, password: pass };
       }
       if (!email || email.indexOf('@') < 0) { msg.textContent = 'Escribe un correo válido.'; return; }
       var btn = m.querySelector('#rgSave'); btn.disabled = true; var prev = btn.textContent; btn.textContent = 'Creando…';
@@ -1858,8 +1853,9 @@
         }
         setToken(data.token);
         document.body.removeChild(m);
-        // Negocio: pedimos los datos (nombre, WhatsApp) DESPUÉS de entrar, igual que el social.
+        // Pedimos los datos DESPUÉS de entrar (igual que el social): negocio → nombre/WhatsApp; personal → ingreso (saltable).
         if (esNeg && data.needsBusinessName) pedirNombreNegocio('');
+        else if (!esNeg && data.needsIncome) pedirIngresoPersonal();
         else showApp();
       } catch (e) {
         msg.textContent = 'No se pudo crear la cuenta. Revisa tu conexión.';

@@ -3,13 +3,11 @@ import { api } from './api';
 import { googleDisponible, facebookDisponible, googleNativeLogin, facebookNativeLogin } from './socialAuth';
 
 export default function RegisterPersonalScreen({ onRegistered, onBackToLogin }) {
-  const [nombre, setNombre] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [sueldo, setSueldo] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  // Paso de ingreso tras un registro social (saltable).
+  // Paso de ingreso tras crear la cuenta (social o manual), saltable.
   const [incomeStep, setIncomeStep] = useState(false);
   const [incomeVal, setIncomeVal] = useState('');
   const [socialData, setSocialData] = useState(null);
@@ -17,15 +15,16 @@ export default function RegisterPersonalScreen({ onRegistered, onBackToLogin }) 
   async function submit(e) {
     e.preventDefault();
     setError('');
-    const sueldoNum = parseInt(sueldo.replace(/\D/g, ''), 10);
-    if (!nombre.trim() || !email.trim() || password.length < 6 || !sueldoNum) {
-      setError('Completa todos los campos. La contraseña debe tener al menos 6 caracteres y el ingreso debe ser mayor a 0.');
+    if (!email.trim() || password.length < 6) {
+      setError('Escribe tu correo y una contraseña de al menos 6 caracteres.');
       return;
     }
     setLoading(true);
     try {
-      const data = await api.registerPersonal({ nombre: nombre.trim(), email: email.trim().toLowerCase(), password, sueldo_mensual: sueldoNum, dia_pago: 1 });
-      onRegistered(data);
+      // Sin nombre ni ingreso: el ingreso se pide DESPUÉS (saltable).
+      const data = await api.registerPersonal({ email: email.trim().toLowerCase(), password });
+      if (data && data.needsIncome) { setSocialData(data); setIncomeStep(true); }
+      else onRegistered(data);
     } catch (err) {
       const msg = err?.body?.error || err?.message || '';
       if (msg === 'email_en_uso') setError('Este correo ya tiene una cuenta. Inicia sesión.');
@@ -101,10 +100,6 @@ export default function RegisterPersonalScreen({ onRegistered, onBackToLogin }) 
         </div>
       )}
 
-      <label className="text-sm" htmlFor="rp-nombre">Nombre completo</label>
-      <input id="rp-nombre" className="rounded-xl bg-black/10 px-4 py-3 border" value={nombre}
-        onChange={(e) => setNombre(e.target.value)} autoCapitalize="words" />
-
       <label className="text-sm" htmlFor="rp-email">Correo</label>
       <input id="rp-email" type="email" className="rounded-xl bg-black/10 px-4 py-3 border" value={email}
         onChange={(e) => setEmail(e.target.value)} autoCapitalize="none" />
@@ -112,10 +107,6 @@ export default function RegisterPersonalScreen({ onRegistered, onBackToLogin }) 
       <label className="text-sm" htmlFor="rp-pass">Contraseña (mín. 6 caracteres)</label>
       <input id="rp-pass" type="password" className="rounded-xl bg-black/10 px-4 py-3 border" value={password}
         onChange={(e) => setPassword(e.target.value)} />
-
-      <label className="text-sm" htmlFor="rp-sueldo">Sueldo o ingresos mensuales ($CLP)</label>
-      <input id="rp-sueldo" inputMode="numeric" placeholder="Ej: 800000" className="rounded-xl bg-black/10 px-4 py-3 border" value={sueldo}
-        onChange={(e) => setSueldo(e.target.value)} />
 
       {error && <p className="text-red-500 text-sm">{error}</p>}
 

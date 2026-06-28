@@ -214,13 +214,12 @@ function createOnboardingRouter({ db }) {
   router.post('/register-personal', async (req, res) => {
     try {
       const { nombre, email, password, sueldo_mensual, dia_pago } = req.body || {};
-      if (!nombre || !email || !password || String(password).length < 6) {
+      // Solo correo + contraseña son obligatorios. El nombre y el ingreso son
+      // OPCIONALES: se piden DESPUÉS de entrar (igual que el login social).
+      if (!email || !password || String(password).length < 6) {
         return res.status(400).json({ error: 'campos_requeridos' });
       }
-      const sueldoNum = parseInt(sueldo_mensual);
-      if (!sueldoNum || sueldoNum <= 0) {
-        return res.status(400).json({ error: 'sueldo_invalido' });
-      }
+      const sueldoNum = parseInt(sueldo_mensual) || 0;
       const emailNorm = String(email).trim().toLowerCase();
 
       const { rows: [existing] } = await db.query(
@@ -228,17 +227,19 @@ function createOnboardingRouter({ db }) {
       );
       if (existing) return res.status(400).json({ error: 'email_en_uso' });
 
+      const diferido = sueldoNum <= 0; // sin ingreso aún → se pide después (saltable)
       const company = await createCompany(db, {
-        nombre: String(nombre).trim().slice(0, 120),
+        nombre: nombre ? String(nombre).trim().slice(0, 120) : 'Mi cuenta',
         tipo_cuenta: 'personal',
-        sueldo_mensual: sueldoNum,
+        sueldo_mensual: sueldoNum > 0 ? sueldoNum : 0,
         dia_pago: parseInt(dia_pago) || 1,
       });
+      if (diferido) { try { await db.query('UPDATE companies SET needs_setup=true WHERE id=$1', [company.id]); } catch (e) { /* col nueva */ } }
 
       const hash = await hashPassword(password);
       const emp = await createEmployee(db, {
         company_id: company.id,
-        nombre: String(nombre).trim().slice(0, 80),
+        nombre: nombre ? String(nombre).trim().slice(0, 80) : 'Yo',
         usuario: emailNorm,
         password_hash: hash,
         rol: 'admin',
@@ -246,7 +247,7 @@ function createOnboardingRouter({ db }) {
       });
 
       const token = signToken({ kind: 'employee', companyId: company.id, employeeId: emp.id });
-      res.json({ ok: true, token, employee: { id: emp.id, nombre: emp.nombre } });
+      res.json({ ok: true, token, needsIncome: diferido, employee: { id: emp.id, nombre: emp.nombre } });
     } catch (e) {
       console.error('[onboarding/register-personal]', e.message);
       res.status(500).json({ error: 'No se pudo crear la cuenta' });
