@@ -1560,6 +1560,11 @@
         <div id="planBannerMorosa" class="hidden" style="background:#7f1d1d;color:#fca5a5;border-radius:10px;padding:12px 16px;margin-bottom:16px;font-size:13px">
           ⚠️ Tu pago falló. Renueva tu plan para seguir usando la IA.
         </div>
+        <div id="planMonedaSelector" style="display:flex;gap:8px;margin-bottom:14px">
+          <button onclick="cambiarMoneda('CLP')" id="monedaBtn-CLP" style="padding:4px 12px;border-radius:20px;border:1px solid var(--gold);background:var(--gold);color:#1a1000;font-weight:700;font-size:12px;cursor:pointer">CLP</button>
+          <button onclick="cambiarMoneda('USD')" id="monedaBtn-USD" style="padding:4px 12px;border-radius:20px;border:1px solid #444;background:transparent;color:#9a917a;font-size:12px;cursor:pointer">USD</button>
+          <button onclick="cambiarMoneda('EUR')" id="monedaBtn-EUR" style="padding:4px 12px;border-radius:20px;border:1px solid #444;background:transparent;color:#9a917a;font-size:12px;cursor:pointer">EUR</button>
+        </div>
         <div id="planCards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px"></div>
         <p style="font-size:11px;color:#555;margin-top:20px;text-align:center">
           Para cancelar o bajar de plan, escríbenos al
@@ -2928,10 +2933,39 @@
 
   // ── MI PLAN ───────────────────────────────────────────────────────────────
   var PLANES_PANEL = [
-    { key: 'basico',  nombre: 'Básico',  precio: '$9.900',  shots: 100 },
-    { key: 'pyme',    nombre: 'Pyme',    precio: '$24.900', shots: 210 },
-    { key: 'empresa', nombre: 'Empresa', precio: '$49.900', shots: 600 },
+    { key: 'basico',  nombre: 'Básico',  shots: 100 },
+    { key: 'pyme',    nombre: 'Pyme',    shots: 210 },
+    { key: 'empresa', nombre: 'Empresa', shots: 600 },
   ];
+  // Precios por moneda — espejo de backend planes.js
+  var PRECIOS_MONEDA = {
+    CLP: { basico: '$9.900',  pyme: '$24.900', empresa: '$49.900' },
+    USD: { basico: 'US$15',   pyme: 'US$35',   empresa: 'US$69'  },
+    EUR: { basico: '€15',     pyme: '€35',     empresa: '€69'    },
+  };
+  var monedaSeleccionada = 'CLP';
+
+  window.cambiarMoneda = function(mon) {
+    if (!PRECIOS_MONEDA[mon]) return;
+    monedaSeleccionada = mon;
+    ['CLP','USD','EUR'].forEach(function(m) {
+      var btn = document.getElementById('monedaBtn-' + m);
+      if (!btn) return;
+      if (m === mon) {
+        btn.style.background = 'var(--gold)'; btn.style.color = '#1a1000';
+        btn.style.border = '1px solid var(--gold)'; btn.style.fontWeight = '700';
+      } else {
+        btn.style.background = 'transparent'; btn.style.color = '#9a917a';
+        btn.style.border = '1px solid #444'; btn.style.fontWeight = '400';
+      }
+    });
+    // Re-render only the price spans (avoids losing "Plan actual" button state)
+    var precios = PRECIOS_MONEDA[mon];
+    PLANES_PANEL.forEach(function(p) {
+      var el = document.getElementById('precio-' + p.key);
+      if (el) el.innerHTML = precios[p.key] + '<span style="font-size:11px;font-weight:400;color:#555">/mes</span>';
+    });
+  };
 
   async function loadMiPlan() {
     var cards = $('planCards');
@@ -2952,25 +2986,29 @@
       cards.innerHTML = '<p style="color:#9a917a;font-size:13px">Plan especial — sin límite de créditos. Gracias por ser parte de Hash IA 🙌</p>';
       return;
     }
-    cards.innerHTML = PLANES_PANEL.map(function(p) {
-      var esActual = p.key === planActual;
-      var borde = esActual ? '2px solid var(--gold)' : '1px solid #2a2a2a';
-      var btn = esActual
-        ? '<button disabled style="width:100%;padding:8px;border-radius:8px;background:#2a2a2a;color:#555;border:none;font-size:12px;cursor:default">Plan actual</button>'
-        : '<button onclick="contratarPlan(\'' + p.key + '\',event)" style="width:100%;padding:8px;border-radius:8px;background:var(--gold);color:#1a1000;border:none;font-weight:700;font-size:12px;cursor:pointer">Contratar</button>';
-      return '<div style="border:' + borde + ';border-radius:12px;padding:16px;background:#0d0e0f">'
-        + '<div style="font-weight:700;color:#e3e2e2">' + p.nombre + '</div>'
-        + '<div style="font-size:1.4rem;font-weight:800;color:var(--gold);margin:6px 0">' + p.precio + '<span style="font-size:11px;font-weight:400;color:#555">/mes</span></div>'
-        + '<div style="font-size:12px;color:#9a917a;margin-bottom:12px">' + p.shots + ' shots al mes</div>'
-        + btn + '</div>';
-    }).join('');
+    function renderPlanCards(planActual) {
+      var precios = PRECIOS_MONEDA[monedaSeleccionada] || PRECIOS_MONEDA['CLP'];
+      cards.innerHTML = PLANES_PANEL.map(function(p) {
+        var esActual = p.key === planActual;
+        var borde = esActual ? '2px solid var(--gold)' : '1px solid #2a2a2a';
+        var btn = esActual
+          ? '<button disabled style="width:100%;padding:8px;border-radius:8px;background:#2a2a2a;color:#555;border:none;font-size:12px;cursor:default">Plan actual</button>'
+          : '<button onclick="contratarPlan(\'' + p.key + '\',event)" style="width:100%;padding:8px;border-radius:8px;background:var(--gold);color:#1a1000;border:none;font-weight:700;font-size:12px;cursor:pointer">Contratar</button>';
+        return '<div style="border:' + borde + ';border-radius:12px;padding:16px;background:#0d0e0f">'
+          + '<div style="font-weight:700;color:#e3e2e2">' + p.nombre + '</div>'
+          + '<div id="precio-' + p.key + '" style="font-size:1.4rem;font-weight:800;color:var(--gold);margin:6px 0">' + precios[p.key] + '<span style="font-size:11px;font-weight:400;color:#555">/mes</span></div>'
+          + '<div style="font-size:12px;color:#9a917a;margin-bottom:12px">' + p.shots + ' shots al mes</div>'
+          + btn + '</div>';
+      }).join('');
+    }
+    renderPlanCards(planActual);
   }
 
   window.contratarPlan = async function(plan, ev) {
     var btn = ev && ev.target;
     if (btn) { btn.disabled = true; btn.textContent = 'Redirigiendo…'; }
     try {
-      var r = await apiFetch('/suscripcion/crear', { method: 'POST', body: JSON.stringify({ plan: plan }) });
+      var r = await apiFetch('/suscripcion/crear', { method: 'POST', body: JSON.stringify({ plan: plan, moneda: monedaSeleccionada }) });
       var data = await r.json().catch(function () { return {}; });
       if (data.url) {
         window.open(data.url, '_blank');
