@@ -29,14 +29,15 @@ async function mpFetch(path, opts = {}) {
 // Returns: { id, init_point }
 async function createPreapproval(planNombre, backUrl, payerEmail) {
   const p = PLANES[planNombre];
-  if (!p || !p.precio) throw new Error(`Plan no pagable: ${planNombre}`);
+  const precioCLP = p && p.precios ? p.precios.CLP : null;
+  if (!precioCLP) throw new Error(`Plan no pagable: ${planNombre}`);
   const label = PLAN_LABELS[planNombre] || planNombre;
   const body = {
     reason: label,
     auto_recurring: {
       frequency: 1,
       frequency_type: 'months',
-      transaction_amount: p.precio,
+      transaction_amount: precioCLP,
       currency_id: 'CLP',
     },
     back_url: backUrl,
