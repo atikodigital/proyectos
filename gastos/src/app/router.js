@@ -205,7 +205,7 @@ function createAppRouter({ db, extractExpense, createLiveToken, sendText, sendIm
   router.patch('/company', async (req, res) => {
     const b = req.body || {};
     const companyPatch = {};
-    ['nombre', 'owner_whatsapp', 'sueldo_mensual', 'dia_pago'].forEach((k) => { if (b[k] !== undefined) companyPatch[k] = b[k]; });
+    ['nombre', 'owner_whatsapp', 'sueldo_mensual', 'dia_pago', 'idioma'].forEach((k) => { if (b[k] !== undefined) companyPatch[k] = b[k]; });
     if (Object.keys(companyPatch).length) await updateCompany(db, req.auth.companyId, companyPatch);
     if (b.giro !== undefined) await setGiro(db, req.auth.companyId, b.giro);
     if (b.onboarded) await setOnboarded(db, req.auth.companyId);

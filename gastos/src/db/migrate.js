@@ -136,6 +136,12 @@ const PERSONAL_COLUMNS = [
   "ALTER TABLE companies ADD COLUMN IF NOT EXISTS dia_pago INTEGER NOT NULL DEFAULT 1",
 ];
 
+// Idioma de la cuenta (es | en | pt). Condiciona el asistente (responde en ese
+// idioma) y la interfaz (Fase 2). Default español.
+const IDIOMA_COLUMNS = [
+  "ALTER TABLE companies ADD COLUMN IF NOT EXISTS idioma TEXT NOT NULL DEFAULT 'es'",
+];
+
 // Login social para cuentas PERSONALES: la cuenta personal vive en employees
 // (kind=employee). Para que entren con Google/Facebook ligamos el id del proveedor
 // al empleado, igual que ya se hace en users para las cuentas de negocio.
@@ -212,6 +218,9 @@ async function migrate(db) {
     try { await db.query(stmt); } catch (e) { /* pg-mem: índice parcial no soportado */ }
   }
   for (const stmt of PERSONAL_COLUMNS) {
+    try { await db.query(stmt); } catch (e) { /* pg-mem / ya existe */ }
+  }
+  for (const stmt of IDIOMA_COLUMNS) {
     try { await db.query(stmt); } catch (e) { /* pg-mem / ya existe */ }
   }
   for (const stmt of SOCIAL_EMPLOYEE_DDL) {

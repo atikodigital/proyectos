@@ -85,7 +85,8 @@ async function getCompany(db, companyId) {
 }
 
 async function updateCompany(db, companyId, patch) {
-  const cols = ['nombre', 'rut', 'owner_nombre', 'owner_whatsapp', 'resumen_frecuencia', 'sueldo_mensual', 'dia_pago'].filter((f) => patch[f] !== undefined);
+  if (patch.idioma !== undefined && !['es', 'en', 'pt'].includes(patch.idioma)) patch = { ...patch, idioma: 'es' };
+  const cols = ['nombre', 'rut', 'owner_nombre', 'owner_whatsapp', 'resumen_frecuencia', 'sueldo_mensual', 'dia_pago', 'idioma'].filter((f) => patch[f] !== undefined);
   if (!cols.length) return getCompany(db, companyId);
   const set = cols.map((f, i) => `${f}=$${i + 2}`).join(', ');
   await db.query(`UPDATE companies SET ${set} WHERE id=$1`, [companyId, ...cols.map((f) => patch[f])]);
@@ -164,7 +165,7 @@ async function ensureCompanyOnboarding(db) {
 async function getCompanyProfile(db, companyId) {
   await ensureCompanyOnboarding(db);
   const r = await db.query(
-    'SELECT id, nombre, rut, giro, owner_nombre, owner_whatsapp, onboarded_at, created_at, kaly_persona, productos, tipo_cuenta, sueldo_mensual, dia_pago FROM companies WHERE id=$1',
+    'SELECT id, nombre, rut, giro, owner_nombre, owner_whatsapp, onboarded_at, created_at, kaly_persona, productos, tipo_cuenta, sueldo_mensual, dia_pago, idioma FROM companies WHERE id=$1',
     [companyId]
   );
   if (!r.rows[0]) return null;

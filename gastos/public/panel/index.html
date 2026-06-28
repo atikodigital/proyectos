@@ -1524,6 +1524,13 @@
               <option value="mensual">Mensual</option>
             </select>
           </div>
+          <div><label>Idioma</label>
+            <select id="cIdioma">
+              <option value="es">Español</option>
+              <option value="en">English</option>
+              <option value="pt">Português</option>
+            </select>
+          </div>
           <button id="saveCompanyBtn" class="btn-gold">Guardar</button>
         </div>
         <p id="settingsMsg" class="muted"></p>
@@ -2304,6 +2311,7 @@
       var c = await res.json();
       $('cNombre').value = c.nombre || ''; $('cRut').value = c.rut || '';
       $('cOwnerWa').value = c.owner_whatsapp || ''; $('cFreq').value = c.resumen_frecuencia || 'mensual';
+      if ($('cIdioma')) $('cIdioma').value = c.idioma || 'es';
     } catch (e) {}
     try { var r = await apiFetch('/pedido-config'); var cfg = await r.json(); var el = $('ivaIncluido'); if (el) el.checked = cfg.iva_incluido !== false; } catch (e) {}
     loadDelivery();
@@ -2360,7 +2368,8 @@
     try {
       await apiFetch('/company', { method: 'PATCH', body: JSON.stringify({
         nombre: $('cNombre').value, rut: $('cRut').value,
-        owner_whatsapp: $('cOwnerWa').value, resumen_frecuencia: $('cFreq').value }) });
+        owner_whatsapp: $('cOwnerWa').value, resumen_frecuencia: $('cFreq').value,
+        idioma: $('cIdioma') ? $('cIdioma').value : 'es' }) });
       $('settingsMsg').textContent = 'Guardado ✓';
     } catch (e) { $('settingsMsg').textContent = 'No se pudo guardar.'; }
   };

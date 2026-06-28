@@ -1,6 +1,14 @@
 // gastos/src/varas/chat.js
 // Cerebro de VARAS conversacional (texto): loop de function-calling.
 const { TOOLS_READ, TOOL_DECLARATIONS, ACCION_NAMES, descAccion } = require('./tools');
+const { getCompanyProfile } = require('../companies/repo');
+
+const IDIOMA_NOMBRE = { es: 'español', en: 'inglés (English)', pt: 'portugués de Brasil (Português)' };
+// Instrucción para que el asistente responda en el idioma de la cuenta (es|en|pt).
+function instruccionIdioma(idioma) {
+  const n = IDIOMA_NOMBRE[idioma] || IDIOMA_NOMBRE.es;
+  return `IMPORTANTE: Responde SIEMPRE en ${n}, sin importar el idioma en que te pregunten. Adapta los formatos de número, fecha y moneda a ese idioma.`;
+}
 
 const SYSTEM_PROMPT = [
   'Eres VARAS, el contador IA de la empresa. Tono serio, claro y conciso.',
@@ -21,10 +29,13 @@ async function _defaultGemini() { return { text: 'VARAS no está disponible ahor
 // Devuelve { reply, accionPropuesta? }.
 async function responder(db, companyId, messages, { gemini, maxIter = 5 } = {}) {
   const _g = gemini || _defaultGemini;
+  let idioma = 'es';
+  try { const p = await getCompanyProfile(db, companyId); idioma = (p && p.idioma) || 'es'; } catch (e) { /* default es */ }
+  const systemPrompt = SYSTEM_PROMPT + ' ' + instruccionIdioma(idioma);
   let convo = Array.isArray(messages) ? messages.slice() : [];
   for (let i = 0; i < maxIter; i++) {
     let out;
-    try { out = await _g({ systemPrompt: SYSTEM_PROMPT, messages: convo, tools: TOOL_DECLARATIONS }); }
+    try { out = await _g({ systemPrompt, messages: convo, tools: TOOL_DECLARATIONS }); }
     catch (e) { return { reply: 'No pude procesar la consulta.' }; }
     if (out && out.tool && out.tool.name) {
       const name = out.tool.name; const args = out.tool.args || {};
