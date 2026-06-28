@@ -43,6 +43,8 @@ const { createEphemeralToken } = require('../agent/token');
 const { suggestOrder } = require('../pedidos/suggest');
 const { saldo: saldoCreditos, consumirCredito, SinCreditosError } = require('../billing/creditos');
 const { createPreapproval } = require('../billing/mp');
+const { crearCheckoutSuscripcion } = require('../billing/stripe');
+const { procesadorPara, monedasSoportadas } = require('../billing/planes');
 
 function parseFiltros(q = {}) {
   return {
@@ -75,26 +77,44 @@ function createPanelRouter({ db, sendText, sendImage, varasGemini } = {}) {
   });
 
   router.post('/suscripcion/crear', async (req, res) => {
-    const { plan } = req.body || {};
+    const { plan, moneda = 'CLP' } = req.body || {};
     if (!plan || !['basico', 'pyme', 'empresa'].includes(plan)) {
       return res.status(400).json({ error: 'plan_invalido' });
+    }
+    if (!monedasSoportadas().includes(moneda)) {
+      return res.status(400).json({ error: 'moneda_invalida' });
     }
     const sub = await saldoCreditos(db, req.auth.companyId);
     if (sub.plan === 'ilimitado') return res.status(409).json({ error: 'plan_especial' });
     if (sub.estado === 'activa' && sub.plan === plan) return res.status(409).json({ error: 'ya_activa' });
     const owner = await getUserById(db, req.auth.userId);
     if (!owner || !owner.email) return res.status(400).json({ error: 'email_requerido' });
+    const proc = procesadorPara(moneda);
     try {
-      const backUrl = `${process.env.PANEL_BASE_URL || 'https://gastos.atikodigital.cl'}/panel/#plan`;
-      const { id, init_point } = await createPreapproval(plan, backUrl, owner.email);
+      const base = process.env.PANEL_BASE_URL || 'https://gastos.atikodigital.cl';
+      let id, url;
+      if (proc === 'mp') {
+        const backUrl = `${base}/panel/#plan`;
+        const result = await createPreapproval(plan, backUrl, owner.email);
+        id = result.id;
+        url = result.init_point;
+      } else {
+        const result = await crearCheckoutSuscripcion({
+          plan, moneda, payerEmail: owner.email,
+          successUrl: `${base}/panel/#plan`,
+          cancelUrl: `${base}/panel/#plan`,
+        });
+        id = result.id;
+        url = result.url;
+      }
       await db.query(
-        `UPDATE subscriptions SET external_id=$2, updated_at=now() WHERE company_id=$1`,
-        [req.auth.companyId, id]);
-      console.log('[mp] preapproval', id, 'empresa', req.auth.companyId, 'plan', plan);
-      return res.json({ init_point });
+        `UPDATE subscriptions SET external_id=$2, procesador=$3, moneda=$4, updated_at=now() WHERE company_id=$1`,
+        [req.auth.companyId, id, proc, moneda]);
+      console.log(`[billing] ${proc} checkout`, id, 'empresa', req.auth.companyId, 'plan', plan, 'moneda', moneda);
+      return res.json({ url });
     } catch (e) {
-      console.error('[mp] error preapproval:', e.message);
-      return res.status(502).json({ error: 'mp_error' });
+      console.error('[billing] error checkout:', e.message);
+      return res.status(502).json({ error: 'pago_error' });
     }
   });
 

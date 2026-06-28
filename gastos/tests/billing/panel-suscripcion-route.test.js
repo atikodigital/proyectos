@@ -67,7 +67,7 @@ test('GET /api/panel/suscripcion sin token → 401', async () => {
   expect(res.status).toBe(401);
 });
 
-test('POST /suscripcion/crear pasa payer_email a MP y devuelve init_point', async () => {
+test('POST /suscripcion/crear pasa payer_email a MP y devuelve url (CLP, back-compat init_point gone)', async () => {
   const db = await freshDb();
   const co = await createCompany(db, { nombre: 'TestCo3' });
   await seedOwner(db, co.id);
@@ -90,17 +90,146 @@ test('POST /suscripcion/crear pasa payer_email a MP y devuelve init_point', asyn
       .send({ plan: 'pyme' });
 
     expect(res.status).toBe(200);
-    expect(res.body.init_point).toBe('https://mp.cl/pay/PRE-STUB');
+    // Unified response key is now 'url'
+    expect(res.body.url).toBe('https://mp.cl/pay/PRE-STUB');
 
     // Verify payer_email was included in the MP request body
     const mpCall = global.fetch.mock.calls.find((c) => String(c[0]).includes('/preapproval'));
     expect(mpCall).toBeTruthy();
     const capturedBody = JSON.parse(mpCall[1].body);
     expect(capturedBody.payer_email).toBe('owner@test.cl');
+
+    // procesador='mp', moneda='CLP' persisted
+    const subRow = await db.query('SELECT procesador, moneda FROM subscriptions WHERE company_id=$1', [co.id]);
+    expect(subRow.rows[0].procesador).toBe('mp');
+    expect(subRow.rows[0].moneda).toBe('CLP');
   } finally {
     delete global.fetch;
     delete process.env.MP_ACCESS_TOKEN;
   }
+});
+
+test('POST /suscripcion/crear moneda omitida → default CLP (MP) — back-compat', async () => {
+  const db = await freshDb();
+  const co = await createCompany(db, { nombre: 'TestCoBackCompat' });
+  await seedOwner(db, co.id);
+
+  process.env.MP_ACCESS_TOKEN = 'TEST_TOKEN';
+  global.fetch = jest.fn().mockResolvedValue({
+    ok: true,
+    status: 200,
+    json: async () => ({ id: 'PRE-BC', init_point: 'https://mp.cl/pay/PRE-BC' }),
+  });
+
+  try {
+    const app = buildApp(db);
+    const tok = await getToken(app);
+
+    // No moneda in body (old panel call)
+    const res = await request(app)
+      .post('/api/panel/suscripcion/crear')
+      .set('Authorization', `Bearer ${tok}`)
+      .send({ plan: 'basico' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.url).toBe('https://mp.cl/pay/PRE-BC');
+
+    const mpCall = global.fetch.mock.calls.find((c) => String(c[0]).includes('/preapproval'));
+    expect(mpCall).toBeTruthy();
+
+    const subRow = await db.query('SELECT procesador, moneda FROM subscriptions WHERE company_id=$1', [co.id]);
+    expect(subRow.rows[0].procesador).toBe('mp');
+    expect(subRow.rows[0].moneda).toBe('CLP');
+  } finally {
+    delete global.fetch;
+    delete process.env.MP_ACCESS_TOKEN;
+  }
+});
+
+test('POST /suscripcion/crear moneda USD → Stripe; persiste procesador=stripe, moneda=USD', async () => {
+  const db = await freshDb();
+  const co = await createCompany(db, { nombre: 'TestCoUSD' });
+  await seedOwner(db, co.id);
+
+  process.env.STRIPE_SECRET_KEY = 'sk_test_STUB';
+  global.fetch = jest.fn().mockResolvedValue({
+    ok: true,
+    status: 200,
+    json: async () => ({ id: 'cs_test_STUB', url: 'https://checkout.stripe.com/pay/cs_test_STUB' }),
+  });
+
+  try {
+    const app = buildApp(db);
+    const tok = await getToken(app);
+
+    const res = await request(app)
+      .post('/api/panel/suscripcion/crear')
+      .set('Authorization', `Bearer ${tok}`)
+      .send({ plan: 'pyme', moneda: 'USD' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.url).toBe('https://checkout.stripe.com/pay/cs_test_STUB');
+
+    const stripeCall = global.fetch.mock.calls.find((c) => String(c[0]).includes('stripe.com'));
+    expect(stripeCall).toBeTruthy();
+
+    const subRow = await db.query('SELECT procesador, moneda FROM subscriptions WHERE company_id=$1', [co.id]);
+    expect(subRow.rows[0].procesador).toBe('stripe');
+    expect(subRow.rows[0].moneda).toBe('USD');
+  } finally {
+    delete global.fetch;
+    delete process.env.STRIPE_SECRET_KEY;
+  }
+});
+
+test('POST /suscripcion/crear moneda EUR → Stripe; persiste procesador=stripe, moneda=EUR', async () => {
+  const db = await freshDb();
+  const co = await createCompany(db, { nombre: 'TestCoEUR' });
+  await seedOwner(db, co.id);
+
+  process.env.STRIPE_SECRET_KEY = 'sk_test_STUB_EUR';
+  global.fetch = jest.fn().mockResolvedValue({
+    ok: true,
+    status: 200,
+    json: async () => ({ id: 'cs_eur_STUB', url: 'https://checkout.stripe.com/pay/cs_eur_STUB' }),
+  });
+
+  try {
+    const app = buildApp(db);
+    const tok = await getToken(app);
+
+    const res = await request(app)
+      .post('/api/panel/suscripcion/crear')
+      .set('Authorization', `Bearer ${tok}`)
+      .send({ plan: 'empresa', moneda: 'EUR' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.url).toBe('https://checkout.stripe.com/pay/cs_eur_STUB');
+
+    const subRow = await db.query('SELECT procesador, moneda FROM subscriptions WHERE company_id=$1', [co.id]);
+    expect(subRow.rows[0].procesador).toBe('stripe');
+    expect(subRow.rows[0].moneda).toBe('EUR');
+  } finally {
+    delete global.fetch;
+    delete process.env.STRIPE_SECRET_KEY;
+  }
+});
+
+test('POST /suscripcion/crear moneda XYZ → 400 moneda_invalida', async () => {
+  const db = await freshDb();
+  const co = await createCompany(db, { nombre: 'TestCoXYZ' });
+  await seedOwner(db, co.id);
+
+  const app = buildApp(db);
+  const tok = await getToken(app);
+
+  const res = await request(app)
+    .post('/api/panel/suscripcion/crear')
+    .set('Authorization', `Bearer ${tok}`)
+    .send({ plan: 'pyme', moneda: 'XYZ' });
+
+  expect(res.status).toBe(400);
+  expect(res.body.error).toBe('moneda_invalida');
 });
 
 test('POST /suscripcion/crear → 400 email_requerido si usuario no existe en DB', async () => {

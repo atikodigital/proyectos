@@ -2920,8 +2920,8 @@
     try {
       var r = await apiFetch('/suscripcion/crear', { method: 'POST', body: JSON.stringify({ plan: plan }) });
       var data = await r.json().catch(function () { return {}; });
-      if (data.init_point) {
-        window.open(data.init_point, '_blank');
+      if (data.url) {
+        window.open(data.url, '_blank');
       } else if (data.error === 'ya_activa') {
         alert('Ya tienes este plan activo.');
       } else {

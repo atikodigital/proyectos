@@ -136,6 +136,11 @@ const PERSONAL_COLUMNS = [
   "ALTER TABLE companies ADD COLUMN IF NOT EXISTS dia_pago INTEGER NOT NULL DEFAULT 1",
 ];
 
+const BILLING_MULTIMONEDA_COLUMNS = [
+  "ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS procesador TEXT NOT NULL DEFAULT 'mp'",
+  "ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS moneda TEXT NOT NULL DEFAULT 'CLP'",
+];
+
 // Recuperación de contraseña: token hasheado, caduca en 1 hora, un solo uso.
 const PASSWORD_RESETS_DDL = [
   `CREATE TABLE IF NOT EXISTS password_resets (
@@ -194,6 +199,9 @@ async function migrate(db) {
     try { await db.query(stmt); } catch (e) { /* pg-mem: índice parcial no soportado */ }
   }
   for (const stmt of PERSONAL_COLUMNS) {
+    try { await db.query(stmt); } catch (e) { /* pg-mem / ya existe */ }
+  }
+  for (const stmt of BILLING_MULTIMONEDA_COLUMNS) {
     try { await db.query(stmt); } catch (e) { /* pg-mem / ya existe */ }
   }
   for (const stmt of PASSWORD_RESETS_DDL) {
