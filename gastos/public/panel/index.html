@@ -891,6 +891,25 @@
         <p class="text-[9px] font-bold text-[#d0c6ab] tracking-widest uppercase">Executive Control</p>
       </div>
     </div>
+    <!-- Selector Negocio vs Persona (misma diferencia que el APK) -->
+    <p class="text-[11px] font-bold text-[#d0c6ab] uppercase tracking-wider text-center mb-2">¿Cómo vas a usar Hash IA?</p>
+    <div class="grid grid-cols-2 gap-3 mb-5">
+      <button type="button" id="selNegocio" class="rounded-xl border-2 border-[#ffd700]/70 p-3 flex flex-col items-center gap-1 hover:border-[#ffd700] hover:bg-[#ffd700]/10 transition-all">
+        <span class="text-2xl" aria-hidden="true">🏢</span>
+        <span class="text-sm font-bold text-white">Negocio</span>
+        <span class="text-[10px] text-[#d0c6ab]/70 text-center leading-tight">Pequeña y mediana empresa</span>
+      </button>
+      <button type="button" id="selPersonal" class="rounded-xl border-2 border-[#ffd700]/70 p-3 flex flex-col items-center gap-1 hover:border-[#ffd700] hover:bg-[#ffd700]/10 transition-all">
+        <span class="text-2xl" aria-hidden="true">👤</span>
+        <span class="text-sm font-bold text-white">Personal</span>
+        <span class="text-[10px] text-[#d0c6ab]/70 text-center leading-tight">Persona natural</span>
+      </button>
+    </div>
+    <div class="flex items-center gap-2 mb-3">
+      <div class="flex-1 h-px bg-[#343535]"></div>
+      <span class="text-[10px] text-[#d0c6ab]/60 uppercase tracking-wider">¿ya tienes cuenta?</span>
+      <div class="flex-1 h-px bg-[#343535]"></div>
+    </div>
     <div class="space-y-4">
       <div>
         <label for="email" class="text-[10px] font-bold text-[#d0c6ab] uppercase tracking-wider block mb-1">Correo</label>
@@ -1722,6 +1741,79 @@
     m.querySelector('#bnSave').onclick = guardar;
     m.addEventListener('keydown', function (e) { if (e.key === 'Enter') guardar(); });
   }
+  // ── Registro: Negocio vs Persona (misma diferencia que el APK) ──────────────
+  // Reusa los endpoints existentes: negocio → /register, persona → /register-personal.
+  // Ambos devuelven { token }; al crear, entramos directo (setToken + showApp).
+  function abrirRegistro(tipo) {
+    var esNeg = tipo === 'negocio';
+    var m = document.createElement('div');
+    m.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
+    var inp = 'width:100%;box-sizing:border-box;border-radius:8px;padding:10px;border:1px solid #343535;background:rgba(41,42,42,.5);color:#e3e2e2;outline:none;margin-top:4px;';
+    var lbl = 'display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#d0c6ab;margin-top:12px;';
+    var campos = esNeg
+      ? '<label style="' + lbl + '">Nombre del negocio</label><input id="rgNombreNeg" placeholder="Ej: Panadería Don José" style="' + inp + '" />'
+        + '<label style="' + lbl + '">Tu nombre (opcional)</label><input id="rgOwner" placeholder="Ej: José Olguín" style="' + inp + '" />'
+        + '<label style="' + lbl + '">Correo</label><input id="rgEmail" type="email" placeholder="tu@empresa.cl" style="' + inp + '" />'
+        + '<label style="' + lbl + '">Contraseña (mín. 8)</label><input id="rgPass" type="password" style="' + inp + '" />'
+        + '<label style="' + lbl + '">WhatsApp (opcional)</label><input id="rgWa" type="tel" placeholder="+56 9 1234 5678" style="' + inp + '" />'
+      : '<label style="' + lbl + '">Nombre completo</label><input id="rgNombre" placeholder="Ej: María Pérez" style="' + inp + '" />'
+        + '<label style="' + lbl + '">Correo</label><input id="rgEmail" type="email" placeholder="tu@correo.cl" style="' + inp + '" />'
+        + '<label style="' + lbl + '">Contraseña (mín. 6)</label><input id="rgPass" type="password" style="' + inp + '" />'
+        + '<label style="' + lbl + '">Sueldo mensual ($CLP)</label><input id="rgSueldo" inputmode="numeric" placeholder="Ej: 800000" style="' + inp + '" />';
+    m.innerHTML = '<div style="background:#1b1c1c;border:1px solid #343535;border-radius:16px;padding:22px;max-width:380px;width:100%;box-shadow:0 8px 40px rgba(0,0,0,.6);max-height:90vh;overflow:auto;">'
+      + '<h3 style="margin:0 0 4px;font-weight:900;color:#ffd700;">' + (esNeg ? 'Crea tu cuenta de negocio 🏢' : 'Crea tu cuenta personal 👤') + '</h3>'
+      + '<p style="margin:0;color:#d0c6ab;font-size:13px;">' + (esNeg ? 'Para tu pequeña o mediana empresa.' : 'Para controlar tus finanzas personales.') + '</p>'
+      + campos
+      + '<p id="rgMsg" style="color:#ffb4ab;font-size:12px;margin:8px 0 0;min-height:14px;"></p>'
+      + '<button id="rgSave" style="width:100%;margin-top:14px;background:linear-gradient(to right,#ffd700,#e9c400);color:#3a3000;border:none;border-radius:10px;padding:11px;font-weight:800;cursor:pointer;">Crear mi cuenta</button>'
+      + '<button id="rgCancel" style="width:100%;margin-top:8px;background:transparent;color:#9d9da0;border:none;padding:6px;font-size:12px;cursor:pointer;text-decoration:underline;">Cancelar</button>'
+      + '</div>';
+    document.body.appendChild(m);
+    var msg = m.querySelector('#rgMsg');
+    m.querySelector('#rgCancel').onclick = function () { document.body.removeChild(m); };
+    async function guardar() {
+      var email = (m.querySelector('#rgEmail').value || '').trim().toLowerCase();
+      var pass = m.querySelector('#rgPass').value || '';
+      msg.textContent = '';
+      var url, body;
+      if (esNeg) {
+        var nn = (m.querySelector('#rgNombreNeg').value || '').trim();
+        if (nn.length < 2) { msg.textContent = 'Escribe el nombre de tu negocio.'; return; }
+        if (pass.length < 8) { msg.textContent = 'La contraseña debe tener al menos 8 caracteres.'; return; }
+        url = '/api/onboarding/register';
+        body = { nombre_negocio: nn, nombre_owner: (m.querySelector('#rgOwner').value || '').trim() || null, email: email, password: pass, owner_whatsapp: (m.querySelector('#rgWa').value || '').trim() || null };
+      } else {
+        var nombre = (m.querySelector('#rgNombre').value || '').trim();
+        var sueldo = parseInt((m.querySelector('#rgSueldo').value || '').replace(/\D/g, ''), 10);
+        if (nombre.length < 2) { msg.textContent = 'Escribe tu nombre.'; return; }
+        if (pass.length < 6) { msg.textContent = 'La contraseña debe tener al menos 6 caracteres.'; return; }
+        if (!sueldo) { msg.textContent = 'Escribe tu sueldo mensual.'; return; }
+        url = '/api/onboarding/register-personal';
+        body = { nombre: nombre, email: email, password: pass, sueldo_mensual: sueldo, dia_pago: 1 };
+      }
+      if (!email || email.indexOf('@') < 0) { msg.textContent = 'Escribe un correo válido.'; return; }
+      var btn = m.querySelector('#rgSave'); btn.disabled = true; var prev = btn.textContent; btn.textContent = 'Creando…';
+      try {
+        var r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        var data = await r.json().catch(function () { return {}; });
+        if (!r.ok || !data.token) {
+          if (data.error === 'email_en_uso') msg.textContent = 'Ese correo ya tiene una cuenta. Inicia sesión abajo.';
+          else msg.textContent = 'No se pudo crear la cuenta. Intenta de nuevo.';
+          btn.disabled = false; btn.textContent = prev; return;
+        }
+        setToken(data.token);
+        document.body.removeChild(m);
+        showApp();
+      } catch (e) {
+        msg.textContent = 'No se pudo crear la cuenta. Revisa tu conexión.';
+        btn.disabled = false; btn.textContent = prev;
+      }
+    }
+    m.querySelector('#rgSave').onclick = guardar;
+  }
+  var _selNeg = $('selNegocio'); if (_selNeg) _selNeg.onclick = function () { abrirRegistro('negocio'); };
+  var _selPer = $('selPersonal'); if (_selPer) _selPer.onclick = function () { abrirRegistro('personal'); };
+
   initGoogleBtn();
   manejarRetornoGoogle();
 
