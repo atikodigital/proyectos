@@ -7,6 +7,7 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '../api';
+import { t } from '../i18n';
 import VarasOrb from './VarasOrb.jsx';
 import { openLiveSession, unlockAudio } from '../kaly/live.js';
 import { TOOL_DECLARATIONS, executeVarasVoiceTool } from './voice/tools.js';
@@ -92,7 +93,7 @@ export default function VarasVoice() {
         <button
           type="button"
           onClick={toggleMute}
-          aria-label={muted ? 'Activar voz de VARAS' : 'Silenciar VARAS'}
+          aria-label={muted ? t('var.activar_voz') : t('var.silenciar')}
           className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm border ${muted ? 'text-white' : 'bg-white text-slate-500 border-slate-200'}`}
           style={muted ? { background: ORO, borderColor: ORO } : undefined}
         >
@@ -100,7 +101,7 @@ export default function VarasVoice() {
         </button>
       </div>
 
-      {state === 'error' ? <p className="text-[10px] text-red-400 mt-1 font-bold">VARAS no disponible</p> : null}
+      {state === 'error' ? <p className="text-[10px] text-red-400 mt-1 font-bold">{t('var.no_disponible')}</p> : null}
 
       {ultima ? (
         <p className="w-full text-[12px] mt-2 px-3 py-1.5 rounded-xl leading-snug line-clamp-2"

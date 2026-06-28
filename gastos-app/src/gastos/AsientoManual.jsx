@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { api } from './api';
+import { t } from './i18n';
 
 const ORO = '#C9A24B';
 function clp(n) { return '$' + (Math.round(Number(n) || 0)).toLocaleString('es-CL'); }
@@ -29,23 +30,23 @@ export default function AsientoManual({ onSaved }) {
     setBusy(true); setMsg('');
     try {
       await api.crearAsientoManual({ fecha, glosa, lineas: validas.map((f) => ({ cuenta_id: f.cuenta_id, debe: _int(f.debe), haber: _int(f.haber) })) });
-      setMsg('✓ Asiento guardado'); setGlosa(''); setFilas([{ cuenta_id: '', debe: '', haber: '' }, { cuenta_id: '', debe: '', haber: '' }]);
+      setMsg(t('prod.asiento_guardado')); setGlosa(''); setFilas([{ cuenta_id: '', debe: '', haber: '' }, { cuenta_id: '', debe: '', haber: '' }]);
       if (onSaved) onSaved();
-    } catch (e) { setMsg('No se pudo guardar (revisa que cuadre).'); }
+    } catch (e) { setMsg(t('prod.asiento_err_guardar')); }
     finally { setBusy(false); }
   }
 
   return (
     <div className="p-3 grid gap-2">
-      <h3 className="text-sm font-black" style={{ color: ORO }}>Nuevo asiento manual</h3>
+      <h3 className="text-sm font-black" style={{ color: ORO }}>{t('prod.asiento_titulo')}</h3>
       <div className="flex gap-2">
-        <input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} className="text-xs border rounded px-2 py-1" aria-label="fecha" />
-        <input placeholder="Glosa" value={glosa} onChange={(e) => setGlosa(e.target.value)} className="flex-1 text-xs border rounded px-2 py-1" aria-label="glosa" />
+        <input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} className="text-xs border rounded px-2 py-1" aria-label={t('prod.asiento_fecha')} />
+        <input placeholder={t('prod.asiento_glosa')} value={glosa} onChange={(e) => setGlosa(e.target.value)} className="flex-1 text-xs border rounded px-2 py-1" aria-label={t('prod.asiento_glosa')} />
       </div>
       {filas.map((f, i) => (
         <div key={i} className="grid grid-cols-3 gap-1">
           <select aria-label={`cuenta-${i}`} value={f.cuenta_id} onChange={(e) => setFila(i, { cuenta_id: e.target.value })} className="text-xs border rounded px-1 py-1 bg-black/5">
-            <option value="">cuenta…</option>
+            <option value="">{t('prod.asiento_cuenta_ph')}</option>
             {cuentas.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
           </select>
           <input aria-label={`debe-${i}`} placeholder="Debe" inputMode="numeric" value={f.debe} onChange={(e) => setFila(i, { debe: e.target.value, haber: '' })} className="text-xs border rounded px-1 py-1" />

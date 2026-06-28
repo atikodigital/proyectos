@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { api } from './api';
+import { t } from './i18n';
 import ProactividadToggle from './kaly/ProactividadToggle.jsx';
 
 const GOLD = '#C9A24B';
@@ -25,7 +26,7 @@ export default function MemoriaKalyView() {
     try {
       setItems(await api.kalyMemorias());
     } catch (e) {
-      setErr('No pude cargar la memoria');
+      setErr(t('match.kaly_err_cargar'));
     } finally {
       setCargando(false);
     }
@@ -43,7 +44,7 @@ export default function MemoriaKalyView() {
       setContenido('');
       cargar();
     } catch (e) {
-      setErr('No se pudo guardar');
+      setErr(t('match.kaly_err_guardar'));
     }
   }
 
@@ -53,7 +54,7 @@ export default function MemoriaKalyView() {
       await api.kalyBorrarMemoria(id);
       cargar();
     } catch (e) {
-      setErr('No se pudo borrar');
+      setErr(t('match.kaly_err_borrar'));
     }
   }
 
@@ -77,10 +78,10 @@ export default function MemoriaKalyView() {
           WebkitTextFillColor: 'transparent',
           letterSpacing: '-0.02em'
         }}>
-          Memoria de KALY
+          {t('match.kaly_titulo')}
         </h2>
         <p style={{ fontSize: '14px', color: '#a1a1aa', margin: 0 }}>
-          La base de conocimiento de tu asistente de ventas. Lo que KALY recuerde guiará sus respuestas con los clientes.
+          {t('match.kaly_subtitulo')}
         </p>
         <div style={{ marginTop: 12 }}>
           <ProactividadToggle />
@@ -105,11 +106,11 @@ export default function MemoriaKalyView() {
           textTransform: 'uppercase',
           letterSpacing: '0.05em'
         }}>
-          Agregar nuevo hecho
+          {t('match.kaly_agregar_hecho')}
         </h4>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <textarea
-            placeholder="Ej: Aceptamos transferencias y tarjetas. Despachamos solo los viernes."
+            placeholder={t('match.kaly_placeholder')}
             value={contenido}
             onChange={(e) => setContenido(e.target.value)}
             rows={2}
@@ -144,9 +145,9 @@ export default function MemoriaKalyView() {
                   outline: 'none'
                 }}
               >
-                {TIPOS.map((t) => (
-                  <option key={t} value={t} style={{ background: '#121215' }}>
-                    Tipo: {t.charAt(0).toUpperCase() + t.slice(1)}
+                {TIPOS.map((tp) => (
+                  <option key={tp} value={tp} style={{ background: '#121215' }}>
+                    {t('match.kaly_tipo_label')}: {t('match.kaly_tipo_' + tp)}
                   </option>
                 ))}
               </select>
@@ -165,7 +166,7 @@ export default function MemoriaKalyView() {
                 transition: 'all 0.2s'
               }}
             >
-              Guardar Hecho
+              {t('match.kaly_guardar_hecho')}
             </button>
           </div>
         </div>
@@ -192,12 +193,12 @@ export default function MemoriaKalyView() {
         fontWeight: 700,
         margin: '0 0 12px 0'
       }}>
-        Hechos aprendidos ({items.length})
+        {t('match.kaly_hechos_aprendidos')} ({items.length})
       </h3>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
         {cargando ? (
-          <div style={{ color: '#a1a1aa', textAlign: 'center', padding: '24px' }}>Cargando memoria...</div>
+          <div style={{ color: '#a1a1aa', textAlign: 'center', padding: '24px' }}>{t('match.kaly_cargando')}</div>
         ) : items.map((m) => {
           const colInfo = TIPO_COLORS[m.tipo] || { bg: 'rgba(255,255,255,0.08)', text: '#a1a1aa' };
           return (
@@ -228,7 +229,7 @@ export default function MemoriaKalyView() {
                   letterSpacing: '0.05em',
                   marginBottom: '8px'
                 }}>
-                  {m.tipo}
+                  {t('match.kaly_tipo_' + m.tipo)}
                 </span>
                 <div style={{ fontSize: '14px', lineHeight: '1.5', color: '#e4e4e7' }}>{m.contenido}</div>
               </div>
@@ -246,7 +247,7 @@ export default function MemoriaKalyView() {
                   transition: 'background 0.2s'
                 }}
               >
-                Eliminar
+                {t('match.kaly_eliminar')}
               </button>
             </div>
           );
@@ -262,7 +263,7 @@ export default function MemoriaKalyView() {
             color: '#71717a',
             fontSize: '14px'
           }}>
-            KALY aún no tiene hechos en su memoria. ¡Agrega el primero arriba!
+            {t('match.kaly_vacio')}
           </div>
         )}
       </div>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { t } from './i18n';
 
 // Plugin nativo (registrado en MainActivity como "AtikoPedido"). En web no existe.
 const plugin = () => window?.Capacitor?.Plugins?.AtikoPedido || null;
@@ -42,9 +43,9 @@ export default function PedidoOverlaySetup() {
   if (!isNative() || !plugin()) {
     return (
       <div className="p-6 grid gap-2">
-        <h2 className="text-xl font-black" style={{ color: GOLD }}>Crear pedido en cualquier chat</h2>
+        <h2 className="text-xl font-black" style={{ color: GOLD }}>{t('match.pedido_titulo')}</h2>
         <p className="text-sm opacity-70">
-          Esta función vive en la app Android (APK). Ábrela desde tu teléfono para configurarla.
+          {t('match.pedido_solo_android')}
         </p>
       </div>
     );
@@ -53,52 +54,51 @@ export default function PedidoOverlaySetup() {
   const allReady = st.accessibilityEnabled && st.overlayGranted;
 
   async function openAccessibility() {
-    setMsg('Busca "Hash IA" en la lista y actívalo.');
+    setMsg(t('match.pedido_msg_accesibilidad'));
     try { await plugin().openAccessibilitySettings(); } catch { /* no-op */ }
   }
   async function openOverlay() {
-    setMsg('Activa "Permitir mostrar sobre otras apps".');
+    setMsg(t('match.pedido_msg_overlay'));
     try { await plugin().openOverlaySettings(); } catch { /* no-op */ }
   }
   async function showBubble() {
-    try { await plugin().refreshOverlay(); setMsg('Listo: abre un chat de WhatsApp y verás la burbuja "Crear pedido".'); }
+    try { await plugin().refreshOverlay(); setMsg(t('match.pedido_msg_burbuja')); }
     catch { /* no-op */ }
   }
 
   return (
     <div className="p-6 grid gap-4 max-w-sm mx-auto">
       <div>
-        <h2 className="text-xl font-black" style={{ color: GOLD }}>Crear pedido en cualquier chat</h2>
+        <h2 className="text-xl font-black" style={{ color: GOLD }}>{t('match.pedido_titulo')}</h2>
         <p className="text-sm opacity-70 mt-1">
-          Activa estos permisos una vez. Después, en cualquier chat de WhatsApp te aparece una
-          burbuja: la tocas y armo el pedido leyendo la conversación.
+          {t('match.pedido_descripcion')}
         </p>
       </div>
 
       <div className="rounded-2xl bg-black/5 p-4 border grid gap-2">
-        <Row ok={st.accessibilityEnabled} label="Accesibilidad activada" />
-        <Row ok={st.overlayGranted} label="Permiso para aparecer encima" />
-        <Row ok={st.hasToken} label="Sesión Atiko iniciada (se pide en la burbuja)" />
+        <Row ok={st.accessibilityEnabled} label={t('match.pedido_row_accesibilidad')} />
+        <Row ok={st.overlayGranted} label={t('match.pedido_row_overlay')} />
+        <Row ok={st.hasToken} label={t('match.pedido_row_sesion')} />
       </div>
 
       {!st.accessibilityEnabled && (
         <button onClick={openAccessibility} className="rounded-xl font-black py-3 text-black" style={{ background: GOLD }}>
-          Activar accesibilidad
+          {t('match.pedido_btn_accesibilidad')}
         </button>
       )}
       {!st.overlayGranted && (
         <button onClick={openOverlay} className="rounded-xl font-black py-3 bg-black/10 border">
-          Permitir aparecer encima
+          {t('match.pedido_btn_overlay')}
         </button>
       )}
       {allReady && (
         <button onClick={showBubble} className="rounded-xl font-black py-3 text-black" style={{ background: GOLD }}>
-          Mostrar burbuja
+          {t('match.pedido_btn_burbuja')}
         </button>
       )}
 
       <button onClick={refresh} className="text-xs opacity-60 underline justify-self-center">
-        Volver a chequear estado
+        {t('match.pedido_btn_rechequear')}
       </button>
 
       {msg ? <p className="text-xs opacity-70 text-center">{msg}</p> : null}

@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { api } from './api';
+import { t } from './i18n';
 import VarasVoice from './varas/VarasVoice.jsx';
 import { useAgentInteraction } from './agente/AgentInteractionProvider.jsx';
 
@@ -33,7 +34,7 @@ export default function VarasChat() {
       setMensajes((prev) => [...prev, { role: 'varas', text: (r && r.reply) || '' }]);
       if (r && r.accionPropuesta) setAccion(r.accionPropuesta);
     } catch (_e) {
-      setMensajes((prev) => [...prev, { role: 'varas', text: 'No pude procesar eso, intenta de nuevo.' }]);
+      setMensajes((prev) => [...prev, { role: 'varas', text: t('var.error_procesar') }]);
     } finally {
       setBusy(false);
     }
@@ -44,7 +45,7 @@ export default function VarasChat() {
     setBusy(true);
     try {
       const datos = await proponer({
-        titulo: accion.descripcion || 'Confirmar acción',
+        titulo: accion.descripcion || t('var.confirmar_accion'),
         accion: accion.tipo,
         campos: Object.entries(accion.args || {}).map(([key, valor]) => ({
           key, label: key, valor: valor == null ? '' : valor,
@@ -53,10 +54,10 @@ export default function VarasChat() {
       });
       if (!datos) { setAccion(null); setBusy(false); return; }
       await api.varasAccion(accion.tipo, { ...accion.args, ...datos });
-      setMensajes((prev) => [...prev, { role: 'varas', text: '✓ Hecho.' }]);
+      setMensajes((prev) => [...prev, { role: 'varas', text: t('var.hecho') }]);
       setAccion(null);
     } catch (_e) {
-      setMensajes((prev) => [...prev, { role: 'varas', text: 'No pude ejecutar la acción, intenta de nuevo.' }]);
+      setMensajes((prev) => [...prev, { role: 'varas', text: t('var.error_ejecutar') }]);
     } finally {
       setBusy(false);
     }
@@ -80,16 +81,16 @@ export default function VarasChat() {
             </div>
           </div>
         ))}
-        {busy ? <div className="text-xs opacity-50 px-1">VARAS está pensando…</div> : null}
+        {busy ? <div className="text-xs opacity-50 px-1">{t('var.pensando')}</div> : null}
         {accion ? (
           <div className="rounded-2xl border p-3 text-sm" style={{ borderColor: ORO }}>
             <div className="font-bold mb-2" style={{ color: ORO }}>{accion.descripcion}</div>
             <div className="flex gap-2">
               <button onClick={confirmar} disabled={busy}
                 className="text-xs font-bold px-3 py-1.5 rounded-full text-white"
-                style={{ background: ORO }}>Confirmar</button>
+                style={{ background: ORO }}>{t('var.confirmar')}</button>
               <button onClick={() => setAccion(null)} disabled={busy}
-                className="text-xs font-bold px-3 py-1.5 rounded-full border opacity-70">Cancelar</button>
+                className="text-xs font-bold px-3 py-1.5 rounded-full border opacity-70">{t('var.cancelar')}</button>
             </div>
           </div>
         ) : null}
@@ -100,12 +101,12 @@ export default function VarasChat() {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={onKey}
-          placeholder="Pregúntale a VARAS…"
+          placeholder={t('var.placeholder')}
           className="flex-1 text-sm border rounded-full px-3 py-2"
         />
         <button onClick={enviar} disabled={busy || !input.trim()}
           className="text-sm font-bold px-4 py-2 rounded-full text-white disabled:opacity-40"
-          style={{ background: ORO }}>Enviar</button>
+          style={{ background: ORO }}>{t('var.enviar')}</button>
       </div>
     </div>
   );
