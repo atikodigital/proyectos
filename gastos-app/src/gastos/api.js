@@ -157,6 +157,18 @@ export const api = {
   forgotPassword(identificador) {
     return req('/api/onboarding/forgot-password', { method: 'POST', auth: false, body: { identificador } });
   },
+  // Login social nativo: el plugin obtiene el token del proveedor en el teléfono y
+  // el backend lo verifica (mismo endpoint que usa la web). Crea/encuentra la cuenta.
+  async loginGoogle(idToken) {
+    const data = await req('/api/onboarding/oauth/google', { method: 'POST', auth: false, body: { idToken } });
+    if (data && data.token) setToken(data.token);
+    return data;
+  },
+  async loginFacebook(accessToken) {
+    const data = await req('/api/onboarding/oauth/facebook', { method: 'POST', auth: false, body: { accessToken } });
+    if (data && data.token) setToken(data.token);
+    return data;
+  },
   bspStatus() { return req('/api/onboarding/bsp-status'); },
   connectWhatsApp({ code, phone_number_id, waba_id, register, pin, label }) {
     return req('/api/onboarding/connect/whatsapp', {
