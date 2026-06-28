@@ -232,6 +232,36 @@ test('POST /suscripcion/crear moneda XYZ → 400 moneda_invalida', async () => {
   expect(res.body.error).toBe('moneda_invalida');
 });
 
+test('POST /suscripcion/crear CLP → 409 payer_es_colector cuando MP dice "Payer and collector cannot be the same user"', async () => {
+  const db = await freshDb();
+  const co = await createCompany(db, { nombre: 'TestCoColector' });
+  await seedOwner(db, co.id);
+
+  process.env.MP_ACCESS_TOKEN = 'TEST_TOKEN';
+  global.fetch = jest.fn().mockResolvedValue({
+    ok: false,
+    status: 400,
+    json: async () => ({ message: 'Payer and collector cannot be the same user', status: 400 }),
+  });
+
+  try {
+    const app = buildApp(db);
+    const tok = await getToken(app);
+
+    const res = await request(app)
+      .post('/api/panel/suscripcion/crear')
+      .set('Authorization', `Bearer ${tok}`)
+      .send({ plan: 'pyme' });
+
+    expect(res.status).toBe(409);
+    expect(res.body.error).toBe('payer_es_colector');
+    expect(res.body.mensaje).toMatch(/mismo correo|cuenta de cobro/i);
+  } finally {
+    delete global.fetch;
+    delete process.env.MP_ACCESS_TOKEN;
+  }
+});
+
 test('POST /suscripcion/crear → 400 email_requerido si usuario no existe en DB', async () => {
   const db = await freshDb();
   const co = await createCompany(db, { nombre: 'TestCo4' });

@@ -115,7 +115,20 @@ function createPanelRouter({ db, sendText, sendImage, varasGemini } = {}) {
       return res.json({ url });
     } catch (e) {
       console.error('[billing] error checkout:', e.message);
-      return res.status(502).json({ error: 'pago_error' });
+      const msg = String(e.message || '');
+      if (/Payer and collector cannot be the same/i.test(msg)) {
+        return res.status(409).json({
+          error: 'payer_es_colector',
+          mensaje: 'No puedes suscribirte con el mismo correo que recibe los pagos (la cuenta de cobro). Inicia sesión con otro correo.',
+        });
+      }
+      if (proc === 'mp') {
+        return res.status(502).json({
+          error: 'pago_error',
+          mensaje: 'MercadoPago no pudo procesar este correo. Si ya tienes una cuenta MercadoPago, intenta con otro correo.',
+        });
+      }
+      return res.status(502).json({ error: 'pago_error', mensaje: 'No pudimos iniciar el pago. Intenta de nuevo en un momento.' });
     }
   });
 

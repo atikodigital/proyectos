@@ -3011,7 +3011,7 @@
       } else if (data.error === 'ya_activa') {
         alert('Ya tienes este plan activo.');
       } else {
-        alert('No se pudo iniciar el pago. Intenta de nuevo.');
+        alert(data.mensaje || 'No se pudo iniciar el pago. Intenta de nuevo.');
       }
     } catch (_) { alert('Error de conexión. Intenta de nuevo.'); }
     if (btn) { btn.disabled = false; btn.textContent = 'Contratar'; }
