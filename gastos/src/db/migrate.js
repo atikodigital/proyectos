@@ -160,6 +160,17 @@ const BILLING_MULTIMONEDA_COLUMNS = [
   "ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS moneda TEXT NOT NULL DEFAULT 'CLP'",
 ];
 
+// PayPal: tabla de config (product_id) y planes cacheados por (plan, moneda).
+const PAYPAL_DDL = [
+  `CREATE TABLE IF NOT EXISTS paypal_config (key TEXT PRIMARY KEY, value TEXT NOT NULL)`,
+  `CREATE TABLE IF NOT EXISTS paypal_plans (
+    plan TEXT NOT NULL,
+    moneda TEXT NOT NULL,
+    paypal_plan_id TEXT NOT NULL,
+    PRIMARY KEY (plan, moneda)
+  )`,
+];
+
 // Recuperación de contraseña: token hasheado, caduca en 1 hora, un solo uso.
 const PASSWORD_RESETS_DDL = [
   `CREATE TABLE IF NOT EXISTS password_resets (
@@ -233,6 +244,9 @@ async function migrate(db) {
     try { await db.query(stmt); } catch (e) { /* pg-mem / ya existe */ }
   }
   for (const stmt of PASSWORD_RESETS_DDL) {
+    try { await db.query(stmt); } catch (e) { /* pg-mem / ya existe */ }
+  }
+  for (const stmt of PAYPAL_DDL) {
     try { await db.query(stmt); } catch (e) { /* pg-mem / ya existe */ }
   }
   // Grandfathering: las empresas que YA existen (sin suscripción) parten ILIMITADAS

@@ -9,6 +9,8 @@ const { createWebhookRouter } = require('./whatsapp/webhook');
 const { validarFirmaMP, procesarEventoMP } = require('./billing/webhook-mp');
 const { verificarFirmaStripe } = require('./billing/stripe');
 const { procesarEventoStripe } = require('./billing/webhook-stripe');
+const { verificarWebhookPaypal } = require('./billing/paypal');
+const { procesarEventoPaypal } = require('./billing/webhook-paypal');
 const { createAppRouter } = require('./app/router');
 const { createPanelRouter } = require('./panel/router');
 const { createAdminRouter } = require('./admin/router');
@@ -123,6 +125,32 @@ app.post('/api/pagos/stripe/webhook', async (req, res) => {
     return res.json(r);
   } catch (e) {
     console.error('[stripe-webhook]', e.message);
+    return res.status(200).json({ ok: false });
+  }
+});
+// Webhook público de PayPal: verifica firma via API PayPal antes de procesar.
+// Raw body ya capturado por el verify callback de express.json() global.
+app.post('/api/pagos/paypal/webhook', async (req, res) => {
+  try {
+    if (!process.env.PAYPAL_WEBHOOK_ID) {
+      console.warn('[paypal-webhook] PAYPAL_WEBHOOK_ID no configurado — rechazado (fail-closed)');
+      return res.status(503).json({ error: 'webhook_no_configurado' });
+    }
+    const rawBuf = req.rawBody;
+    const evento = req.body && req.body.event_type
+      ? req.body
+      : JSON.parse(rawBuf ? rawBuf.toString('utf8') : '{}');
+    const ok = await verificarWebhookPaypal(req.headers, evento);
+    if (!ok) {
+      console.warn('[paypal-webhook] firma inválida');
+      return res.status(400).json({ error: 'firma_invalida' });
+    }
+    const db = getPool();
+    const r = await procesarEventoPaypal(db, evento);
+    console.log('[paypal-webhook] evento', evento.event_type, '→', r.accion || r.razon);
+    return res.json({ ok: true });
+  } catch (e) {
+    console.error('[paypal-webhook]', e.message);
     return res.status(200).json({ ok: false });
   }
 });

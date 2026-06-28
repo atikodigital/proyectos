@@ -146,16 +146,33 @@ test('POST /suscripcion/crear moneda omitida → default CLP (MP) — back-compa
   }
 });
 
-test('POST /suscripcion/crear moneda USD → Stripe; persiste procesador=stripe, moneda=USD', async () => {
+test('POST /suscripcion/crear moneda USD → PayPal; persiste procesador=paypal, moneda=USD', async () => {
   const db = await freshDb();
   const co = await createCompany(db, { nombre: 'TestCoUSD' });
   await seedOwner(db, co.id);
 
-  process.env.STRIPE_SECRET_KEY = 'sk_test_STUB';
-  global.fetch = jest.fn().mockResolvedValue({
-    ok: true,
-    status: 200,
-    json: async () => ({ id: 'cs_test_STUB', url: 'https://checkout.stripe.com/pay/cs_test_STUB' }),
+  process.env.PAYPAL_CLIENT_ID = 'sb_cid_usd';
+  process.env.PAYPAL_SECRET    = 'sb_sec_usd';
+
+  // Reset module-level token cache so OAuth call fires in this test
+  const { _resetTokenCache } = require('../../src/billing/paypal');
+  _resetTokenCache();
+
+  global.fetch = jest.fn(async (url) => {
+    const u = String(url);
+    if (u.includes('/oauth2/token'))
+      return { ok: true, status: 200, json: async () => ({ access_token: 'TOK_USD', expires_in: 32400 }) };
+    if (u.includes('/catalogs/products'))
+      return { ok: true, status: 201, json: async () => ({ id: 'PROD-USD' }) };
+    if (u.includes('/billing/plans'))
+      return { ok: true, status: 201, json: async () => ({ id: 'P-USD' }) };
+    if (u.includes('/billing/subscriptions'))
+      return { ok: true, status: 201, json: async () => ({
+        id: 'I-USD-1',
+        status: 'APPROVAL_PENDING',
+        links: [{ rel: 'approve', href: 'https://www.sandbox.paypal.com/webapps/billing/subscriptions?ba_token=BA-USD-1' }],
+      }) };
+    return { ok: false, status: 404, json: async () => ({}) };
   });
 
   try {
@@ -168,30 +185,47 @@ test('POST /suscripcion/crear moneda USD → Stripe; persiste procesador=stripe,
       .send({ plan: 'pyme', moneda: 'USD' });
 
     expect(res.status).toBe(200);
-    expect(res.body.url).toBe('https://checkout.stripe.com/pay/cs_test_STUB');
+    expect(res.body.url).toBe('https://www.sandbox.paypal.com/webapps/billing/subscriptions?ba_token=BA-USD-1');
 
-    const stripeCall = global.fetch.mock.calls.find((c) => String(c[0]).includes('stripe.com'));
-    expect(stripeCall).toBeTruthy();
+    const ppSubCall = global.fetch.mock.calls.find((c) => String(c[0]).includes('/billing/subscriptions'));
+    expect(ppSubCall).toBeTruthy();
 
     const subRow = await db.query('SELECT procesador, moneda FROM subscriptions WHERE company_id=$1', [co.id]);
-    expect(subRow.rows[0].procesador).toBe('stripe');
+    expect(subRow.rows[0].procesador).toBe('paypal');
     expect(subRow.rows[0].moneda).toBe('USD');
   } finally {
     delete global.fetch;
-    delete process.env.STRIPE_SECRET_KEY;
+    delete process.env.PAYPAL_CLIENT_ID;
+    delete process.env.PAYPAL_SECRET;
   }
 });
 
-test('POST /suscripcion/crear moneda EUR → Stripe; persiste procesador=stripe, moneda=EUR', async () => {
+test('POST /suscripcion/crear moneda EUR → PayPal; persiste procesador=paypal, moneda=EUR', async () => {
   const db = await freshDb();
   const co = await createCompany(db, { nombre: 'TestCoEUR' });
   await seedOwner(db, co.id);
 
-  process.env.STRIPE_SECRET_KEY = 'sk_test_STUB_EUR';
-  global.fetch = jest.fn().mockResolvedValue({
-    ok: true,
-    status: 200,
-    json: async () => ({ id: 'cs_eur_STUB', url: 'https://checkout.stripe.com/pay/cs_eur_STUB' }),
+  process.env.PAYPAL_CLIENT_ID = 'sb_cid_eur';
+  process.env.PAYPAL_SECRET    = 'sb_sec_eur';
+
+  const { _resetTokenCache } = require('../../src/billing/paypal');
+  _resetTokenCache();
+
+  global.fetch = jest.fn(async (url) => {
+    const u = String(url);
+    if (u.includes('/oauth2/token'))
+      return { ok: true, status: 200, json: async () => ({ access_token: 'TOK_EUR', expires_in: 32400 }) };
+    if (u.includes('/catalogs/products'))
+      return { ok: true, status: 201, json: async () => ({ id: 'PROD-EUR' }) };
+    if (u.includes('/billing/plans'))
+      return { ok: true, status: 201, json: async () => ({ id: 'P-EUR' }) };
+    if (u.includes('/billing/subscriptions'))
+      return { ok: true, status: 201, json: async () => ({
+        id: 'I-EUR-1',
+        status: 'APPROVAL_PENDING',
+        links: [{ rel: 'approve', href: 'https://www.sandbox.paypal.com/webapps/billing/subscriptions?ba_token=BA-EUR-1' }],
+      }) };
+    return { ok: false, status: 404, json: async () => ({}) };
   });
 
   try {
@@ -204,14 +238,18 @@ test('POST /suscripcion/crear moneda EUR → Stripe; persiste procesador=stripe,
       .send({ plan: 'empresa', moneda: 'EUR' });
 
     expect(res.status).toBe(200);
-    expect(res.body.url).toBe('https://checkout.stripe.com/pay/cs_eur_STUB');
+    expect(res.body.url).toBe('https://www.sandbox.paypal.com/webapps/billing/subscriptions?ba_token=BA-EUR-1');
+
+    const ppSubCall = global.fetch.mock.calls.find((c) => String(c[0]).includes('/billing/subscriptions'));
+    expect(ppSubCall).toBeTruthy();
 
     const subRow = await db.query('SELECT procesador, moneda FROM subscriptions WHERE company_id=$1', [co.id]);
-    expect(subRow.rows[0].procesador).toBe('stripe');
+    expect(subRow.rows[0].procesador).toBe('paypal');
     expect(subRow.rows[0].moneda).toBe('EUR');
   } finally {
     delete global.fetch;
-    delete process.env.STRIPE_SECRET_KEY;
+    delete process.env.PAYPAL_CLIENT_ID;
+    delete process.env.PAYPAL_SECRET;
   }
 });
 

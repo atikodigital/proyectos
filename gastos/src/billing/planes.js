@@ -39,9 +39,9 @@ function precioDe(plan, moneda) {
 }
 
 // Devuelve el procesador de pago para la moneda dada.
-// CLP → MercadoPago ('mp'), cualquier otra → Stripe ('stripe').
+// CLP → MercadoPago ('mp'), cualquier otra → PayPal ('paypal').
 function procesadorPara(moneda) {
-  return moneda === 'CLP' ? 'mp' : 'stripe';
+  return moneda === 'CLP' ? 'mp' : 'paypal';
 }
 
 // Lista de monedas soportadas en el sistema de billing.

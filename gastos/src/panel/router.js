@@ -43,7 +43,7 @@ const { createEphemeralToken } = require('../agent/token');
 const { suggestOrder } = require('../pedidos/suggest');
 const { saldo: saldoCreditos, consumirCredito, SinCreditosError } = require('../billing/creditos');
 const { createPreapproval } = require('../billing/mp');
-const { crearCheckoutSuscripcion } = require('../billing/stripe');
+const { crearSuscripcionPaypal } = require('../billing/paypal');
 const { procesadorPara, monedasSoportadas } = require('../billing/planes');
 
 function parseFiltros(q = {}) {
@@ -99,11 +99,12 @@ function createPanelRouter({ db, sendText, sendImage, varasGemini } = {}) {
         id = result.id;
         url = result.init_point;
       } else {
-        const result = await crearCheckoutSuscripcion({
+        const result = await crearSuscripcionPaypal({
           plan, moneda, payerEmail: owner.email,
-          successUrl: `${base}/panel/#plan`,
+          returnUrl: `${base}/panel/#plan`,
           cancelUrl: `${base}/panel/#plan`,
           companyId: req.auth.companyId,
+          db,
         });
         id = result.id;
         url = result.url;
