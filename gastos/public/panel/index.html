@@ -1705,7 +1705,7 @@
       var esPersonal = /[#&]perfil=personal/.test(h);
       var pideIngreso = /[#&]income=1/.test(h);
       setToken(decodeURIComponent(mSso[1]));
-      try { document.cookie = 'signup_tipo=negocio; path=/; max-age=600; samesite=lax'; } catch (e) {}
+      try { document.cookie = 'signup_tipo=negocio; path=/; max-age=600; samesite=none; secure'; } catch (e) {}
       try { history.replaceState(null, '', location.pathname); } catch (e) {}
       if (esPersonal) { if (pideIngreso) pedirIngresoPersonal(); else showApp(); }
       else if (mNew && mNew[1] === '1') pedirNombreNegocio(mNombre ? decodeURIComponent(mNombre[1]) : '');
@@ -1816,14 +1816,14 @@
     // Registro personal: marca la intención (cookie que leen los endpoints sociales
     // en la redirección) y dibuja el botón de Google dentro del modal.
     if (!esNeg) {
-      try { document.cookie = 'signup_tipo=personal; path=/; max-age=600; samesite=lax'; } catch (e) {}
+      try { document.cookie = 'signup_tipo=personal; path=/; max-age=600; samesite=none; secure'; } catch (e) {}
       (function renderG(intentos) {
         if (window.google && google.accounts && google.accounts.id && m.querySelector('#rgGoogleBtn')) {
           try { google.accounts.id.renderButton(m.querySelector('#rgGoogleBtn'), { theme: 'filled_black', size: 'large', text: 'continue_with', shape: 'pill', logo_alignment: 'left', width: 320 }); } catch (e) {}
         } else if ((intentos || 0) < 20) { setTimeout(function () { renderG((intentos || 0) + 1); }, 200); }
       })(0);
     }
-    function cerrar() { try { document.cookie = 'signup_tipo=negocio; path=/; max-age=600; samesite=lax'; } catch (e) {} document.body.removeChild(m); }
+    function cerrar() { try { document.cookie = 'signup_tipo=negocio; path=/; max-age=600; samesite=none; secure'; } catch (e) {} document.body.removeChild(m); }
     m.querySelector('#rgCancel').onclick = cerrar;
     async function guardar() {
       var email = (m.querySelector('#rgEmail').value || '').trim().toLowerCase();
