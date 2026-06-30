@@ -152,6 +152,9 @@ export const api = {
     if (data && data.token) setToken(data.token);
     return data;
   },
+  // Suscripción (solo lectura — para gestionar ir al panel web)
+  suscripcion() { return req('/api/app/suscripcion'); },
+
   // Recuperación de contraseña: envía el link por correo y/o WhatsApp. Cubre tanto
   // cuentas de empresa (owner) como personales (empleado). Siempre responde ok.
   forgotPassword(identificador) {

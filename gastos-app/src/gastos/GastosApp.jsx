@@ -15,6 +15,7 @@ import OnboardingWizard from './onboarding/OnboardingWizard.jsx';
 import OnboardingPersonal from './OnboardingPersonal.jsx';
 import BalanceCard from './BalanceCard.jsx';
 import MemoriaKalyView from './MemoriaKalyView.jsx';
+import MiPlanView from './MiPlanView.jsx';
 import { AgentInteractionProvider } from './agente/AgentInteractionProvider.jsx';
 
 function clp(n) { return '$' + (Math.round(Number(n) || 0)).toLocaleString('es-CL'); }
@@ -39,6 +40,7 @@ export default function GastosApp() {
   const [mostrarOnboarding, setMostrarOnboarding] = useState(false);
   const [saltado, setSaltado] = useState(false);
   const [mostrarMemoria, setMostrarMemoria] = useState(false);
+  const [mostrarPlan, setMostrarPlan] = useState(false);
   const [company, setCompany] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
   // Módulos habilitados por cliente (vienen del backend). El módulo "chat" sale
@@ -121,6 +123,16 @@ export default function GastosApp() {
           </div>
         </div>
       )}
+      {mostrarPlan && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 50, background: 'rgba(0,0,0,0.85)', overflowY: 'auto' }}>
+          <div style={{ maxWidth: 480, margin: '0 auto', paddingBottom: 32 }}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '12px 12px 0' }}>
+              <button onClick={() => setMostrarPlan(false)} style={{ background: 'transparent', color: '#fff', fontSize: 20, border: 0, cursor: 'pointer' }}>✕</button>
+            </div>
+            <MiPlanView />
+          </div>
+        </div>
+      )}
       <header className="flex justify-between items-center p-4 border-b shrink-0">
         <span className="font-black" style={{ color: '#C9A24B' }}>Hash IA <span className="text-xs font-normal opacity-50">{APP_VERSION}</span></span>
         <div className="flex items-center gap-2">
@@ -128,6 +140,7 @@ export default function GastosApp() {
             <button className="text-xs opacity-60 border border-current rounded px-2 py-0.5" onClick={() => setMostrarOnboarding(true)}>{t('app.configurar_negocio')}</button>
           )}
           <button className="text-xs opacity-60 border border-current rounded px-2 py-0.5" onClick={() => setMostrarMemoria(true)}>{t('app.memoria_kaly')}</button>
+          <button className="text-xs opacity-60 border border-current rounded px-2 py-0.5" onClick={() => setMostrarPlan(true)}>Mi Plan</button>
           <button className="text-xs opacity-60" onClick={() => { clearToken(); setAuthed(false); }}>{t('app.salir')}</button>
         </div>
       </header>
