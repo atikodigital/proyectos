@@ -1015,7 +1015,7 @@
     <div class="px-3 mt-auto mb-3 shrink-0">
       <div class="h-[1px] w-full bg-gradient-to-r from-transparent via-[#343535] to-transparent mb-2"></div>
       <!-- VARAS: controlador contable — voz/texto, dentro de la barra lateral -->
-      <p class="text-center text-[9px] text-[#C9A24B] font-bold uppercase tracking-widest mb-1">VARAS · Contabilidad</p>
+      <p class="text-center text-[9px] text-[#C9A24B] font-bold uppercase tracking-widest mb-1" data-i18n="pnl.varasContab">VARAS · Contabilidad</p>
       <div id="varasSidebar"></div>
       <div class="h-[1px] w-full bg-gradient-to-r from-transparent via-[#343535] to-transparent my-2"></div>
       <button id="cambiarClaveBtn" class="text-[#d0c6ab] hover:text-[#ffd700] hover:bg-[#343535]/30 transition-all duration-300 flex items-center gap-3 px-4 py-2 rounded-xl w-full text-left">
@@ -1039,7 +1039,7 @@
       </div>
       <div class="flex items-center gap-6">
         <div class="flex flex-col items-end">
-          <div class="text-[#e3e2e2] font-semibold text-xs leading-none" id="headerWelcomeUser">Dueño</div>
+          <div class="text-[#e3e2e2] font-semibold text-xs leading-none" id="headerWelcomeUser" data-i18n="pnl.dueno">Dueño</div>
           <div class="text-[10px] font-mono text-[#d0c6ab] mt-1" id="headerDate"></div>
         </div>
         <span id="saldoCreditos" class="text-[10px] font-mono text-[#d0c6ab]"></span>
@@ -1062,13 +1062,13 @@
             <div class="flex items-center justify-between mb-4">
               <h3 class="text-sm font-bold text-[#ffd700] flex items-center gap-2">
                 <span class="material-symbols-outlined text-[18px]">calendar_month</span>
-                Calendario
+                <span data-i18n="pnl.calendario">Calendario</span>
               </h3>
               <span id="calMonthLabel" class="text-xs font-semibold text-[#d0c6ab] font-mono"></span>
             </div>
             <!-- Grid de días de la semana -->
             <div class="grid grid-cols-7 gap-1 text-center text-[10px] font-bold text-[#d0c6ab] mb-2">
-              <div>Do</div><div>Lu</div><div>Ma</div><div>Mi</div><div>Ju</div><div>Vi</div><div>Sá</div>
+              <div data-i18n="pnl.dia.do">Do</div><div data-i18n="pnl.dia.lu">Lu</div><div data-i18n="pnl.dia.ma">Ma</div><div data-i18n="pnl.dia.mi">Mi</div><div data-i18n="pnl.dia.ju">Ju</div><div data-i18n="pnl.dia.vi">Vi</div><div data-i18n="pnl.dia.sa">Sá</div>
             </div>
             <div id="calendarGrid" class="grid grid-cols-7 gap-1 text-center text-xs font-mono">
               <!-- JS dinámico -->
@@ -1266,7 +1266,7 @@
         <div class="box">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px">
             <span class="brand" id="detalleTitulo">Detalle</span>
-            <button id="detalleClose" class="btn-ghost">Cerrar</button>
+            <button id="detalleClose" class="btn-ghost" data-i18n="det.cerrar">Cerrar</button>
           </div>
           <div id="detalleBody"></div>
           <div id="detalleActions" style="display:flex; gap:8px; margin-top:12px"></div>
@@ -1358,21 +1358,21 @@
       <div class="grid grid-cols-1 lg:grid-cols-[300px_1fr_320px] gap-4" style="height: calc(100vh - 150px);">
         <!-- IZQUIERDA: lista -->
         <div class="glass-card rounded-2xl p-3 flex flex-col overflow-hidden border border-[#343535]/50">
-          <input id="crmSearch" placeholder="Buscar conversación…" class="w-full bg-[#292a2a]/50 border border-[#343535] rounded-xl px-3 py-2 text-sm text-on-surface mb-3 outline-none focus:border-[#ffd700]/50" />
+          <input id="crmSearch" placeholder="Buscar conversación…" data-i18n-ph="crm.buscarConv" class="w-full bg-[#292a2a]/50 border border-[#343535] rounded-xl px-3 py-2 text-sm text-on-surface mb-3 outline-none focus:border-[#ffd700]/50" />
           <div id="crmList" class="flex-1 overflow-y-auto flex flex-col gap-1 scroll" style="border:0;background:transparent;max-height:none;"></div>
         </div>
         <!-- CENTRO: hilo -->
         <div class="glass-card rounded-2xl flex flex-col overflow-hidden border border-[#343535]/50">
-          <div id="crmThreadHeader" class="px-4 py-3 border-b border-[#343535]/50 font-bold text-[#ffd700] text-sm">Elegí una conversación</div>
+          <div id="crmThreadHeader" data-i18n="crm.elegirConv" class="px-4 py-3 border-b border-[#343535]/50 font-bold text-[#ffd700] text-sm">Elegí una conversación</div>
           <div id="crmThread" class="flex-1 overflow-y-auto p-4 flex flex-col gap-2 scroll" style="border:0;background:transparent;max-height:none;"></div>
           <div class="p-3 border-t border-[#343535]/50 flex gap-2">
-            <input id="crmReply" placeholder="Escribe una respuesta…" disabled class="flex-1 bg-[#292a2a]/50 border border-[#343535] rounded-xl px-3 py-2 text-sm text-on-surface outline-none disabled:opacity-40" />
-            <button id="crmSendBtn" disabled class="px-4 py-2 rounded-xl bg-[#ffd700] text-[#3a3000] font-bold text-sm disabled:opacity-40">Enviar</button>
+            <input id="crmReply" placeholder="Escribe una respuesta…" data-i18n-ph="crm.escribeResp" disabled class="flex-1 bg-[#292a2a]/50 border border-[#343535] rounded-xl px-3 py-2 text-sm text-on-surface outline-none disabled:opacity-40" />
+            <button id="crmSendBtn" data-i18n="crm.enviar" disabled class="px-4 py-2 rounded-xl bg-[#ffd700] text-[#3a3000] font-bold text-sm disabled:opacity-40">Enviar</button>
           </div>
           <p id="crmReplyHint" class="text-[10px] text-[#d0c6ab]/60 px-3 pb-2"></p>
         </div>
         <!-- DERECHA: ficha -->
-        <div id="crmFicha" class="glass-card rounded-2xl p-4 overflow-y-auto text-sm text-[#d0c6ab] border border-[#343535]/50 scroll" style="max-height:none;">Sin contacto seleccionado.</div>
+        <div id="crmFicha" data-i18n="crm.sinContacto" class="glass-card rounded-2xl p-4 overflow-y-auto text-sm text-[#d0c6ab] border border-[#343535]/50 scroll" style="max-height:none;">Sin contacto seleccionado.</div>
       </div>
     </section>
 
@@ -1465,22 +1465,22 @@
     <section id="contabilidadSection" class="hidden">
       <div class="card" style="display:flex; flex-direction:column; gap:16px;">
         <div class="row">
-          <div><label>Período</label><input id="cPeriodo" type="month" /></div>
-          <button id="cExcelBtn" class="btn-ghost" style="margin-left:auto">Descargar Excel</button>
+          <div><label data-i18n="cont.periodo">Período</label><input id="cPeriodo" type="month" /></div>
+          <button id="cExcelBtn" class="btn-ghost" style="margin-left:auto" data-i18n="cont.descargarExcel">Descargar Excel</button>
         </div>
         <div class="flex flex-wrap gap-3 w-full" id="contabilidadSubMenu">
-          <button class="csub" data-libro="diario">📓 Diario</button>
-          <button class="csub" data-libro="mayor">📖 Mayor</button>
-          <button class="csub" data-libro="balance">⚖️ Balance</button>
-          <button class="csub" data-libro="flujo">💸 Flujo de Caja</button>
-          <button class="csub" data-libro="conciliacion">🔄 Conciliación</button>
-          <button class="csub" data-libro="iva">🏛️ IVA (SII)</button>
-          <button class="csub" data-libro="manual">📝 Asiento Manual</button>
-          <button class="csub" data-libro="cuentas">📋 Plan de Cuentas</button>
-          <button class="csub" data-libro="varas">💬 Chat VARAS</button>
+          <button class="csub" data-libro="diario" data-i18n="cont.diario">📓 Diario</button>
+          <button class="csub" data-libro="mayor" data-i18n="cont.mayor">📖 Mayor</button>
+          <button class="csub" data-libro="balance" data-i18n="cont.balance">⚖️ Balance</button>
+          <button class="csub" data-libro="flujo" data-i18n="cont.flujo">💸 Flujo de Caja</button>
+          <button class="csub" data-libro="conciliacion" data-i18n="cont.conciliacion">🔄 Conciliación</button>
+          <button class="csub" data-libro="iva" data-i18n="cont.iva">🏛️ IVA (SII)</button>
+          <button class="csub" data-libro="manual" data-i18n="cont.manual">📝 Asiento Manual</button>
+          <button class="csub" data-libro="cuentas" data-i18n="cont.cuentas">📋 Plan de Cuentas</button>
+          <button class="csub" data-libro="varas" data-i18n="cont.varas">💬 Chat VARAS</button>
         </div>
       </div>
-      <div id="cContenido" class="scroll" style="padding:12px"><p class="muted">Cargando…</p></div>
+      <div id="cContenido" class="scroll" style="padding:12px"><p class="muted" data-i18n="cont.cargando">Cargando…</p></div>
     </section>
 
     <!-- AUXILIARES -->
@@ -1562,9 +1562,9 @@
     <!-- MI PLAN -->
     <section id="planSection" class="hidden">
       <div style="max-width:720px;margin:0 auto;padding:24px 16px">
-        <h2 style="font-size:1.1rem;font-weight:700;color:var(--gold);margin-bottom:4px">Mi Plan</h2>
+        <h2 style="font-size:1.1rem;font-weight:700;color:var(--gold);margin-bottom:4px" data-i18n="plan.titulo">Mi Plan</h2>
         <div id="planActualInfo" style="font-size:13px;color:#9a917a;margin-bottom:24px"></div>
-        <div id="planBannerMorosa" class="hidden" style="background:#7f1d1d;color:#fca5a5;border-radius:10px;padding:12px 16px;margin-bottom:16px;font-size:13px">
+        <div id="planBannerMorosa" class="hidden" style="background:#7f1d1d;color:#fca5a5;border-radius:10px;padding:12px 16px;margin-bottom:16px;font-size:13px" data-i18n="plan.bannerMorosa">
           ⚠️ Tu pago falló. Renueva tu plan para seguir usando la IA.
         </div>
         <div id="planMonedaSelector" style="display:flex;gap:8px;margin-bottom:14px">
@@ -1717,7 +1717,111 @@
       'pwd.enviando': 'Enviando…',
       'pwd.errIdent': 'Escribe tu correo o WhatsApp.',
       'pwd.okEnviado': '✅ Si encontramos tu cuenta, te enviamos el link por correo y WhatsApp.',
-      'pwd.cerrar': 'Cerrar'
+      'pwd.cerrar': 'Cerrar',
+      // CRM
+      'crm.buscarConv': 'Buscar conversación…',
+      'crm.elegirConv': 'Elegí una conversación',
+      'crm.escribeResp': 'Escribe una respuesta…',
+      'crm.enviar': 'Enviar',
+      'crm.sinContacto': 'Sin contacto seleccionado.',
+      'crm.noCargar': 'No se pudo cargar.',
+      'crm.sinConvos': 'Sin conversaciones todavía.',
+      'crm.cargando': 'Cargando…',
+      'crm.cargandoFicha': 'Cargando ficha…',
+      'crm.soloWa': 'Responder disponible solo por WhatsApp.',
+      'crm.noCargarConv': 'No se pudo cargar la conversación.',
+      'crm.sinMensajes': 'Sin mensajes.',
+      'crm.noCargarFicha': 'No se pudo cargar la ficha.',
+      'crm.pedido': 'Pedido',
+      'crm.captura': 'Captura',
+      'crm.telefono': 'Teléfono',
+      'crm.primerContacto': 'Primer contacto',
+      'crm.ultimoContacto': 'Último contacto',
+      'crm.mensajes': 'Mensajes',
+      'crm.email': 'Email',
+      'crm.ubicacion': 'Ubicación',
+      'crm.notas': 'Notas',
+      'crm.guardarDatos': 'Guardar datos',
+      'crm.datosGuardados': 'Datos guardados.',
+      'crm.noGuardar': 'No se pudo guardar.',
+      'crm.noEnviar': 'No se pudo enviar.',
+      // Contabilidad
+      'cont.periodo': 'Período',
+      'cont.descargarExcel': 'Descargar Excel',
+      'cont.diario': '📓 Diario',
+      'cont.mayor': '📖 Mayor',
+      'cont.balance': '⚖️ Balance',
+      'cont.flujo': '💸 Flujo de Caja',
+      'cont.conciliacion': '🔄 Conciliación',
+      'cont.iva': '🏛️ IVA (SII)',
+      'cont.manual': '📝 Asiento Manual',
+      'cont.cuentas': '📋 Plan de Cuentas',
+      'cont.varas': '💬 Chat VARAS',
+      'cont.cargando': 'Cargando…',
+      'cont.noCargar': 'No se pudo cargar.',
+      'cont.confirmAnular': '¿Anular este asiento? (quedará registrado como anulado)',
+      'cont.noAnular': 'No se pudo anular.',
+      // Mi Plan
+      'plan.titulo': 'Mi Plan',
+      'plan.bannerMorosa': '⚠️ Tu pago falló. Renueva tu plan para seguir usando la IA.',
+      'plan.plan': 'Plan',
+      'plan.creditosRestantes': 'Créditos restantes',
+      'plan.renovacion': 'Renovación',
+      'plan.ilimitado': 'Plan especial — sin límite de créditos. Gracias por ser parte de Hash IA 🙌',
+      'plan.actual': 'Plan actual',
+      'plan.contratar': 'Contratar',
+      'plan.porMes': '/mes',
+      'plan.shotsMes': 'shots al mes',
+      'plan.nombre.basico': 'Básico',
+      'plan.nombre.pyme': 'Pyme',
+      'plan.nombre.empresa': 'Empresa',
+      // Detalle / edición de movimiento
+      'det.detalle': 'Detalle',
+      'det.cerrar': 'Cerrar',
+      'det.gasto': 'Gasto',
+      'det.ingreso': 'Ingreso',
+      'det.verFoto': '📷 Ver foto',
+      'det.editar': '✏️ Editar',
+      'det.anular': '🗑️ Anular',
+      'det.sinFoto': 'Sin foto disponible (se guarda 2 meses y luego se elimina).',
+      'det.tipo': 'Tipo',
+      'det.proveedor': 'Proveedor',
+      'det.pagador': 'Pagador / origen',
+      'det.monto': 'Monto',
+      'det.fecha': 'Fecha (aaaa-mm-dd)',
+      'det.categoria': 'Categoría',
+      'det.folio': 'Folio (N° doc)',
+      'det.nroOp': 'N° operación',
+      'det.guardar': 'Guardar',
+      'det.cancelar': 'Cancelar',
+      'det.anularPregunta': '¿Anular este movimiento? (queda el registro)',
+      'det.siAnular': 'Sí, anular',
+      'det.no': 'No',
+      // Cambiar contraseña
+      'chpwd.titulo': '🔑 Cambiar contraseña',
+      'chpwd.actual': 'Contraseña actual',
+      'chpwd.nueva': 'Contraseña nueva (mín 8)',
+      'chpwd.repetir': 'Repetir nueva',
+      'chpwd.cancelar': 'Cancelar',
+      'chpwd.guardar': 'Guardar',
+      'chpwd.errMin': 'La nueva debe tener al menos 8 caracteres.',
+      'chpwd.errNoCoincide': 'Las contraseñas nuevas no coinciden.',
+      'chpwd.errActual': 'La contraseña actual es incorrecta.',
+      'chpwd.errGeneric': 'No se pudo cambiar.',
+      'chpwd.ok': '✅ Contraseña actualizada.',
+      // Sueltos
+      'pnl.calendario': 'Calendario',
+      'pnl.dia.do': 'Do',
+      'pnl.dia.lu': 'Lu',
+      'pnl.dia.ma': 'Ma',
+      'pnl.dia.mi': 'Mi',
+      'pnl.dia.ju': 'Ju',
+      'pnl.dia.vi': 'Vi',
+      'pnl.dia.sa': 'Sá',
+      'pnl.varasContab': 'VARAS · Contabilidad',
+      'pnl.dueno': 'Dueño',
+      'pnl.creditos': 'Créditos',
+      'pnl.varasPh': 'Pregúntale a VARAS…'
     },
     en: {
       'login.exec': 'Executive Control',
@@ -1830,7 +1934,111 @@
       'pwd.enviando': 'Sending…',
       'pwd.errIdent': 'Enter your email or WhatsApp.',
       'pwd.okEnviado': '✅ If we find your account, we will send you the link by email and WhatsApp.',
-      'pwd.cerrar': 'Close'
+      'pwd.cerrar': 'Close',
+      // CRM
+      'crm.buscarConv': 'Search conversation…',
+      'crm.elegirConv': 'Pick a conversation',
+      'crm.escribeResp': 'Type a reply…',
+      'crm.enviar': 'Send',
+      'crm.sinContacto': 'No contact selected.',
+      'crm.noCargar': 'Could not load.',
+      'crm.sinConvos': 'No conversations yet.',
+      'crm.cargando': 'Loading…',
+      'crm.cargandoFicha': 'Loading profile…',
+      'crm.soloWa': 'Replies available only via WhatsApp.',
+      'crm.noCargarConv': 'Could not load the conversation.',
+      'crm.sinMensajes': 'No messages.',
+      'crm.noCargarFicha': 'Could not load the profile.',
+      'crm.pedido': 'Order',
+      'crm.captura': 'Capture',
+      'crm.telefono': 'Phone',
+      'crm.primerContacto': 'First contact',
+      'crm.ultimoContacto': 'Last contact',
+      'crm.mensajes': 'Messages',
+      'crm.email': 'Email',
+      'crm.ubicacion': 'Location',
+      'crm.notas': 'Notes',
+      'crm.guardarDatos': 'Save data',
+      'crm.datosGuardados': 'Data saved.',
+      'crm.noGuardar': 'Could not save.',
+      'crm.noEnviar': 'Could not send.',
+      // Contabilidad
+      'cont.periodo': 'Period',
+      'cont.descargarExcel': 'Download Excel',
+      'cont.diario': '📓 Journal',
+      'cont.mayor': '📖 Ledger',
+      'cont.balance': '⚖️ Balance',
+      'cont.flujo': '💸 Cash Flow',
+      'cont.conciliacion': '🔄 Reconciliation',
+      'cont.iva': '🏛️ VAT (SII)',
+      'cont.manual': '📝 Manual Entry',
+      'cont.cuentas': '📋 Chart of Accounts',
+      'cont.varas': '💬 VARAS Chat',
+      'cont.cargando': 'Loading…',
+      'cont.noCargar': 'Could not load.',
+      'cont.confirmAnular': 'Void this entry? (it will be recorded as voided)',
+      'cont.noAnular': 'Could not void.',
+      // My Plan
+      'plan.titulo': 'My Plan',
+      'plan.bannerMorosa': '⚠️ Your payment failed. Renew your plan to keep using the AI.',
+      'plan.plan': 'Plan',
+      'plan.creditosRestantes': 'Credits remaining',
+      'plan.renovacion': 'Renewal',
+      'plan.ilimitado': 'Special plan — no credit limit. Thanks for being part of Hash IA 🙌',
+      'plan.actual': 'Current plan',
+      'plan.contratar': 'Subscribe',
+      'plan.porMes': '/mo',
+      'plan.shotsMes': 'shots per month',
+      'plan.nombre.basico': 'Basic',
+      'plan.nombre.pyme': 'SMB',
+      'plan.nombre.empresa': 'Enterprise',
+      // Detalle / edición de movimiento
+      'det.detalle': 'Detail',
+      'det.cerrar': 'Close',
+      'det.gasto': 'Expense',
+      'det.ingreso': 'Income',
+      'det.verFoto': '📷 View photo',
+      'det.editar': '✏️ Edit',
+      'det.anular': '🗑️ Void',
+      'det.sinFoto': 'No photo available (kept for 2 months, then deleted).',
+      'det.tipo': 'Type',
+      'det.proveedor': 'Supplier',
+      'det.pagador': 'Payer / source',
+      'det.monto': 'Amount',
+      'det.fecha': 'Date (yyyy-mm-dd)',
+      'det.categoria': 'Category',
+      'det.folio': 'Folio (doc no.)',
+      'det.nroOp': 'Operation no.',
+      'det.guardar': 'Save',
+      'det.cancelar': 'Cancel',
+      'det.anularPregunta': 'Void this movement? (the record is kept)',
+      'det.siAnular': 'Yes, void',
+      'det.no': 'No',
+      // Cambiar contraseña
+      'chpwd.titulo': '🔑 Change password',
+      'chpwd.actual': 'Current password',
+      'chpwd.nueva': 'New password (min 8)',
+      'chpwd.repetir': 'Repeat new',
+      'chpwd.cancelar': 'Cancel',
+      'chpwd.guardar': 'Save',
+      'chpwd.errMin': 'The new password must be at least 8 characters.',
+      'chpwd.errNoCoincide': 'The new passwords do not match.',
+      'chpwd.errActual': 'The current password is incorrect.',
+      'chpwd.errGeneric': 'Could not change it.',
+      'chpwd.ok': '✅ Password updated.',
+      // Sueltos
+      'pnl.calendario': 'Calendar',
+      'pnl.dia.do': 'Su',
+      'pnl.dia.lu': 'Mo',
+      'pnl.dia.ma': 'Tu',
+      'pnl.dia.mi': 'We',
+      'pnl.dia.ju': 'Th',
+      'pnl.dia.vi': 'Fr',
+      'pnl.dia.sa': 'Sa',
+      'pnl.varasContab': 'VARAS · Accounting',
+      'pnl.dueno': 'Owner',
+      'pnl.creditos': 'Credits',
+      'pnl.varasPh': 'Ask VARAS…'
     },
     pt: {
       'login.exec': 'Executive Control',
@@ -1943,7 +2151,111 @@
       'pwd.enviando': 'Enviando…',
       'pwd.errIdent': 'Digite seu e-mail ou WhatsApp.',
       'pwd.okEnviado': '✅ Se encontrarmos sua conta, enviaremos o link por e-mail e WhatsApp.',
-      'pwd.cerrar': 'Fechar'
+      'pwd.cerrar': 'Fechar',
+      // CRM
+      'crm.buscarConv': 'Buscar conversa…',
+      'crm.elegirConv': 'Escolha uma conversa',
+      'crm.escribeResp': 'Escreva uma resposta…',
+      'crm.enviar': 'Enviar',
+      'crm.sinContacto': 'Nenhum contato selecionado.',
+      'crm.noCargar': 'Não foi possível carregar.',
+      'crm.sinConvos': 'Ainda não há conversas.',
+      'crm.cargando': 'Carregando…',
+      'crm.cargandoFicha': 'Carregando ficha…',
+      'crm.soloWa': 'Resposta disponível apenas pelo WhatsApp.',
+      'crm.noCargarConv': 'Não foi possível carregar a conversa.',
+      'crm.sinMensajes': 'Sem mensagens.',
+      'crm.noCargarFicha': 'Não foi possível carregar a ficha.',
+      'crm.pedido': 'Pedido',
+      'crm.captura': 'Captura',
+      'crm.telefono': 'Telefone',
+      'crm.primerContacto': 'Primeiro contato',
+      'crm.ultimoContacto': 'Último contato',
+      'crm.mensajes': 'Mensagens',
+      'crm.email': 'E-mail',
+      'crm.ubicacion': 'Localização',
+      'crm.notas': 'Notas',
+      'crm.guardarDatos': 'Salvar dados',
+      'crm.datosGuardados': 'Dados salvos.',
+      'crm.noGuardar': 'Não foi possível salvar.',
+      'crm.noEnviar': 'Não foi possível enviar.',
+      // Contabilidade
+      'cont.periodo': 'Período',
+      'cont.descargarExcel': 'Baixar Excel',
+      'cont.diario': '📓 Diário',
+      'cont.mayor': '📖 Razão',
+      'cont.balance': '⚖️ Balanço',
+      'cont.flujo': '💸 Fluxo de Caixa',
+      'cont.conciliacion': '🔄 Conciliação',
+      'cont.iva': '🏛️ IVA (SII)',
+      'cont.manual': '📝 Lançamento Manual',
+      'cont.cuentas': '📋 Plano de Contas',
+      'cont.varas': '💬 Chat VARAS',
+      'cont.cargando': 'Carregando…',
+      'cont.noCargar': 'Não foi possível carregar.',
+      'cont.confirmAnular': 'Anular este lançamento? (ficará registrado como anulado)',
+      'cont.noAnular': 'Não foi possível anular.',
+      // Meu Plano
+      'plan.titulo': 'Meu Plano',
+      'plan.bannerMorosa': '⚠️ Seu pagamento falhou. Renove seu plano para continuar usando a IA.',
+      'plan.plan': 'Plano',
+      'plan.creditosRestantes': 'Créditos restantes',
+      'plan.renovacion': 'Renovação',
+      'plan.ilimitado': 'Plano especial — sem limite de créditos. Obrigado por fazer parte do Hash IA 🙌',
+      'plan.actual': 'Plano atual',
+      'plan.contratar': 'Assinar',
+      'plan.porMes': '/mês',
+      'plan.shotsMes': 'shots por mês',
+      'plan.nombre.basico': 'Básico',
+      'plan.nombre.pyme': 'Pyme',
+      'plan.nombre.empresa': 'Empresa',
+      // Detalle / edición de movimiento
+      'det.detalle': 'Detalhe',
+      'det.cerrar': 'Fechar',
+      'det.gasto': 'Despesa',
+      'det.ingreso': 'Receita',
+      'det.verFoto': '📷 Ver foto',
+      'det.editar': '✏️ Editar',
+      'det.anular': '🗑️ Anular',
+      'det.sinFoto': 'Sem foto disponível (guardada por 2 meses e depois excluída).',
+      'det.tipo': 'Tipo',
+      'det.proveedor': 'Fornecedor',
+      'det.pagador': 'Pagador / origem',
+      'det.monto': 'Valor',
+      'det.fecha': 'Data (aaaa-mm-dd)',
+      'det.categoria': 'Categoria',
+      'det.folio': 'Folio (nº doc)',
+      'det.nroOp': 'Nº da operação',
+      'det.guardar': 'Salvar',
+      'det.cancelar': 'Cancelar',
+      'det.anularPregunta': 'Anular este movimento? (o registro permanece)',
+      'det.siAnular': 'Sim, anular',
+      'det.no': 'Não',
+      // Cambiar contraseña
+      'chpwd.titulo': '🔑 Alterar senha',
+      'chpwd.actual': 'Senha atual',
+      'chpwd.nueva': 'Nova senha (mín 8)',
+      'chpwd.repetir': 'Repetir nova',
+      'chpwd.cancelar': 'Cancelar',
+      'chpwd.guardar': 'Salvar',
+      'chpwd.errMin': 'A nova senha deve ter ao menos 8 caracteres.',
+      'chpwd.errNoCoincide': 'As novas senhas não coincidem.',
+      'chpwd.errActual': 'A senha atual está incorreta.',
+      'chpwd.errGeneric': 'Não foi possível alterar.',
+      'chpwd.ok': '✅ Senha atualizada.',
+      // Sueltos
+      'pnl.calendario': 'Calendário',
+      'pnl.dia.do': 'Do',
+      'pnl.dia.lu': 'Se',
+      'pnl.dia.ma': 'Te',
+      'pnl.dia.mi': 'Qa',
+      'pnl.dia.ju': 'Qi',
+      'pnl.dia.vi': 'Se',
+      'pnl.dia.sa': 'Sá',
+      'pnl.varasContab': 'VARAS · Contabilidade',
+      'pnl.dueno': 'Dono',
+      'pnl.creditos': 'Créditos',
+      'pnl.varasPh': 'Pergunte ao VARAS…'
     }
   };
   function panelIdioma() {
@@ -2017,7 +2329,7 @@
       var el = $('saldoCreditos');
       if (!el) return;
       var sinCreditos = s.estado !== 'activa' || s.restante === 0;
-      el.textContent = 'Créditos: ' + s.restante + '/' + s.limite;
+      el.textContent = tp('pnl.creditos') + ': ' + s.restante + '/' + s.limite;
       el.style.color = sinCreditos ? '#ffb4ab' : '#d0c6ab';
     } catch (e) {}
   }
@@ -2350,30 +2662,30 @@
       m = document.createElement('div'); m.id = 'cambiarClaveModal';
       m.style.cssText = 'position:fixed;inset:0;z-index:90;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:16px;';
       m.innerHTML = '<div style="background:#15171a;border:1px solid #343535;border-radius:16px;padding:20px;width:100%;max-width:380px;">'
-        + '<h3 style="margin:0 0 12px;font-weight:900;color:#ffd700;">🔑 Cambiar contraseña</h3>'
-        + '<label style="font-size:11px;text-transform:uppercase;color:#d0c6ab;opacity:.6;">Contraseña actual</label>'
+        + '<h3 style="margin:0 0 12px;font-weight:900;color:#ffd700;">' + tp('chpwd.titulo') + '</h3>'
+        + '<label style="font-size:11px;text-transform:uppercase;color:#d0c6ab;opacity:.6;">' + tp('chpwd.actual') + '</label>'
         + '<input id="ccActual" type="password" style="width:100%;box-sizing:border-box;margin:4px 0 10px;border-radius:8px;padding:9px;border:1px solid #343535;background:rgba(41,42,42,.5);color:#e3e2e2;" />'
-        + '<label style="font-size:11px;text-transform:uppercase;color:#d0c6ab;opacity:.6;">Contraseña nueva (mín 8)</label>'
+        + '<label style="font-size:11px;text-transform:uppercase;color:#d0c6ab;opacity:.6;">' + tp('chpwd.nueva') + '</label>'
         + '<input id="ccNueva" type="password" style="width:100%;box-sizing:border-box;margin:4px 0 10px;border-radius:8px;padding:9px;border:1px solid #343535;background:rgba(41,42,42,.5);color:#e3e2e2;" />'
-        + '<label style="font-size:11px;text-transform:uppercase;color:#d0c6ab;opacity:.6;">Repetir nueva</label>'
+        + '<label style="font-size:11px;text-transform:uppercase;color:#d0c6ab;opacity:.6;">' + tp('chpwd.repetir') + '</label>'
         + '<input id="ccNueva2" type="password" style="width:100%;box-sizing:border-box;margin:4px 0 6px;border-radius:8px;padding:9px;border:1px solid #343535;background:rgba(41,42,42,.5);color:#e3e2e2;" />'
         + '<p id="ccMsg" style="font-size:13px;min-height:18px;margin:4px 0;"></p>'
         + '<div style="display:flex;gap:8px;justify-content:flex-end;">'
-        + '<button onclick="document.getElementById(\'cambiarClaveModal\').style.display=\'none\'" style="padding:8px 14px;border-radius:10px;border:1px solid #343535;background:#0000;color:#d0c6ab;font-weight:700;cursor:pointer;">Cancelar</button>'
-        + '<button id="ccGuardar" style="padding:8px 14px;border-radius:10px;border:0;background:#ffd700;color:#3a3000;font-weight:900;cursor:pointer;">Guardar</button></div></div>';
+        + '<button onclick="document.getElementById(\'cambiarClaveModal\').style.display=\'none\'" style="padding:8px 14px;border-radius:10px;border:1px solid #343535;background:#0000;color:#d0c6ab;font-weight:700;cursor:pointer;">' + tp('chpwd.cancelar') + '</button>'
+        + '<button id="ccGuardar" style="padding:8px 14px;border-radius:10px;border:0;background:#ffd700;color:#3a3000;font-weight:900;cursor:pointer;">' + tp('chpwd.guardar') + '</button></div></div>';
       document.body.appendChild(m);
       $('ccGuardar').onclick = async function () {
         var actual = $('ccActual').value, nueva = $('ccNueva').value, n2 = $('ccNueva2').value;
         $('ccMsg').style.color = '#ffb4ab';
-        if (nueva.length < 8) { $('ccMsg').textContent = 'La nueva debe tener al menos 8 caracteres.'; return; }
-        if (nueva !== n2) { $('ccMsg').textContent = 'Las contraseñas nuevas no coinciden.'; return; }
+        if (nueva.length < 8) { $('ccMsg').textContent = tp('chpwd.errMin'); return; }
+        if (nueva !== n2) { $('ccMsg').textContent = tp('chpwd.errNoCoincide'); return; }
         try {
           var r = await apiFetch('/cambiar-clave', { method: 'POST', body: JSON.stringify({ actual: actual, nueva: nueva }) });
-          if (!r.ok) { var er = await r.json().catch(function () { return {}; }); $('ccMsg').textContent = er.error === 'clave_actual_incorrecta' ? 'La contraseña actual es incorrecta.' : 'No se pudo cambiar.'; return; }
-          $('ccMsg').style.color = '#86efac'; $('ccMsg').textContent = '✅ Contraseña actualizada.';
+          if (!r.ok) { var er = await r.json().catch(function () { return {}; }); $('ccMsg').textContent = er.error === 'clave_actual_incorrecta' ? tp('chpwd.errActual') : tp('chpwd.errGeneric'); return; }
+          $('ccMsg').style.color = '#86efac'; $('ccMsg').textContent = tp('chpwd.ok');
           $('ccActual').value = ''; $('ccNueva').value = ''; $('ccNueva2').value = '';
           setTimeout(function () { $('cambiarClaveModal').style.display = 'none'; }, 1200);
-        } catch (e) { $('ccMsg').textContent = 'No se pudo cambiar.'; }
+        } catch (e) { $('ccMsg').textContent = tp('chpwd.errGeneric'); }
       };
     }
     $('ccMsg').textContent = ''; m.style.display = 'flex';
@@ -2460,7 +2772,7 @@
   var detSel = null;
   function openDetalle(row) {
     detSel = row;
-    $('detalleTitulo').textContent = (row.tipo === 'ingreso' ? 'Ingreso' : 'Gasto') + ' · ' + PanelLib.fmtClp(row.total);
+    $('detalleTitulo').textContent = (row.tipo === 'ingreso' ? tp('det.ingreso') : tp('det.gasto')) + ' · ' + PanelLib.fmtClp(row.total);
     $('detalleBody').innerHTML = PanelLib.detalleHtml(row);
     initDetCards();
     defaultActions();
@@ -2468,9 +2780,9 @@
   }
   function closeDetalle() { $('detalleModal').classList.add('hidden'); $('detalleActions').innerHTML = ''; }
   function defaultActions() {
-    $('detalleActions').innerHTML = '<button id="detFotoBtn" class="btn-ghost" style="flex:1">📷 Ver foto</button>'
-      + '<button id="detEditBtn" class="btn-ghost" style="flex:1">✏️ Editar</button>'
-      + '<button id="detAnularBtn" class="btn-ghost" style="flex:1; color:#ff8a8a">🗑️ Anular</button>';
+    $('detalleActions').innerHTML = '<button id="detFotoBtn" class="btn-ghost" style="flex:1">' + tp('det.verFoto') + '</button>'
+      + '<button id="detEditBtn" class="btn-ghost" style="flex:1">' + tp('det.editar') + '</button>'
+      + '<button id="detAnularBtn" class="btn-ghost" style="flex:1; color:#ff8a8a">' + tp('det.anular') + '</button>';
     $('detFotoBtn').onclick = onFoto;
     $('detEditBtn').onclick = onEdit;
     $('detAnularBtn').onclick = onAnular;
@@ -2479,7 +2791,7 @@
     if (!detSel) return;
     try {
       var res = await apiFetch('/expenses/' + detSel.id + '/foto');
-      if (!res.ok) { $('detalleBody').insertAdjacentHTML('afterbegin', '<div class="muted" style="margin-bottom:8px">Sin foto disponible (se guarda 2 meses y luego se elimina).</div>'); $('detFotoBtn').disabled = true; return; }
+      if (!res.ok) { $('detalleBody').insertAdjacentHTML('afterbegin', '<div class="muted" style="margin-bottom:8px">' + tp('det.sinFoto') + '</div>'); $('detFotoBtn').disabled = true; return; }
       var blob = await res.blob();
       var url = URL.createObjectURL(blob);
       $('detalleBody').insertAdjacentHTML('afterbegin', '<img alt="factura" src="' + url + '" style="width:100%; max-height:340px; object-fit:contain; border-radius:10px; background:#0008; margin-bottom:10px" />');
@@ -2497,15 +2809,15 @@
       return '<option value="' + PanelLib.escapeHtml(c) + '"' + (c === e.categoria ? ' selected' : '') + '>' + PanelLib.escapeHtml(c) + '</option>';
     }).join('');
     $('detalleBody').innerHTML = ''
-      + '<label class="muted" style="display:block">Tipo</label>'
-      + '<select id="edTipo" style="width:100%"><option value="gasto"' + (esIngreso ? '' : ' selected') + '>Gasto</option><option value="ingreso"' + (esIngreso ? ' selected' : '') + '>Ingreso</option></select>'
-      + fld('edProveedor', esIngreso ? 'Pagador / origen' : 'Proveedor', e.proveedor)
-      + fld('edTotal', 'Monto', e.total, 'number')
-      + fld('edFecha', 'Fecha (aaaa-mm-dd)', e.fecha ? String(e.fecha).slice(0, 10) : '')
-      + '<label class="muted" style="display:block; margin-top:8px">Categoría</label><select id="edCategoria" style="width:100%">' + catOpts + '</select>'
-      + fld('edFolio', 'Folio (N° doc)', e.folio)
-      + fld('edNroOp', 'N° operación', e.nro_operacion);
-    $('detalleActions').innerHTML = '<button id="edSave" class="btn-gold" style="flex:1">Guardar</button><button id="edCancel" class="btn-ghost" style="flex:1">Cancelar</button>';
+      + '<label class="muted" style="display:block">' + tp('det.tipo') + '</label>'
+      + '<select id="edTipo" style="width:100%"><option value="gasto"' + (esIngreso ? '' : ' selected') + '>' + tp('det.gasto') + '</option><option value="ingreso"' + (esIngreso ? ' selected' : '') + '>' + tp('det.ingreso') + '</option></select>'
+      + fld('edProveedor', esIngreso ? tp('det.pagador') : tp('det.proveedor'), e.proveedor)
+      + fld('edTotal', tp('det.monto'), e.total, 'number')
+      + fld('edFecha', tp('det.fecha'), e.fecha ? String(e.fecha).slice(0, 10) : '')
+      + '<label class="muted" style="display:block; margin-top:8px">' + tp('det.categoria') + '</label><select id="edCategoria" style="width:100%">' + catOpts + '</select>'
+      + fld('edFolio', tp('det.folio'), e.folio)
+      + fld('edNroOp', tp('det.nroOp'), e.nro_operacion);
+    $('detalleActions').innerHTML = '<button id="edSave" class="btn-gold" style="flex:1">' + tp('det.guardar') + '</button><button id="edCancel" class="btn-ghost" style="flex:1">' + tp('det.cancelar') + '</button>';
     $('edSave').onclick = async function () {
       var patch = { tipo: $('edTipo').value, proveedor: $('edProveedor').value, total: Number($('edTotal').value) || 0,
         fecha: $('edFecha').value || null, categoria: $('edCategoria').value, folio: $('edFolio').value, nro_operacion: $('edNroOp').value };
@@ -2514,8 +2826,8 @@
     $('edCancel').onclick = function () { openDetalle(e); };
   }
   function onAnular() {
-    $('detalleActions').innerHTML = '<span style="flex:1; font-size:13px; align-self:center">¿Anular este movimiento? (queda el registro)</span>'
-      + '<button id="anYes" class="btn-ghost" style="color:#ff8a8a">Sí, anular</button><button id="anNo" class="btn-ghost">No</button>';
+    $('detalleActions').innerHTML = '<span style="flex:1; font-size:13px; align-self:center">' + tp('det.anularPregunta') + '</span>'
+      + '<button id="anYes" class="btn-ghost" style="color:#ff8a8a">' + tp('det.siAnular') + '</button><button id="anNo" class="btn-ghost">' + tp('det.no') + '</button>';
     $('anYes').onclick = async function () {
       try { await apiFetch('/expenses/' + detSel.id + '/anular', { method: 'POST', body: JSON.stringify({}) }); closeDetalle(); loadGastos(); } catch (err) {}
     };
@@ -2919,7 +3231,7 @@
       '<div style="max-width:680px;display:flex;flex-direction:column;height:100%">'
       + '<div id="varasScroll" class="scroll" style="flex:1;min-height:200px;padding:4px"></div>'
       + '<div class="row" style="margin-top:8px;gap:8px">'
-      + '<input id="varasInput" style="flex:1" placeholder="Pregúntale a VARAS…" />'
+      + '<input id="varasInput" style="flex:1" placeholder="' + tp('pnl.varasPh') + '" />'
       + '<button id="varasEnviar" class="btn-gold">Enviar</button>'
       + '</div></div>';
 
@@ -3148,7 +3460,7 @@
   };
 
   async function loadContabilidad() {
-    $('cContenido').innerHTML = '<p class="muted" style="padding:8px">Cargando…</p>';
+    $('cContenido').innerHTML = '<p class="muted" style="padding:8px">' + tp('cont.cargando') + '</p>';
     $('cExcelBtn').classList.toggle('hidden', libroActual === 'varas' || libroActual === 'conciliacion' || libroActual === 'iva' || libroActual === 'manual' || libroActual === 'cuentas');
     var p = '?periodo=' + encodeURIComponent(cPeriodoVal());
     try {
@@ -3165,13 +3477,13 @@
         $('cContenido').innerHTML = PanelLib.diarioTableHtml(data.asientos);
         $('cContenido').querySelectorAll('[data-anular]').forEach(function (btn) {
           btn.onclick = async function () {
-            if (!confirm('¿Anular este asiento? (quedará registrado como anulado)')) return;
+            if (!confirm(tp('cont.confirmAnular'))) return;
             btn.disabled = true;
             try {
               var ar = await apiFetch('/asientos/' + btn.getAttribute('data-anular') + '/anular', { method: 'POST', body: JSON.stringify({}) });
               if (!ar.ok) throw new Error('fail');
               loadContabilidad();
-            } catch (e) { btn.disabled = false; alert('No se pudo anular.'); }
+            } catch (e) { btn.disabled = false; alert(tp('cont.noAnular')); }
           };
         });
       } else if (libroActual === 'mayor') {
@@ -3199,7 +3511,7 @@
         $('cContenido').innerHTML = PanelLib.flujoTableHtml(data);
       }
     } catch (e) {
-      if (e.message !== '401') $('cContenido').innerHTML = '<p class="err" style="padding:8px">No se pudo cargar.</p>';
+      if (e.message !== '401') $('cContenido').innerHTML = '<p class="err" style="padding:8px">' + tp('cont.noCargar') + '</p>';
     }
   }
   document.querySelectorAll('.csub').forEach(function (b) {
@@ -3349,7 +3661,7 @@
     var precios = PRECIOS_MONEDA[mon];
     PLANES_PANEL.forEach(function(p) {
       var el = document.getElementById('precio-' + p.key);
-      if (el) el.innerHTML = precios[p.key] + '<span style="font-size:11px;font-weight:400;color:#555">/mes</span>';
+      if (el) el.innerHTML = precios[p.key] + '<span style="font-size:11px;font-weight:400;color:#555">' + tp('plan.porMes') + '</span>';
     });
   };
 
@@ -3364,12 +3676,12 @@
     var estado = s.estado || 'activa';
     var restante = s.restante != null ? s.restante : '—';
     var renovacion = s.ciclo_fin ? new Date(s.ciclo_fin).toLocaleDateString('es-CL') : null;
-    info.textContent = 'Plan: ' + planActual.charAt(0).toUpperCase() + planActual.slice(1)
-      + '  •  Créditos restantes: ' + restante
-      + (renovacion ? '  •  Renovación: ' + renovacion : '');
+    info.textContent = tp('plan.plan') + ': ' + planActual.charAt(0).toUpperCase() + planActual.slice(1)
+      + '  •  ' + tp('plan.creditosRestantes') + ': ' + restante
+      + (renovacion ? '  •  ' + tp('plan.renovacion') + ': ' + renovacion : '');
     if (banner) banner.classList.toggle('hidden', estado !== 'morosa');
     if (planActual === 'ilimitado') {
-      cards.innerHTML = '<p style="color:#9a917a;font-size:13px">Plan especial — sin límite de créditos. Gracias por ser parte de Hash IA 🙌</p>';
+      cards.innerHTML = '<p style="color:#9a917a;font-size:13px">' + tp('plan.ilimitado') + '</p>';
       return;
     }
     function renderPlanCards(planActual) {
@@ -3378,12 +3690,12 @@
         var esActual = p.key === planActual;
         var borde = esActual ? '2px solid var(--gold)' : '1px solid #2a2a2a';
         var btn = esActual
-          ? '<button disabled style="width:100%;padding:8px;border-radius:8px;background:#2a2a2a;color:#555;border:none;font-size:12px;cursor:default">Plan actual</button>'
-          : '<button onclick="contratarPlan(\'' + p.key + '\',event)" style="width:100%;padding:8px;border-radius:8px;background:var(--gold);color:#1a1000;border:none;font-weight:700;font-size:12px;cursor:pointer">Contratar</button>';
+          ? '<button disabled style="width:100%;padding:8px;border-radius:8px;background:#2a2a2a;color:#555;border:none;font-size:12px;cursor:default">' + tp('plan.actual') + '</button>'
+          : '<button onclick="contratarPlan(\'' + p.key + '\',event)" style="width:100%;padding:8px;border-radius:8px;background:var(--gold);color:#1a1000;border:none;font-weight:700;font-size:12px;cursor:pointer">' + tp('plan.contratar') + '</button>';
         return '<div style="border:' + borde + ';border-radius:12px;padding:16px;background:#0d0e0f">'
-          + '<div style="font-weight:700;color:#e3e2e2">' + p.nombre + '</div>'
-          + '<div id="precio-' + p.key + '" style="font-size:1.4rem;font-weight:800;color:var(--gold);margin:6px 0">' + precios[p.key] + '<span style="font-size:11px;font-weight:400;color:#555">/mes</span></div>'
-          + '<div style="font-size:12px;color:#9a917a;margin-bottom:12px">' + p.shots + ' shots al mes</div>'
+          + '<div style="font-weight:700;color:#e3e2e2">' + tp('plan.nombre.' + p.key) + '</div>'
+          + '<div id="precio-' + p.key + '" style="font-size:1.4rem;font-weight:800;color:var(--gold);margin:6px 0">' + precios[p.key] + '<span style="font-size:11px;font-weight:400;color:#555">' + tp('plan.porMes') + '</span></div>'
+          + '<div style="font-size:12px;color:#9a917a;margin-bottom:12px">' + p.shots + ' ' + tp('plan.shotsMes') + '</div>'
           + btn + '</div>';
       }).join('');
     }
@@ -3556,7 +3868,7 @@
     crmCargarConvos();
   }
   async function crmCargarConvos() {
-    try { var r = await apiFetch('/chat/conversaciones'); crmConvos = await r.json(); crmRenderList(); } catch (e) { $('crmList').innerHTML = '<p class="text-xs text-[#d0c6ab]/50 p-3">No se pudo cargar.</p>'; }
+    try { var r = await apiFetch('/chat/conversaciones'); crmConvos = await r.json(); crmRenderList(); } catch (e) { $('crmList').innerHTML = '<p class="text-xs text-[#d0c6ab]/50 p-3">' + tp('crm.noCargar') + '</p>'; }
   }
   function crmRenderList() {
     var q = ($('crmSearch').value || '').toLowerCase();
@@ -3568,24 +3880,24 @@
         + '<span class="flex-1 min-w-0"><span class="block text-sm font-semibold text-on-surface truncate">' + crmEsc(c.contact) + '</span><span class="block text-xs text-[#d0c6ab]/70 truncate">' + crmEsc(c.ultimo || '') + '</span></span>'
         + '<span class="text-[9px] uppercase text-[#d0c6ab]/50 flex-shrink-0">' + crmEsc(c.channel) + '</span></button>';
     }).join('');
-    $('crmList').innerHTML = html || '<p class="text-xs text-[#d0c6ab]/50 p-3">Sin conversaciones todavía.</p>';
+    $('crmList').innerHTML = html || '<p class="text-xs text-[#d0c6ab]/50 p-3">' + tp('crm.sinConvos') + '</p>';
   }
   window.crmAbrir = async function (channelEnc, contactEnc) {
     var channel = decodeURIComponent(channelEnc), contact = decodeURIComponent(contactEnc);
     crmActivo = { channel: channel, contact: contact };
     crmRenderList();
     $('crmThreadHeader').textContent = contact + ' · ' + channel;
-    $('crmThread').innerHTML = '<p class="text-xs text-[#d0c6ab]/50 p-2">Cargando…</p>';
-    $('crmFicha').innerHTML = '<p class="text-xs text-[#d0c6ab]/50 p-2">Cargando ficha…</p>';
+    $('crmThread').innerHTML = '<p class="text-xs text-[#d0c6ab]/50 p-2">' + tp('crm.cargando') + '</p>';
+    $('crmFicha').innerHTML = '<p class="text-xs text-[#d0c6ab]/50 p-2">' + tp('crm.cargandoFicha') + '</p>';
     var esWa = channel.toLowerCase() === 'whatsapp';
     $('crmReply').disabled = !esWa; $('crmSendBtn').disabled = !esWa;
-    $('crmReplyHint').textContent = esWa ? '' : 'Responder disponible solo por WhatsApp.';
+    $('crmReplyHint').textContent = esWa ? '' : tp('crm.soloWa');
     await crmCargarFicha(channel, contact);
     try {
       var r = await apiFetch('/chat/conversacion?channel=' + encodeURIComponent(channel) + '&contact=' + encodeURIComponent(contact));
       var msgs = await r.json();
       if (crmActivo && crmActivo.contact === contact) { $('crmThread').innerHTML = crmRenderThread(msgs); $('crmThread').scrollTop = $('crmThread').scrollHeight; }
-    } catch (e) { $('crmThread').innerHTML = '<p class="text-xs text-[#ffb4ab] p-2">No se pudo cargar la conversación.</p>'; }
+    } catch (e) { $('crmThread').innerHTML = '<p class="text-xs text-[#ffb4ab] p-2">' + tp('crm.noCargarConv') + '</p>'; }
   };
   function crmRenderThread(msgs) {
     var out = '', lastDay = '';
@@ -3595,38 +3907,38 @@
       var mine = m.direccion === 'out';
       out += '<div class="max-w-[78%] ' + (mine ? 'self-end bg-[#ffd700]/15 border border-[#ffd700]/20' : 'self-start bg-[#343535]/40') + ' rounded-2xl px-3 py-2 text-sm text-on-surface">' + crmEsc(m.text) + '</div>';
     });
-    return out || '<p class="text-xs text-[#d0c6ab]/50">Sin mensajes.</p>';
+    return out || '<p class="text-xs text-[#d0c6ab]/50">' + tp('crm.sinMensajes') + '</p>';
   }
   async function crmCargarFicha(channel, contact) {
     try {
       var r = await apiFetch('/chat/contacto?channel=' + encodeURIComponent(channel) + '&contact=' + encodeURIComponent(contact));
       var f = await r.json();
       if (crmActivo && crmActivo.contact === contact && crmActivo.channel === channel) $('crmFicha').innerHTML = crmFichaHtml(f, channel);
-    } catch (e) { $('crmFicha').innerHTML = '<p class="text-xs text-[#ffb4ab] p-2">No se pudo cargar la ficha.</p>'; }
+    } catch (e) { $('crmFicha').innerHTML = '<p class="text-xs text-[#ffb4ab] p-2">' + tp('crm.noCargarFicha') + '</p>'; }
   }
   function crmFila(label, val) { return '<div class="mb-2"><div class="text-[10px] uppercase text-[#d0c6ab]/50">' + label + '</div><div class="text-on-surface">' + (val || '—') + '</div></div>'; }
   function crmFichaHtml(f, channel) {
     var ini = (f.nombre || '?').slice(0, 2).toUpperCase();
     return '<div class="flex items-center gap-3 mb-4"><span class="w-12 h-12 rounded-full bg-[#343535] flex items-center justify-center text-lg font-bold text-[#ffd700]">' + crmEsc(ini) + '</span>'
       + '<div><div class="font-bold text-on-surface">' + crmEsc(f.nombre || '') + '</div><div class="text-xs text-[#d0c6ab]/70">' + crmEsc(channel) + '</div></div></div>'
-      + '<div class="flex gap-2 mb-4"><button onclick="crmNuevoPedido()" class="flex-1 px-3 py-2 rounded-xl bg-[#ffd700] text-[#3a3000] text-xs font-bold">Pedido</button>'
-      + '<button onclick="crmCaptura()" class="flex-1 px-3 py-2 rounded-xl border border-[#343535] text-xs font-bold text-[#d0c6ab]">Captura</button></div>'
-      + crmFila('Teléfono', crmEsc(f.telefono)) + crmFila('Primer contacto', crmEsc((f.primerContacto || '').slice(0, 10))) + crmFila('Último contacto', crmEsc((f.ultimoContacto || '').slice(0, 10))) + crmFila('Mensajes', String(f.nMensajes || 0))
+      + '<div class="flex gap-2 mb-4"><button onclick="crmNuevoPedido()" class="flex-1 px-3 py-2 rounded-xl bg-[#ffd700] text-[#3a3000] text-xs font-bold">' + tp('crm.pedido') + '</button>'
+      + '<button onclick="crmCaptura()" class="flex-1 px-3 py-2 rounded-xl border border-[#343535] text-xs font-bold text-[#d0c6ab]">' + tp('crm.captura') + '</button></div>'
+      + crmFila(tp('crm.telefono'), crmEsc(f.telefono)) + crmFila(tp('crm.primerContacto'), crmEsc((f.primerContacto || '').slice(0, 10))) + crmFila(tp('crm.ultimoContacto'), crmEsc((f.ultimoContacto || '').slice(0, 10))) + crmFila(tp('crm.mensajes'), String(f.nMensajes || 0))
       + '<div class="border-t border-[#343535]/50 my-3"></div>'
-      + '<label class="text-[10px] uppercase text-[#d0c6ab]/50">Email</label><input id="fEmail" value="' + crmEsc(f.email || '') + '" class="w-full bg-[#292a2a]/50 border border-[#343535] rounded-lg px-2 py-1 text-sm mb-2 text-on-surface outline-none" />'
-      + '<label class="text-[10px] uppercase text-[#d0c6ab]/50">Ubicación</label><input id="fUbic" value="' + crmEsc(f.ubicacion || '') + '" class="w-full bg-[#292a2a]/50 border border-[#343535] rounded-lg px-2 py-1 text-sm mb-2 text-on-surface outline-none" />'
-      + '<label class="text-[10px] uppercase text-[#d0c6ab]/50">Notas</label><textarea id="fNotas" rows="3" class="w-full bg-[#292a2a]/50 border border-[#343535] rounded-lg px-2 py-1 text-sm mb-2 text-on-surface outline-none">' + crmEsc(f.notas || '') + '</textarea>'
-      + '<button onclick="crmGuardarFicha()" class="w-full px-3 py-2 rounded-xl bg-[#ffd700] text-[#3a3000] text-xs font-bold">Guardar datos</button>';
+      + '<label class="text-[10px] uppercase text-[#d0c6ab]/50">' + tp('crm.email') + '</label><input id="fEmail" value="' + crmEsc(f.email || '') + '" class="w-full bg-[#292a2a]/50 border border-[#343535] rounded-lg px-2 py-1 text-sm mb-2 text-on-surface outline-none" />'
+      + '<label class="text-[10px] uppercase text-[#d0c6ab]/50">' + tp('crm.ubicacion') + '</label><input id="fUbic" value="' + crmEsc(f.ubicacion || '') + '" class="w-full bg-[#292a2a]/50 border border-[#343535] rounded-lg px-2 py-1 text-sm mb-2 text-on-surface outline-none" />'
+      + '<label class="text-[10px] uppercase text-[#d0c6ab]/50">' + tp('crm.notas') + '</label><textarea id="fNotas" rows="3" class="w-full bg-[#292a2a]/50 border border-[#343535] rounded-lg px-2 py-1 text-sm mb-2 text-on-surface outline-none">' + crmEsc(f.notas || '') + '</textarea>'
+      + '<button onclick="crmGuardarFicha()" class="w-full px-3 py-2 rounded-xl bg-[#ffd700] text-[#3a3000] text-xs font-bold">' + tp('crm.guardarDatos') + '</button>';
   }
   window.crmGuardarFicha = async function () {
     if (!crmActivo) return;
-    try { await apiFetch('/chat/contacto', { method: 'PATCH', body: JSON.stringify({ channel: crmActivo.channel, contact: crmActivo.contact, email: $('fEmail').value, ubicacion: $('fUbic').value, notas: $('fNotas').value }) }); alert('Datos guardados.'); } catch (e) { alert('No se pudo guardar.'); }
+    try { await apiFetch('/chat/contacto', { method: 'PATCH', body: JSON.stringify({ channel: crmActivo.channel, contact: crmActivo.contact, email: $('fEmail').value, ubicacion: $('fUbic').value, notas: $('fNotas').value }) }); alert(tp('crm.datosGuardados')); } catch (e) { alert(tp('crm.noGuardar')); }
   };
   window.crmEnviarReply = async function () {
     if (!crmActivo) return;
     var txt = ($('crmReply').value || '').trim(); if (!txt) return;
     try { await apiFetch('/chat/responder', { method: 'POST', body: JSON.stringify({ channel: crmActivo.channel, contact: crmActivo.contact, text: txt }) }); $('crmReply').value = ''; crmAbrir(encodeURIComponent(crmActivo.channel), encodeURIComponent(crmActivo.contact)); }
-    catch (e) { alert('No se pudo enviar.'); }
+    catch (e) { alert(tp('crm.noEnviar')); }
   };
   // ════════════════════════════════════════════════════════════════════
   //  EVIDENCIA — clon vanilla del EvidenceIntake del APK (KALY): Tomar foto
