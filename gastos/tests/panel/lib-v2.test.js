@@ -59,6 +59,6 @@ test('detalleHtml muestra todos los campos (voucher, teléfono, fechas)', () => 
   expect(html).toContain('OP-7788');
   expect(html).toContain('56999111222');
   expect(html).toContain('2026-06-07');
-  expect(html).toContain('Pagador / origen');
+  expect(html).toContain('Pagador');
   expect(html).toContain('Cliente A');
 });

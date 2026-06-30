@@ -253,7 +253,13 @@ async function execKalyTool(name, args = {}) {
 }
 
 // ── UI de la esfera (vanilla) ──────────────────────────────────────────────────
-const ESTADO_LABEL = { off: 'Toca para hablar', connecting: 'Conectando…', live: 'Escuchando…', listening: 'Escuchando…', speaking: 'Hablando…', error: 'No disponible' };
+const ESTADO_LABELS = {
+  es: { off: 'Toca para hablar', connecting: 'Conectando…', live: 'Escuchando…', listening: 'Escuchando…', speaking: 'Hablando…', error: 'No disponible' },
+  en: { off: 'Tap to talk', connecting: 'Connecting…', live: 'Listening…', listening: 'Listening…', speaking: 'Speaking…', error: 'Unavailable' },
+  pt: { off: 'Toque para falar', connecting: 'Conectando…', live: 'Ouvindo…', listening: 'Ouvindo…', speaking: 'Falando…', error: 'Indisponível' },
+};
+function avIdioma() { try { var i = localStorage.getItem('hash_idioma'); if (i && ESTADO_LABELS[i]) return i; } catch (e) {} return 'es'; }
+function estLabel(s) { var d = ESTADO_LABELS[avIdioma()] || ESTADO_LABELS.es; return d[s] || ESTADO_LABELS.es[s] || s; }
 
 function makeAgent(el, opts) {
   const { titulo, color, voice, buildPrompt, instruccion, tools, execTool } = opts;
@@ -272,7 +278,7 @@ function makeAgent(el, opts) {
   el.innerHTML = `
     <div style="display:flex;flex-direction:column;align-items:center;gap:8px;padding:8px">
       ${orbHtml}
-      <div class="agv-state" style="font-size:12px;color:#d0c6ab;font-weight:600">${ESTADO_LABEL.off}</div>
+      <div class="agv-state" style="font-size:12px;color:#d0c6ab;font-weight:600">${estLabel('off')}</div>
       <div class="agv-last" style="max-width:${lastMax}px;text-align:center;font-size:13px;color:#e3e2e2;min-height:18px"></div>
       <button class="agv-mute" type="button" style="display:none;font-size:11px;color:#9a917a;background:transparent;border:1px solid #343535;border-radius:999px;padding:4px 12px;cursor:pointer">🔊 Silenciar</button>
       ${conTexto ? `<div class="agv-textbar" style="display:flex;gap:5px;width:100%;max-width:320px;margin-top:2px;align-items:center">
@@ -300,7 +306,7 @@ function makeAgent(el, opts) {
   function armSilence() { if (!behavior.silenceMs) return; clearSilence(); silenceTimer = setTimeout(() => { silenceTimer = null; stop(); }, behavior.silenceMs); }
 
   function setState(s) {
-    stEl.textContent = ESTADO_LABEL[s] || s;
+    stEl.textContent = estLabel(s);
     if (kalyOrb) kalyOrb.setState(s);
     if (orb) {
       orb.style.transform = (s === 'speaking') ? 'scale(1.08)' : 'scale(1)';

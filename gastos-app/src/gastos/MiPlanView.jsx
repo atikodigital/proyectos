@@ -1,16 +1,14 @@
 import { useEffect, useState } from 'react';
 import { api } from './api';
+import { t } from './i18n';
 
 const GOLD = '#C9A24B';
 const PANEL_URL = 'https://gastos.atikodigital.cl/panel';
 
-const PLAN_NOMBRES = {
-  free: 'Plan Free',
-  basico: 'Plan Básico',
-  pyme: 'Plan Pyme',
-  empresa: 'Plan Empresa',
-  ilimitado: 'Plan Especial',
-};
+const PLANES = ['free', 'basico', 'pyme', 'empresa', 'ilimitado'];
+function nombrePlan(plan) {
+  return PLANES.includes(plan) ? t('mp.plan_' + plan) : plan;
+}
 
 function fechaCorta(v) {
   if (!v) return '';
@@ -32,7 +30,7 @@ export default function MiPlanView() {
         const s = await api.suscripcion();
         setDatos(s);
       } catch {
-        setError('No se pudo cargar la información del plan.');
+        setError(t('mp.err_cargar'));
       } finally {
         setCargando(false);
       }
@@ -61,11 +59,11 @@ export default function MiPlanView() {
       margin: '0 auto',
     }}>
       <h2 style={{ color: GOLD, fontWeight: 900, fontSize: 20, marginBottom: 20 }}>
-        Mi Plan
+        {t('mp.titulo')}
       </h2>
 
       {cargando && (
-        <p style={{ opacity: 0.5, fontSize: 14 }}>Cargando…</p>
+        <p style={{ opacity: 0.5, fontSize: 14 }}>{t('mp.cargando')}</p>
       )}
 
       {error && (
@@ -85,7 +83,7 @@ export default function MiPlanView() {
               fontSize: 13,
               color: '#fca5a5',
             }}>
-              ⚠️ Tu pago falló. Renueva tu plan en la web.
+              {t('mp.morosa')}
             </div>
           )}
 
@@ -100,7 +98,7 @@ export default function MiPlanView() {
             {/* Nombre del plan */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
               <span style={{ fontWeight: 900, fontSize: 17, color: GOLD }}>
-                {PLAN_NOMBRES[datos.plan] || datos.plan}
+                {nombrePlan(datos.plan)}
               </span>
               <span style={{
                 fontSize: 11,
@@ -111,19 +109,19 @@ export default function MiPlanView() {
                 padding: '2px 10px',
                 textTransform: 'capitalize',
               }}>
-                {datos.estado}
+                {datos.estado === 'activa' || datos.estado === 'morosa' ? t('mp.estado_' + datos.estado) : datos.estado}
               </span>
             </div>
 
             {/* Uso de créditos */}
             {esIlimitado ? (
               <div style={{ fontSize: 13, opacity: 0.8 }}>
-                <span style={{ color: GOLD, fontWeight: 700 }}>Sin límite</span> de créditos este ciclo
+                <span style={{ color: GOLD, fontWeight: 700 }}>{t('mp.sin_limite')}</span> {t('mp.de_creditos_ciclo')}
               </div>
             ) : (
               <>
                 <div style={{ fontSize: 13, marginBottom: 8, opacity: 0.85 }}>
-                  Créditos usados:{' '}
+                  {t('mp.creditos_usados')}{' '}
                   <span style={{ color: GOLD, fontWeight: 700 }}>{datos.usado}</span>
                   {' / '}
                   <span style={{ fontWeight: 600 }}>{datos.limite}</span>
@@ -145,7 +143,7 @@ export default function MiPlanView() {
                   }} />
                 </div>
                 <div style={{ fontSize: 12, opacity: 0.65 }}>
-                  {datos.restante} crédito{datos.restante !== 1 ? 's' : ''} restante{datos.restante !== 1 ? 's' : ''}
+                  {datos.restante} {t('mp.creditos_restantes')}
                 </div>
               </>
             )}
@@ -153,14 +151,14 @@ export default function MiPlanView() {
             {/* Fecha de vencimiento del ciclo */}
             {datos.ciclo_fin && (
               <div style={{ marginTop: 12, fontSize: 12, opacity: 0.55 }}>
-                Ciclo vence: {fechaCorta(datos.ciclo_fin)}
+                {t('mp.ciclo_vence')} {fechaCorta(datos.ciclo_fin)}
               </div>
             )}
           </div>
 
           {/* Nota explicativa */}
           <p style={{ fontSize: 12, opacity: 0.5, marginBottom: 18, lineHeight: 1.5 }}>
-            Para cambiar de plan o suscribirte, gestiona tu plan en la web.
+            {t('mp.nota')}
           </p>
 
           {/* Botón principal */}
@@ -179,7 +177,7 @@ export default function MiPlanView() {
               letterSpacing: 0.2,
             }}
           >
-            Gestionar mi plan en la web
+            {t('mp.gestionar')}
           </button>
         </>
       )}
