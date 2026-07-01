@@ -312,7 +312,7 @@ public class MaticoScreenCaptureService extends Service {
                 ));
 
                 // Pill "Captura pantalla" (estado A)
-                TextView bubble = buildCaptureBubbleView();
+                View bubble = buildCaptureBubbleView();
                 attachDragToCaptureBubble(bubble);
 
                 // Prompt "Otra / Finalizar" (estado B) - pre-construido y oculto
@@ -343,7 +343,27 @@ public class MaticoScreenCaptureService extends Service {
         }, OVERLAY_RETRY_MS);
     }
 
-    private TextView buildCaptureBubbleView() {
+    // Botón circular "✕" pequeño para cancelar la sesión sin usar lo capturado.
+    // Antes no existía ninguna forma visible de arrepentirse desde el overlay — solo
+    // se podía detener desde la notificación del sistema (poco descubrible).
+    private TextView buildCloseButtonView() {
+        TextView close = new TextView(this);
+        close.setText("✕");
+        close.setTextColor(0xFFFFFFFF);
+        close.setTextSize(14f);
+        close.setGravity(Gravity.CENTER);
+        close.setTypeface(close.getTypeface(), android.graphics.Typeface.BOLD);
+        GradientDrawable closeDrawable = new GradientDrawable();
+        closeDrawable.setShape(GradientDrawable.OVAL);
+        closeDrawable.setColor(0xFFDC2626); // rojo "cancelar"
+        closeDrawable.setStroke(dp(2), 0xFFFFFFFF);
+        close.setBackground(closeDrawable);
+        close.setElevation(dp(6));
+        close.setOnClickListener(v -> cancelSession());
+        return close;
+    }
+
+    private View buildCaptureBubbleView() {
         TextView bubble = new TextView(this);
         bubble.setText("Captura\npantalla");
         bubble.setTextColor(0xFFFFFFFF);
@@ -359,7 +379,21 @@ public class MaticoScreenCaptureService extends Service {
         bubbleDrawable.setStroke(dp(2), 0xFFFFFFFF);
         bubble.setBackground(bubbleDrawable);
         bubble.setElevation(dp(6));
-        return bubble;
+
+        FrameLayout container = new FrameLayout(this);
+        FrameLayout.LayoutParams bubbleLp = new FrameLayout.LayoutParams(
+            FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT);
+        container.addView(bubble, bubbleLp);
+
+        TextView close = buildCloseButtonView();
+        int closeSize = dp(22);
+        FrameLayout.LayoutParams closeLp = new FrameLayout.LayoutParams(closeSize, closeSize);
+        closeLp.gravity = Gravity.TOP | Gravity.END;
+        closeLp.topMargin = -dp(6);
+        closeLp.rightMargin = -dp(6);
+        container.addView(close, closeLp);
+
+        return container;
     }
 
     // Prompt con dos botones (Otra captura / Finalizar) que se muestra tras cada captura.
@@ -407,9 +441,24 @@ public class MaticoScreenCaptureService extends Service {
         LinearLayout.LayoutParams rightLp = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1f);
         rightLp.setMargins(dp(PROMPT_BUTTON_MARGIN_DP), 0, 0, 0);
 
+        // X para cancelar sin usar lo capturado (descarta la cola en curso).
+        TextView close = buildCloseButtonView();
+        int closeSize = dp(BUBBLE_HEIGHT_DP);
+        LinearLayout.LayoutParams closeLp = new LinearLayout.LayoutParams(closeSize, closeSize);
+        closeLp.setMargins(0, 0, dp(PROMPT_BUTTON_MARGIN_DP), 0);
+
+        row.addView(close, closeLp);
         row.addView(another, leftLp);
         row.addView(finish, rightLp);
         return row;
+    }
+
+    // Cierra el overlay y libera la proyección SIN avisar al plugin/JS: descarta la
+    // cola de capturas pendientes en vez de procesarlas (a diferencia de "Finalizar").
+    private void cancelSession() {
+        MaticoScreenCaptureStore.clear();
+        stopSession();
+        stopSelf();
     }
 
     private WindowManager.LayoutParams buildFrameLayoutParams() {

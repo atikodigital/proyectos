@@ -55,7 +55,7 @@ export default function GastosApp() {
         setCompany(resp);
         try { localStorage.setItem('hash_idioma', resp.idioma || 'es'); } catch (_) {}
         setProductos(Array.isArray(resp.productos) ? resp.productos : []);
-        if (!resp.onboarded_at && !saltado) setMostrarOnboarding(true);
+        if (!resp.onboarded_at && !resp.onboarding_saltado && !saltado) setMostrarOnboarding(true);
       } catch { /* no romper el render */ }
     })();
   }, [authed]); // eslint-disable-line react-hooks/exhaustive-deps

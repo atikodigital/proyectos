@@ -154,6 +154,9 @@ export default function OnboardingWizard({ onDone, onSkip, onIrAlChat, onCrearPe
     });
   }
   async function terminar() { try { await api.updateCompany({ onboarded: true }); } catch {} onDone && onDone(); }
+  // Guardamos "saltado" en el servidor: si solo viviera en memoria de React se
+  // perdía al reabrir la app y el wizard volvía a aparecer desde el paso 1 cada vez.
+  async function saltar() { try { await api.updateCompany({ onboarding_saltado: true }); } catch {} onSkip && onSkip(); }
 
   if (cargando) return <div style={{ padding: 24, color: '#cfeaf3' }}>{t('onb.cargando')}</div>;
 
@@ -161,7 +164,7 @@ export default function OnboardingWizard({ onDone, onSkip, onIrAlChat, onCrearPe
     <div style={{ position: 'fixed', inset: 0, background: '#0a0a0f', color: '#e7eef2', overflowY: 'auto', zIndex: 50, padding: 20 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div style={{ fontSize: 12, opacity: 0.7 }}>{t('onb.paso')} {i + 1} {t('onb.de')} {PASOS.length}</div>
-        <button onClick={() => onSkip && onSkip()} style={{ background: 'transparent', color: '#9aa', border: 0 }}>{t('onb.saltar_por_ahora')}</button>
+        <button onClick={saltar} style={{ background: 'transparent', color: '#9aa', border: 0 }}>{t('onb.saltar_por_ahora')}</button>
       </div>
       <div style={{ height: 4, background: '#ffffff14', borderRadius: 4, margin: '10px 0 18px' }}>
         <div style={{ width: `${((i + 1) / PASOS.length) * 100}%`, height: '100%', background: GOLD, borderRadius: 4 }} />
