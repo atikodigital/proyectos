@@ -4,6 +4,8 @@ import {
   hoyStr,
   decideAutoStart,
   esNegativa,
+  yaSaludoEnEstaSesion,
+  marcarSaludado,
 } from '../../src/gastos/kaly/logic';
 import { buildSystemPrompt, instruccionInicial } from '../../src/gastos/kaly/prompt';
 
@@ -31,8 +33,29 @@ describe('decideAutoStart', () => {
     expect(decideAutoStart({ onboarded: undefined, lastGreet: null, today })).toBe('onboarding');
   });
 
-  test('retorna saludo siempre si onboarded=true', () => {
-    expect(decideAutoStart({ onboarded: true, lastGreet: today, today })).toBe('saludo');
+  test('retorna saludo si onboarded=true y no ha saludado en esta sesión', () => {
+    expect(decideAutoStart({ onboarded: true, yaSaludo: false })).toBe('saludo');
+  });
+
+  // Bug real: KalyAgent se remonta al navegar entre pestañas (está dentro de una
+  // condición que depende de `tab`/`pending`/etc.), y cada remontaje disparaba el
+  // saludo automático de nuevo — el usuario reportó "me saludó 3 veces". La bandera
+  // yaSaludo (memoria de corto plazo, sessionStorage) evita repetirlo.
+  test('NO retorna saludo si ya saludó en esta sesión (evita saludos repetidos al remontar)', () => {
+    expect(decideAutoStart({ onboarded: true, yaSaludo: true })).toBeNull();
+  });
+});
+
+describe('yaSaludoEnEstaSesion / marcarSaludado', () => {
+  beforeEach(() => { sessionStorage.clear(); });
+
+  test('empieza en false', () => {
+    expect(yaSaludoEnEstaSesion()).toBe(false);
+  });
+
+  test('marcarSaludado() hace que yaSaludoEnEstaSesion() devuelva true', () => {
+    marcarSaludado();
+    expect(yaSaludoEnEstaSesion()).toBe(true);
   });
 });
 

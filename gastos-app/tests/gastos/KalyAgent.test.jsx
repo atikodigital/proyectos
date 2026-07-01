@@ -68,6 +68,7 @@ beforeEach(() => {
   lastLiveOpts = null;
   lastSession = null;
   localStorage.clear();
+  sessionStorage.clear();
   jest.useFakeTimers();
 });
 
@@ -111,6 +112,30 @@ test('(2) kaly_onboarded=1 + kaly_last_greet=today → auto-starts (greeted toda
   });
 
   // Auto-start should have happened
+  expect(api.agentSession).toHaveBeenCalledTimes(1);
+  expect(openLiveSession).toHaveBeenCalledTimes(1);
+});
+
+// ── Test 2b: bug real reportado — KalyAgent se remonta al navegar entre pestañas
+// (vive dentro de una condición que depende de tab/pending/etc. en GastosApp), y
+// cada remontaje repetía el saludo automático ("me saludó 3 veces"). La bandera de
+// sessionStorage (memoria de corto plazo) debe evitarlo sin tocar ese layout.
+
+test('(2b) remontar KalyAgent 3 veces en la misma sesión de app solo saluda 1 vez', async () => {
+  localStorage.setItem('kaly_onboarded', '1');
+
+  const { unmount: unmount1 } = render(<KalyAgent />);
+  await act(async () => { await Promise.resolve(); });
+  unmount1();
+
+  const { unmount: unmount2 } = render(<KalyAgent />);
+  await act(async () => { await Promise.resolve(); });
+  unmount2();
+
+  render(<KalyAgent />);
+  await act(async () => { await Promise.resolve(); });
+
+  // Solo el primer montaje debió disparar el saludo automático.
   expect(api.agentSession).toHaveBeenCalledTimes(1);
   expect(openLiveSession).toHaveBeenCalledTimes(1);
 });

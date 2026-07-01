@@ -10,7 +10,7 @@ import KalyOrb from './KalyOrb.jsx';
 import { openLiveSession, unlockAudio } from './live.js';
 import { TOOL_DECLARATIONS, executeTool } from './tools.js';
 import { buildSystemPrompt, instruccionInicial } from './prompt.js';
-import { decideAutoStart, esNegativa, hoyStr, SILENCE_MS, INACTIVITY_MS } from './logic.js';
+import { decideAutoStart, esNegativa, hoyStr, marcarSaludado, yaSaludoEnEstaSesion, SILENCE_MS, INACTIVITY_MS } from './logic.js';
 import { useAgentInteraction } from '../agente/AgentInteractionProvider.jsx';
 
 const LIVE_MODEL_FALLBACK =
@@ -86,6 +86,9 @@ export default function KalyAgent() {
   const start = useCallback(
     async (motivo) => {
       if (sessionRef.current) return;
+      // Marcar ANTES de conectar: si KalyAgent se desmonta/remonta a mitad de la
+      // conexión (navegación entre pestañas), el remontaje no debe repetir el saludo.
+      if (motivo === 'saludo') marcarSaludado();
       setState('connecting');
       setMessages([{ sender: 'kaly', text: 'Conectando con Kaly...', isSystem: true }]);
 
@@ -181,7 +184,7 @@ export default function KalyAgent() {
 
   useEffect(() => {
     const onboarded = localStorage.getItem('kaly_onboarded') === '1';
-    const motivo = decideAutoStart({ onboarded });
+    const motivo = decideAutoStart({ onboarded, yaSaludo: yaSaludoEnEstaSesion() });
     if (motivo) start(motivo);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
