@@ -721,7 +721,9 @@ const EvidenceIntake = ({
             {errorMsg && (
                 <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 flex items-start gap-2">
                     <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                    <span>{errorMsg}</span>
+                    <span className="flex-1">{errorMsg}</span>
+                    <button type="button" onClick={() => setErrorMsg('')} aria-label="Cerrar aviso"
+                        className="text-red-700 opacity-60 hover:opacity-100 flex-shrink-0 font-bold leading-none">✕</button>
                 </div>
             )}
         </div>
