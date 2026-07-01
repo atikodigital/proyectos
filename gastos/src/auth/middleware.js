@@ -19,4 +19,11 @@ function requireKind(kind) {
   };
 }
 
-module.exports = { requireAuth, requireKind };
+function requireKindAny(kinds) {
+  return (req, res, next) => {
+    if (!req.auth || !kinds.includes(req.auth.kind)) return res.status(403).json({ error: 'prohibido' });
+    return next();
+  };
+}
+
+module.exports = { requireAuth, requireKind, requireKindAny };

@@ -1,8 +1,8 @@
 const express = require('express');
-const { getEmployeeByUsuario, getAgentPrefs, setAgentPrefs, getCompanyWa, getCompanyProfile, setOnboarded, updateCompany, setGiro, getCompany } = require('../companies/repo');
+const { getEmployeeByUsuario, getAgentPrefs, setAgentPrefs, getCompanyWa, getCompanyProfile, setOnboarded, updateCompany, setGiro, getCompany, getOwnerAgentPrefs } = require('../companies/repo');
 const { verifyPassword } = require('../auth/password');
 const { signToken } = require('../auth/jwt');
-const { requireAuth, requireKind } = require('../auth/middleware');
+const { requireAuth, requireKind, requireKindAny } = require('../auth/middleware');
 const { intakeFromImage } = require('../expenses/intake');
 const { getExpense, confirmExpense, updateExpense, rejectExpense, annulExpense, markExpensePaid, markExpenseConciliada, createExpense } = require('../expenses/repo');
 const { getLineas, getLineaConCompany, setLineaAuxiliar } = require('../expenses/lineas-repo');
@@ -64,6 +64,50 @@ function createAppRouter({ db, extractExpense, createLiveToken, sendText, sendIm
     }
     const token = signToken({ kind: 'employee', companyId: emp.company_id, employeeId: emp.id });
     return res.json({ token, employee: { id: emp.id, nombre: emp.nombre } });
+  });
+
+  // ── Sesión de voz KALY: la APK la usan tanto empleados (login usuario/clave)
+  // como dueños (login social Google/Facebook, token kind='user'). Por eso estas
+  // dos rutas van ANTES del requireKind('employee') global, con su propio middleware
+  // que acepta ambos, y arman el contexto según cuál sea (mismo patrón que el panel).
+  router.post('/agent/session', requireAuth, requireKindAny(['employee', 'user']), async (req, res) => {
+    let tok;
+    if (process.env.KALY_TOKEN_MODE === 'key') {
+      tok = { token: process.env.GEMINI_API_KEY, expireAt: null, model: process.env.GEMINI_LIVE_MODEL || 'gemini-2.5-flash-native-audio-preview-09-2025' };
+    } else {
+      try { tok = await _liveToken(); }
+      catch (e) { return res.status(503).json({ error: 'live_no_disponible', detalle: e.message }); }
+    }
+    const esOwner = req.auth.kind === 'user';
+    const context = await buildAgentContext(db, {
+      companyId: req.auth.companyId,
+      employeeId: esOwner ? null : req.auth.employeeId,
+      owner: esOwner ? { kind: 'user', id: req.auth.userId } : { kind: 'employee', id: req.auth.employeeId },
+    });
+    if (esOwner) {
+      const ownerPrefs = await getOwnerAgentPrefs(db, req.auth.companyId);
+      if (ownerPrefs.nombre) context.nombre = ownerPrefs.nombre;
+      if (ownerPrefs.trato) context.trato = ownerPrefs.trato;
+      if (ownerPrefs.onboarded_at) context.onboarded = true;
+    }
+    console.log('[kaly] token live emitido para', esOwner ? 'owner' : 'empleado', esOwner ? req.auth.userId : req.auth.employeeId);
+    return res.json({ ...tok, context });
+  });
+
+  router.post('/agent/session/end', requireAuth, requireKindAny(['employee', 'user']), async (req, res) => {
+    const duracion_seg = Number((req.body || {}).duracion_seg);
+    if (!Number.isFinite(duracion_seg) || duracion_seg <= 0) {
+      return res.status(400).json({ error: 'duracion_invalida' });
+    }
+    const minutos = Math.max(1, Math.ceil(duracion_seg / 60));
+    try {
+      await consumirCredito(db, req.auth.companyId, { tipo: 'voz_min', cantidad: minutos, meta: { duracion_seg } });
+      const s = await saldoCreditos(db, req.auth.companyId);
+      return res.json({ ok: true, saldo: s });
+    } catch (e) {
+      if (e instanceof SinCreditosError) return res.status(402).json({ error: 'sin_creditos', saldo: e.saldo });
+      return res.status(500).json({ error: 'voz_end_error' });
+    }
   });
 
   router.use(requireAuth, requireKind('employee'));
@@ -313,41 +357,6 @@ function createAppRouter({ db, extractExpense, createLiveToken, sendText, sendIm
   router.patch('/agent/prefs', async (req, res) => {
     const prefs = await setAgentPrefs(db, req.auth.employeeId, req.auth.companyId, req.body || {});
     return res.json({ agent_prefs: prefs });
-  });
-
-  router.post('/agent/session', async (req, res) => {
-    let tok;
-    if (process.env.KALY_TOKEN_MODE === 'key') {
-      // Modo directo: entrega la API key real SOLO a empleados autenticados (fallback
-      // mientras el WS no acepte tokens efimeros como key).
-      tok = { token: process.env.GEMINI_API_KEY, expireAt: null, model: process.env.GEMINI_LIVE_MODEL || 'gemini-2.5-flash-native-audio-preview-09-2025' };
-    } else {
-      try { tok = await _liveToken(); }
-      catch (e) { return res.status(503).json({ error: 'live_no_disponible', detalle: e.message }); }
-    }
-    const context = await buildAgentContext(db, {
-      companyId: req.auth.companyId,
-      employeeId: req.auth.employeeId,
-      owner: { kind: 'employee', id: req.auth.employeeId },
-    });
-    console.log('[kaly] token live emitido para empleado', req.auth.employeeId);
-    return res.json({ ...tok, context });
-  });
-
-  router.post('/agent/session/end', async (req, res) => {
-    const duracion_seg = Number((req.body || {}).duracion_seg);
-    if (!Number.isFinite(duracion_seg) || duracion_seg <= 0) {
-      return res.status(400).json({ error: 'duracion_invalida' });
-    }
-    const minutos = Math.max(1, Math.ceil(duracion_seg / 60));
-    try {
-      await consumirCredito(db, req.auth.companyId, { tipo: 'voz_min', cantidad: minutos, meta: { duracion_seg } });
-      const s = await saldoCreditos(db, req.auth.companyId);
-      return res.json({ ok: true, saldo: s });
-    } catch (e) {
-      if (e instanceof SinCreditosError) return res.status(402).json({ error: 'sin_creditos', saldo: e.saldo });
-      return res.status(500).json({ error: 'voz_end_error' });
-    }
   });
 
   // ── KALY memoria (hechos scoped por empresa + personal por empleado) ──
