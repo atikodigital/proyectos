@@ -61,6 +61,12 @@ public class MaticoScreenCaptureService extends Service {
     private static final int BUBBLE_HEIGHT_DP = 56;
     private static final int BUBBLE_MARGIN_DP = 16;
     private static final int BUBBLE_BOTTOM_OFFSET_DP = 180;
+    // La ventana del overlay mide EXACTO lo que ocupa su contenido — todo lo que se
+    // dibuje fuera de ese tamaño lo recorta el propio sistema (no es un problema de
+    // z-order/clipping de vistas). Por eso el botón "✕" (que sobresale de la burbuja
+    // hacia la esquina superior-derecha) necesita una ventana más grande que la
+    // burbuja visual, con espacio extra reservado para que quepa completo.
+    private static final int CLOSE_OVERHANG_DP = 12;
 
     // Prompt post-captura (estado B) con dos botones: Otra / Finalizar
     private static final int PROMPT_WIDTH_DP = 300;
@@ -380,17 +386,18 @@ public class MaticoScreenCaptureService extends Service {
         bubble.setBackground(bubbleDrawable);
         bubble.setElevation(dp(6));
 
+        // El contenedor (= la ventana completa, ver buildCaptureBubbleLayoutParams) es
+        // más grande que la burbuja: la burbuja va anclada abajo-izquierda, dejando el
+        // espacio extra arriba-derecha libre para que la X quepa completa.
         FrameLayout container = new FrameLayout(this);
-        FrameLayout.LayoutParams bubbleLp = new FrameLayout.LayoutParams(
-            FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT);
+        FrameLayout.LayoutParams bubbleLp = new FrameLayout.LayoutParams(dp(BUBBLE_WIDTH_DP), dp(BUBBLE_HEIGHT_DP));
+        bubbleLp.gravity = Gravity.BOTTOM | Gravity.START;
         container.addView(bubble, bubbleLp);
 
         TextView close = buildCloseButtonView();
         int closeSize = dp(22);
         FrameLayout.LayoutParams closeLp = new FrameLayout.LayoutParams(closeSize, closeSize);
         closeLp.gravity = Gravity.TOP | Gravity.END;
-        closeLp.topMargin = -dp(6);
-        closeLp.rightMargin = -dp(6);
         container.addView(close, closeLp);
 
         return container;
@@ -477,9 +484,14 @@ public class MaticoScreenCaptureService extends Service {
     }
 
     private WindowManager.LayoutParams buildCaptureBubbleLayoutParams() {
+        // La ventana crece CLOSE_OVERHANG_DP en ancho y alto respecto a la burbuja
+        // visual, dejando espacio para que la X quepa sin recortarse (ver comentario
+        // de CLOSE_OVERHANG_DP). La burbuja se ancla abajo-izquierda de esa ventana
+        // más grande (buildCaptureBubbleView), así que compensamos "y" restando el
+        // overhang para que la burbuja quede en la misma posición visual de antes.
         WindowManager.LayoutParams params = new WindowManager.LayoutParams(
-            dp(BUBBLE_WIDTH_DP),
-            dp(BUBBLE_HEIGHT_DP),
+            dp(BUBBLE_WIDTH_DP + CLOSE_OVERHANG_DP),
+            dp(BUBBLE_HEIGHT_DP + CLOSE_OVERHANG_DP),
             resolveOverlayType(),
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
                 | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN
@@ -488,7 +500,7 @@ public class MaticoScreenCaptureService extends Service {
         );
         params.gravity = Gravity.TOP | Gravity.START;
         params.x = Math.max(0, width - dp(BUBBLE_WIDTH_DP) - dp(BUBBLE_MARGIN_DP));
-        params.y = Math.max(0, height - dp(BUBBLE_HEIGHT_DP) - dp(BUBBLE_BOTTOM_OFFSET_DP));
+        params.y = Math.max(0, height - dp(BUBBLE_HEIGHT_DP) - dp(BUBBLE_BOTTOM_OFFSET_DP) - dp(CLOSE_OVERHANG_DP));
         return params;
     }
 
@@ -552,8 +564,11 @@ public class MaticoScreenCaptureService extends Service {
     // Permite arrastrar la pill y, si el dedo apenas se mueve, dispara la captura (tap).
     private void attachDragToCaptureBubble(View bubble) {
         final int touchSlop = ViewConfiguration.get(this).getScaledTouchSlop();
-        final int bubbleWidthPx = dp(BUBBLE_WIDTH_DP);
-        final int bubbleHeightPx = dp(BUBBLE_HEIGHT_DP);
+        // Los límites de arrastre deben usar el tamaño real de la VENTANA (burbuja +
+        // overhang de la X), no solo el de la burbuja visual, para no dejarla salir
+        // de la pantalla por el ancho/alto extra reservado para el botón "✕".
+        final int bubbleWidthPx = dp(BUBBLE_WIDTH_DP + CLOSE_OVERHANG_DP);
+        final int bubbleHeightPx = dp(BUBBLE_HEIGHT_DP + CLOSE_OVERHANG_DP);
         final int marginPx = dp(BUBBLE_MARGIN_DP);
 
         bubble.setOnTouchListener(new View.OnTouchListener() {
