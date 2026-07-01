@@ -159,13 +159,17 @@ async function ensureCompanyOnboarding(db) {
   if (_ocReady.get(db)) return;
   try { await db.query('ALTER TABLE companies ADD COLUMN IF NOT EXISTS onboarded_at timestamptz'); } catch (e) { /* ya existe */ }
   try { await db.query("ALTER TABLE companies ADD COLUMN IF NOT EXISTS productos jsonb DEFAULT '[]'"); } catch (e) { /* ya existe */ }
+  // "Saltar por ahora" en el wizard: sin esto, saltarlo solo vivía en memoria de React
+  // (useState) y se perdía al reabrir la app — el wizard volvía a aparecer desde el
+  // paso 1 cada vez. Guardarlo en la empresa lo hace permanente entre sesiones/dispositivos.
+  try { await db.query('ALTER TABLE companies ADD COLUMN IF NOT EXISTS onboarding_saltado boolean NOT NULL DEFAULT false'); } catch (e) { /* ya existe */ }
   _ocReady.set(db, true);
 }
 
 async function getCompanyProfile(db, companyId) {
   await ensureCompanyOnboarding(db);
   const r = await db.query(
-    'SELECT id, nombre, rut, giro, owner_nombre, owner_whatsapp, onboarded_at, created_at, kaly_persona, productos, tipo_cuenta, sueldo_mensual, dia_pago, idioma FROM companies WHERE id=$1',
+    'SELECT id, nombre, rut, giro, owner_nombre, owner_whatsapp, onboarded_at, onboarding_saltado, created_at, kaly_persona, productos, tipo_cuenta, sueldo_mensual, dia_pago, idioma FROM companies WHERE id=$1',
     [companyId]
   );
   if (!r.rows[0]) return null;
@@ -197,9 +201,15 @@ async function setOnboarded(db, companyId) {
   return getCompanyProfile(db, companyId);
 }
 
+async function setOnboardingSaltado(db, companyId) {
+  await ensureCompanyOnboarding(db);
+  await db.query('UPDATE companies SET onboarding_saltado=true WHERE id=$1', [companyId]);
+  return getCompanyProfile(db, companyId);
+}
+
 module.exports = {
   createCompany, createEmployee, getEmployeeByProvider, linkProviderEmployee, getCompanyByPhoneNumberId, getEmployeeByPhone, getEmployeeByUsuario,
   listEmployees, updateEmployee, deactivateEmployee, getCompany, updateCompany, getCompanyWa,
   getAgentPrefs, setAgentPrefs, getOwnerAgentPrefs, setOwnerAgentPrefs, getGiro, setGiro,
-  getCompanyProfile, setOnboarded, ensureCompanyOnboarding, setKalyPersona,
+  getCompanyProfile, setOnboarded, setOnboardingSaltado, ensureCompanyOnboarding, setKalyPersona,
 };

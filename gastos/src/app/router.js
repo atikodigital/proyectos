@@ -1,5 +1,5 @@
 const express = require('express');
-const { getEmployeeByUsuario, getAgentPrefs, setAgentPrefs, getCompanyWa, getCompanyProfile, setOnboarded, updateCompany, setGiro, getCompany, getOwnerAgentPrefs } = require('../companies/repo');
+const { getEmployeeByUsuario, getAgentPrefs, setAgentPrefs, getCompanyWa, getCompanyProfile, setOnboarded, setOnboardingSaltado, updateCompany, setGiro, getCompany, getOwnerAgentPrefs } = require('../companies/repo');
 const { verifyPassword } = require('../auth/password');
 const { signToken } = require('../auth/jwt');
 const { requireAuth, requireKind, requireKindAny } = require('../auth/middleware');
@@ -253,6 +253,7 @@ function createAppRouter({ db, extractExpense, createLiveToken, sendText, sendIm
     if (Object.keys(companyPatch).length) await updateCompany(db, req.auth.companyId, companyPatch);
     if (b.giro !== undefined) await setGiro(db, req.auth.companyId, b.giro);
     if (b.onboarded) await setOnboarded(db, req.auth.companyId);
+    if (b.onboarding_saltado) await setOnboardingSaltado(db, req.auth.companyId);
     return res.json(await getCompanyProfile(db, req.auth.companyId));
   });
 
