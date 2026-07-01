@@ -82,7 +82,7 @@ export function openLiveSession(opts) {
   };
 
   ws.onerror = () => setState('error');
-  ws.onclose = () => { cleanup(); onClose && onClose(); };
+  ws.onclose = (ev) => { cleanup(); onClose && onClose({ code: ev && ev.code, reason: ev && ev.reason, wasClean: ev && ev.wasClean }); };
 
   function cleanup() { if (closed) return; closed = true; stopIdle(); if (micStop) micStop(); if (player) player.stop(); }
 

@@ -33,6 +33,7 @@ export default function KalyAgent() {
   const sessionRef = useRef(null);
   const silenceTimerRef = useRef(null);
   const inactivityTimerRef = useRef(null);
+  const diagTimerRef = useRef(null);
   const contextRef = useRef(null);
   const mutedRef = useRef(muted);
   const turnosRef = useRef([]);
@@ -76,6 +77,7 @@ export default function KalyAgent() {
   const stop = useCallback(() => {
     flushAprender();
     clearSilenceTimer();
+    if (diagTimerRef.current) { clearTimeout(diagTimerRef.current); diagTimerRef.current = null; }
     if (sessionRef.current) { sessionRef.current.close(); sessionRef.current = null; }
     setState('off');
     setMessages([]);
@@ -89,18 +91,31 @@ export default function KalyAgent() {
 
       let s;
       try { s = await api.agentSession(); }
-      catch (_) {
+      catch (e) {
         setState('error');
-        setMessages([{ sender: 'kaly', text: 'Kaly no disponible. Intente más tarde.', isSystem: true }]);
-        setTimeout(() => stop(), 3000);
+        const detalle = e && (e.status ? `HTTP ${e.status}` : '') + (e && e.data && e.data.error ? ' · ' + e.data.error : (e.message || ''));
+        setMessages([{ sender: 'kaly', text: 'Kaly no disponible. ' + (detalle || 'Intente más tarde.'), isSystem: true }]);
+        setTimeout(() => stop(), 4000);
         return;
       }
+
+      // Diagnóstico: si a los 10s la sesión no llegó a 'live', el problema está en
+      // la conexión WebSocket a Gemini (token/red), no en el backend. onState limpia
+      // este timer apenas conecta.
+      diagTimerRef.current = setTimeout(() => {
+        setMessages((prev) => [...prev, { sender: 'kaly', text: 'DIAG: la conexión de voz con Gemini no respondió en 10s (revisa conexión a internet del teléfono).', isSystem: true }]);
+      }, 10000);
 
       contextRef.current = s.context;
       if (motivo === 'onboarding' && s.context && s.context.onboarded) motivo = 'saludo';
       if (s.context && s.context.onboarded) localStorage.setItem('kaly_onboarded', '1');
 
+      let everLive = false;
       const onState = (newState) => {
+        if (newState === 'live' || newState === 'listening' || newState === 'speaking') {
+          everLive = true;
+          if (diagTimerRef.current) { clearTimeout(diagTimerRef.current); diagTimerRef.current = null; }
+        }
         setState(newState);
         if (newState === 'listening') armSilenceTimer(stop);
       };
@@ -133,7 +148,19 @@ export default function KalyAgent() {
         });
         if (sessionRef.current) sessionRef.current.sendToolResponse(fc.id, fc.name, out);
       };
-      const onClose = () => { flushAprender(); sessionRef.current = null; setState('off'); setMessages([]); };
+      const onClose = (info) => {
+        flushAprender();
+        sessionRef.current = null;
+        if (diagTimerRef.current) { clearTimeout(diagTimerRef.current); diagTimerRef.current = null; }
+        if (!everLive && info) {
+          setMessages([{ sender: 'kaly', text: `DIAG: la conexión con Gemini se cerró antes de conectar (código ${info.code || '?'}${info.reason ? ' · ' + info.reason : ''}).`, isSystem: true }]);
+          setState('error');
+          setTimeout(() => { setState('off'); setMessages([]); }, 5000);
+          return;
+        }
+        setState('off');
+        setMessages([]);
+      };
 
       const session = openLiveSession({
         token: s.token,
