@@ -36,7 +36,7 @@ export async function googleNativeLogin() {
 
 export async function facebookNativeLogin() {
   const SocialLogin = await ensureInit();
-  const res = await SocialLogin.login({ provider: 'facebook', options: { permissions: ['public_profile'] } });
+  const res = await SocialLogin.login({ provider: 'facebook', options: { permissions: ['public_profile', 'email'] } });
   const r = (res && res.result) || {};
   const token = r.accessToken && r.accessToken.token;
   if (!token) throw new Error('sin_accessToken');
