@@ -38,13 +38,13 @@ export default function LoginScreen({ onLoggedIn }) {
   async function entrarConGoogle() {
     setError(''); setLoading(true);
     try { onLoggedIn(await api.loginGoogle(await googleNativeLogin())); }
-    catch { setError(t('login.err_google')); }
+    catch (e) { setError('DIAG Google: ' + (e && (e.message || e.code || e.error)) + (e && e.data ? ' · ' + JSON.stringify(e.data).slice(0, 200) : '')); }
     finally { setLoading(false); }
   }
   async function entrarConFacebook() {
     setError(''); setLoading(true);
     try { onLoggedIn(await api.loginFacebook(await facebookNativeLogin())); }
-    catch { setError(t('login.err_facebook')); }
+    catch (e) { setError('DIAG Facebook: ' + (e && (e.message || e.code || e.error)) + (e && e.data ? ' · ' + JSON.stringify(e.data).slice(0, 200) : '')); }
     finally { setLoading(false); }
   }
 

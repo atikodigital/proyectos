@@ -28,7 +28,9 @@ export function facebookDisponible() { return Capacitor.isNativePlatform() && !!
 
 export async function googleNativeLogin() {
   const SocialLogin = await ensureInit();
-  const res = await SocialLogin.login({ provider: 'google', options: { scopes: ['email', 'profile'] } });
+  // El plugin ya incluye email+profile+openid por defecto; pasar `scopes` (aunque
+  // duplique los defaults) exige modificar MainActivity — mejor omitirlo.
+  const res = await SocialLogin.login({ provider: 'google', options: {} });
   const r = (res && res.result) || {};
   if (!r.idToken) throw new Error('sin_idToken');
   return r.idToken;
