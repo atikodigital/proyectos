@@ -372,9 +372,21 @@
     return acc;
   }
 
+  // Etiqueta clara del estado de pago (lo no pagado es "Pendiente de pago").
+  function labelPago(v) {
+    var s = String(v || '').toLowerCase();
+    if (!s) return 'Pendiente de pago';
+    if (s === 'pagada' || s === 'pagado') return L('tab.pagado');
+    if (s === 'conciliada') return 'Conciliada';
+    return 'Pendiente de pago';
+  }
+
   function pagoCell(r) {
     if (r.tipo === 'ingreso') return '—';
-    if (r.estado_pago === 'pagada') return '<span class="badge-pago badge-pagado">' + L('tab.pagado') + '</span>';
+    // Ambos estados son botón: pagada → volver a pendiente (data-unpay); pendiente → pagar (data-pay).
+    if (r.estado_pago === 'pagada' || r.estado_pago === 'conciliada') {
+      return '<button class="badge-pago badge-pagado" data-unpay="' + escapeHtml(r.id) + '" title="Tocar para volver a Pendiente de pago" style="cursor:pointer;border:0">' + labelPago(r.estado_pago) + '</button>';
+    }
     return '<button class="btn-pay btn-porpagar" data-pay="' + escapeHtml(r.id) + '">' + L('tab.por_pagar') + '</button>';
   }
 
@@ -418,7 +430,7 @@
       + '<div class="movprov">' + escapeHtml(r.proveedor || (esIngreso ? L('tab.sin_pagador') : L('tab.sin_proveedor'))) + '</div>'
       + '<div class="movtotal">' + (esIngreso ? '+' : '−') + fmtClp(r.total) + '</div>'
       + '<div class="movmeta">' + escapeHtml(r.fecha || L('tab.sin_fecha')) + ' · ' + escapeHtml(esIngreso ? L('tab.ingreso') : (r.categoria || L('tab.otros_gastos'))) + '</div>'
-      + '<div class="movmeta">' + escapeHtml(r.estado || '') + (r.estado_pago ? ' · ' + escapeHtml(r.estado_pago) : '') + '</div>'
+      + '<div class="movmeta">' + escapeHtml(r.estado || '') + (r.estado_pago ? ' · ' + escapeHtml(labelPago(r.estado_pago)) : '') + '</div>'
       + '<div class="movpago">' + pagoCell(r) + '</div>'
       + '</div>';
   }
@@ -451,7 +463,7 @@
       [L('tab.enviado_por_wa'), [e.wa_sender_name, e.wa_sender_phone].filter(Boolean).join(' · ')],
       [L('tab.canal'), e.canal],
       [L('tab.estado'), e.estado],
-      [L('tab.estado_pago'), e.estado_pago],
+      [L('tab.estado_pago'), e.estado_pago ? labelPago(e.estado_pago) : e.estado_pago],
     ].filter(function (f) { return f[1] !== undefined && f[1] !== null && String(f[1]).trim() !== ''; });
   }
 
@@ -506,7 +518,7 @@
         grad: 'linear-gradient(135deg,#10b981 0%,#065f46 100%)',
         campos: [
           campo(L('tab.estado'), e.estado),
-          campo(L('tab.pago'), e.estado_pago),
+          campo(L('tab.pago'), e.estado_pago ? labelPago(e.estado_pago) : null),
           campo(L('tab.glosa'), e.glosa),
           campo(L('tab.whatsapp'), [e.wa_sender_name, e.wa_sender_phone].filter(Boolean).join(' · ') || null),
         ]
@@ -768,5 +780,5 @@
     return '<div id="varasMensajes" style="display:flex;flex-direction:column">' + burbujas + tarjeta + '</div>';
   }
 
-  return { fmtClp, escapeHtml, buildQuery, totalsFromRows, cashflowFromRows, expensesTableHtml, expensesCarouselHtml, detalleRows, detalleHtml, desdePriceLib: desdePriceLib, productosListHtml: productosListHtml, cuadreManual: cuadreManual, diarioTableHtml: diarioTableHtml, mayorTableHtml: mayorTableHtml, balanceTableHtml: balanceTableHtml, flujoTableHtml: flujoTableHtml, conciliacionHtml: conciliacionHtml, ivaResumenHtml: ivaResumenHtml, auxiliaresTableHtml: auxiliaresTableHtml, consumoHtml: consumoHtml, varasChatHtml: varasChatHtml, cuentasTableHtml: cuentasTableHtml };
+  return { fmtClp, escapeHtml, buildQuery, totalsFromRows, cashflowFromRows, expensesTableHtml, expensesCarouselHtml, detalleRows, detalleHtml, labelPago: labelPago, desdePriceLib: desdePriceLib, productosListHtml: productosListHtml, cuadreManual: cuadreManual, diarioTableHtml: diarioTableHtml, mayorTableHtml: mayorTableHtml, balanceTableHtml: balanceTableHtml, flujoTableHtml: flujoTableHtml, conciliacionHtml: conciliacionHtml, ivaResumenHtml: ivaResumenHtml, auxiliaresTableHtml: auxiliaresTableHtml, consumoHtml: consumoHtml, varasChatHtml: varasChatHtml, cuentasTableHtml: cuentasTableHtml };
 });

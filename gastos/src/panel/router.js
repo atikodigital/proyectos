@@ -7,7 +7,7 @@ const chatRepo = require('../chat/repo');
 const contactosRepo = require('../chat/contactos-repo');
 const { fichaDerivada, telefonoDeContacto } = require('../chat/ficha');
 const { listExpenses } = require('../expenses/query');
-const { markExpensePaid, getExpense, updateExpense, annulExpense, createExpense } = require('../expenses/repo');
+const { markExpensePaid, markExpensePendiente, getExpense, updateExpense, annulExpense, createExpense } = require('../expenses/repo');
 const { intakeFromImage } = require('../expenses/intake');
 const { getLineas } = require('../expenses/lineas-repo');
 const { readImage, contentTypeFor } = require('../expenses/storage');
@@ -341,6 +341,19 @@ function createPanelRouter({ db, sendText, sendImage, varasGemini } = {}) {
   router.patch('/expenses/:id/pagar', async (req, res) => {
     const upd = await markExpensePaid(db, req.auth.companyId, req.params.id);
     if (!upd) return res.status(404).json({ error: 'no_existe' });
+    try { const exp = await getExpense(db, req.params.id); await aplicarContabilidad(db, req.auth.companyId, exp, 'pagar'); } catch (_) { /* contab best-effort */ }
+    return res.json(upd);
+  });
+
+  // Cambia el estado de pago en ambos sentidos: pagada <-> pendiente de pago.
+  // Ajusta la contabilidad (crea o anula el asiento de pago Proveedores<->Banco).
+  router.patch('/expenses/:id/pago', async (req, res) => {
+    const pagada = !!(req.body && req.body.pagada);
+    const upd = pagada
+      ? await markExpensePaid(db, req.auth.companyId, req.params.id)
+      : await markExpensePendiente(db, req.auth.companyId, req.params.id);
+    if (!upd) return res.status(404).json({ error: 'no_existe' });
+    try { const exp = await getExpense(db, req.params.id); await aplicarContabilidad(db, req.auth.companyId, exp, pagada ? 'pagar' : 'despagar'); } catch (_) { /* contab best-effort */ }
     return res.json(upd);
   });
 

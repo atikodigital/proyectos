@@ -2753,7 +2753,7 @@
   function wireRowClicks() {
     $('expensesTable').querySelectorAll('tr.exp-row').forEach(function (tr) {
       tr.onclick = function (ev) {
-        if (ev.target.closest && ev.target.closest('[data-pay]')) return; // no abrir si tocó "Marcar pagada"
+        if (ev.target.closest && (ev.target.closest('[data-pay]') || ev.target.closest('[data-unpay]'))) return; // no abrir si tocó el botón de pago
         var id = tr.getAttribute('data-id');
         var row = lastRows.filter(function (r) { return String(r.id) === id; })[0];
         if (row) openDetalle(row);
@@ -2800,7 +2800,7 @@
     if (e.fecha) L.push(tp('det.fecha') + ': ' + String(e.fecha).slice(0, 10));
     if (!esIngreso && e.categoria) L.push(tp('det.categoria') + ': ' + e.categoria);
     if (e.estado) L.push('Estado: ' + e.estado);
-    if (e.estado_pago) L.push('Pago: ' + e.estado_pago);
+    if (e.estado_pago) L.push('Pago: ' + (PanelLib.labelPago ? PanelLib.labelPago(e.estado_pago) : e.estado_pago));
     if (detLineas && detLineas.length) {
       L.push('');
       L.push(tp('det.productos') + ':');
@@ -2877,6 +2877,15 @@
       b.onclick = async function () {
         b.disabled = true;
         try { await apiFetch('/expenses/' + b.getAttribute('data-pay') + '/pagar', { method: 'PATCH' }); loadGastos(); }
+        catch (e) { b.disabled = false; }
+      };
+    });
+    // Toggle inverso: "Pagado" → volver a Pendiente de pago (anula el asiento de pago).
+    $('expensesTable').querySelectorAll('[data-unpay]').forEach(function (b) {
+      b.onclick = async function (ev) {
+        ev.stopPropagation();
+        b.disabled = true;
+        try { await apiFetch('/expenses/' + b.getAttribute('data-unpay') + '/pago', { method: 'PATCH', body: JSON.stringify({ pagada: false }) }); loadGastos(); }
         catch (e) { b.disabled = false; }
       };
     });
@@ -4259,10 +4268,10 @@
   var FS = [
     'precision highp float;',
     'uniform float u_time; uniform vec2 u_res;',
-    'const vec3 C1 = vec3(0.024,0.714,0.831);', // cian  #06b6d4
-    'const vec3 C2 = vec3(0.031,0.569,0.698);', // teal  #0891b2
-    'const vec3 C3 = vec3(0.086,0.306,0.388);', // azul  #164e63
-    'const vec3 C4 = vec3(0.976,0.451,0.086);', // naranja #f97316',
+    'const vec3 C1 = vec3(0.86,0.91,0.97);', // blanco azulado #DBE8F7
+    'const vec3 C2 = vec3(0.36,0.48,0.68);', // azul acero claro #5C7AAD
+    'const vec3 C3 = vec3(0.05,0.10,0.23);', // azul marino #0D1A3B
+    'const vec3 C4 = vec3(1.00,1.00,1.00);', // blanco puro
     'void main(){',
     '  vec2 uv = gl_FragCoord.xy / u_res.xy;',
     '  float ar = u_res.x / u_res.y;',
@@ -4276,12 +4285,11 @@
     '  float b = 0.5 + 0.5 * sin(q.y * 1.7 - t * 0.90 + 1.6);',
     '  float c = 0.5 + 0.5 * sin((q.x + q.y) * 1.2 + t * 0.70);',
     '  float o = 0.5 + 0.5 * sin(q.x * 1.05 - q.y * 1.35 + t * 1.30);',
-    '  vec3 col = mix(C3, C2, smoothstep(0.0, 1.0, a));',      // base teal viva (NO negra)
-    '  col = mix(col, C1, smoothstep(0.28, 1.0, b) * 0.95);',  // realces cian brillante
-    '  col = mix(col, C1, smoothstep(0.45, 1.0, c) * 0.55);',
-    '  col = mix(col, C4, smoothstep(0.60, 1.02, o) * 0.78);', // acento naranja fluyendo
-    '  col += 0.07;',                                          // levanta el brillo general
-    '  col = pow(col, vec3(0.74));',                           // gamma: más claro y saturado
+    '  vec3 col = mix(C3, C2, smoothstep(0.0, 1.0, a) * 0.75);', // base azul marino con flujo acero
+    '  col = mix(col, C1, smoothstep(0.45, 1.0, b) * 0.55);',    // ondas blanco-azuladas suaves
+    '  col = mix(col, C1, smoothstep(0.55, 1.0, c) * 0.35);',
+    '  col = mix(col, C4, smoothstep(0.72, 1.02, o) * 0.30);',   // destellos blancos sutiles
+    '  col = pow(col, vec3(0.92));',                             // gamma suave, sin quemar el texto
     '  gl_FragColor = vec4(col, 1.0);',
     '}'
   ].join('\n');

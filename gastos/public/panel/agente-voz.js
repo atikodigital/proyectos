@@ -66,6 +66,7 @@ VARAS y toda Hash IA fueron creados y desarrollados por **José Antonio Olguín 
 # Reglas de datos (OBLIGATORIAS)
 - Responde ÚNICAMENTE con los datos que entregan las herramientas. CERO invención de cifras.
 - Saldos: \`saldo_cuenta\`; balance: \`balance\`; flujo: \`flujo\`; deudas: \`deudas\`; conciliación: \`estado_conciliacion\`; consumo de insumo: \`consumo_insumo\`.
+- GASTOS/INGRESOS registrados ("¿cuánto gasté?", "¿en qué gasté?", "¿qué le compré a X?"): usa \`gastos\` (total, desglose por categoría y últimos movimientos capturados por KALY).
 - Si una herramienta no devuelve datos, dilo con claridad; no rellenes.
 
 # Acciones — confirmación verbal EXPLÍCITA
@@ -74,7 +75,7 @@ VARAS y toda Hash IA fueron creados y desarrollados por **José Antonio Olguín 
 - \`recordar\` guarda datos del negocio o del usuario y NO mueve ni cobra dinero: úsala directamente sin pedir confirmación previa.`;
 }
 function instruccionInicialVoz() {
-  return 'El usuario tocó la esfera para hablar contigo. Salúdalo con calidez y calma, como un viejo profesor de contabilidad que recibe a su pupilo, preséntate brevemente como VARAS y pregúntale en qué lo puedes ayudar hoy (saldos, deudas, flujo, conciliación o consumo de insumos). Tono cálido y sabio, pero breve.';
+  return 'El usuario tocó la esfera para hablar contigo. Salúdalo con calidez y calma, como un viejo profesor de contabilidad que recibe a su pupilo, preséntate brevemente como VARAS y pregúntale en qué lo puedes ayudar hoy (saldos, gastos, deudas, flujo, conciliación o consumo de insumos). Tono cálido y sabio, pero breve.';
 }
 const VARAS_TOOLS = [
   { name: 'saldo_cuenta', description: 'Saldo de una cuenta contable por nombre o clave (ej. banco, caja, proveedores).', parameters: { type: 'OBJECT', properties: { nombre: { type: 'STRING' } } } },
@@ -83,6 +84,7 @@ const VARAS_TOOLS = [
   { name: 'deudas', description: 'Cuánto debe la empresa a proveedores y cuánto le deben los clientes.', parameters: { type: 'OBJECT', properties: {} } },
   { name: 'estado_conciliacion', description: 'Estado de la última conciliación bancaria (cuadrado, SCA/SBA).', parameters: { type: 'OBJECT', properties: {} } },
   { name: 'consumo_insumo', description: 'Consumo de un insumo/auxiliar por nombre. Param opcional periodo YYYY-MM.', parameters: { type: 'OBJECT', properties: { nombre: { type: 'STRING' }, periodo: { type: 'STRING' } }, required: ['nombre'] } },
+  { name: 'gastos', description: 'Consulta los GASTOS o INGRESOS registrados (capturados por KALY): total, desglose por categoría y últimos movimientos. Filtros opcionales: tipo (gasto|ingreso), categoria, proveedor, periodo YYYY-MM. Úsala SIEMPRE que pregunten por gastos.', parameters: { type: 'OBJECT', properties: { tipo: { type: 'STRING' }, categoria: { type: 'STRING' }, proveedor: { type: 'STRING' }, periodo: { type: 'STRING' } } } },
   { name: 'marcar_pagado', description: 'Marca un gasto como pagado. SOLO tras confirmación verbal explícita.', parameters: { type: 'OBJECT', properties: { descripcion: { type: 'STRING' } } } },
   { name: 'crear_asiento_manual', description: 'Crea un asiento manual. SOLO tras confirmación verbal explícita.', parameters: { type: 'OBJECT', properties: { fecha: { type: 'STRING' }, glosa: { type: 'STRING' }, lineas: { type: 'ARRAY', items: { type: 'OBJECT', properties: { cuenta: { type: 'STRING' }, debe: { type: 'NUMBER' }, haber: { type: 'NUMBER' } } } } } } },
   { name: 'enviar_resumen_whatsapp', description: 'Envía el resumen de caja por WhatsApp al dueño. SOLO tras confirmación verbal explícita.', parameters: { type: 'OBJECT', properties: {} } },
