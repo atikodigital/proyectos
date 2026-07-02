@@ -51,15 +51,18 @@ export default function MatchView({ embedded = false }) {
     }
   }
 
+  function avisarCambio() { try { window.dispatchEvent(new CustomEvent('hash:data-changed')); } catch (_) {} }
+
   async function crearAsiento(s) {
     try {
       await api.matchConfirmarAsiento(s);
       setHechos((prev) => new Set([...prev, s.id]));
+      avisarCambio();
     } catch (_e) { /* noop */ }
   }
 
   async function crearMovimiento(f, i) {
-    try { await api.matchCrearMovimiento(f); setSiiHechos((p) => new Set([...p, i])); } catch (_e) { /* noop */ }
+    try { await api.matchCrearMovimiento(f); setSiiHechos((p) => new Set([...p, i])); avisarCambio(); } catch (_e) { /* noop */ }
   }
 
   return (

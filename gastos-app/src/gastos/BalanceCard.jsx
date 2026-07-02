@@ -11,7 +11,11 @@ export default function BalanceCard() {
   const [resumen, setResumen] = useState(null);
 
   useEffect(() => {
-    api.personalResumen().then(setResumen).catch(() => {});
+    let alive = true;
+    const cargar = () => api.personalResumen().then((r) => { if (alive) setResumen(r); }).catch(() => {});
+    cargar();
+    window.addEventListener('hash:data-changed', cargar);
+    return () => { alive = false; window.removeEventListener('hash:data-changed', cargar); };
   }, []);
 
   if (!resumen) return null;

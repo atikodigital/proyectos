@@ -88,7 +88,7 @@ export default function KalyAgent() {
       if (sessionRef.current) return;
       // Marcar ANTES de conectar: si KalyAgent se desmonta/remonta a mitad de la
       // conexión (navegación entre pestañas), el remontaje no debe repetir el saludo.
-      if (motivo === 'saludo') marcarSaludado();
+      if (motivo === 'saludo' || motivo === 'onboarding') marcarSaludado();
       setState('connecting');
       setMessages([{ sender: 'kaly', text: 'Conectando con Kaly...', isSystem: true }]);
 
@@ -149,6 +149,12 @@ export default function KalyAgent() {
           proponer,
           pedirEvidencia,
         });
+        // Si el tool cambió movimientos (registró/pagó/anuló/capturó), avisa a la app
+        // para que BalanceCard y la lista de movimientos se refresquen al instante.
+        const CAMBIA_DATOS = new Set(['crear_movimiento_manual', 'marcar_pagada', 'anular_movimiento', 'pedir_documento']);
+        if (out && !out.error && !out.cancelado && CAMBIA_DATOS.has(fc.name)) {
+          try { window.dispatchEvent(new CustomEvent('hash:data-changed')); } catch (_) {}
+        }
         if (sessionRef.current) sessionRef.current.sendToolResponse(fc.id, fc.name, out);
       };
       const onClose = (info) => {

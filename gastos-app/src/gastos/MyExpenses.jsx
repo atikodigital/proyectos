@@ -373,7 +373,9 @@ export default function MyExpenses() {
     let alive = true;
     api.listExpenses().then((r) => { if (alive) setRows(Array.isArray(r) ? r : []); })
       .catch(() => {}).finally(() => { if (alive) setLoading(false); });
-    return () => { alive = false; };
+    const recargar = () => { api.listExpenses().then((r) => { if (alive) setRows(Array.isArray(r) ? r : []); }).catch(() => {}); };
+    window.addEventListener('hash:data-changed', recargar);
+    return () => { alive = false; window.removeEventListener('hash:data-changed', recargar); };
   }, []);
 
   // Opciones de categoría y estado salen de los datos → se adapta a negocio y personal.
