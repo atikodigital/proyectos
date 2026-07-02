@@ -265,14 +265,14 @@ export function instruccionInicial(context = {}, motivo = 'manual') {
   }
 
   if (motivo === 'onboarding') {
-    return 'Realiza el onboarding completo ahora. Saluda, preséntate ("Soy Kaly, tu asistente contable...") y pregunta SOLO el nombre: "¿Cuál es su nombre?". Deduce el trato del género del nombre y llama a guardar_preferencias con nombre y trato.';
+    return 'Realiza el onboarding completo ahora. Saluda, preséntate ("Soy Kaly, tu asistente contable...") y pregunta SOLO el nombre: "¿Cuál es su nombre?". Deduce el trato del género del nombre y llama a guardar_preferencias con nombre y trato. Luego, en 1 frase, enséñale que puede registrar un documento con una FOTO, una CAPTURA de pantalla o SUBIENDO un archivo (botón Captura), o dictándotelo por voz; e invítalo a probar.';
   }
   if (motivo === 'saludo') {
     const senal = Array.isArray(context.senales) && context.senales[0];
     if (senal) {
       return `Enciende el micrófono y saluda breve: 'Hola, ${saludo}${nombreLabel}'. Menciona enseguida, en tu tono y sin agobiar: '${senal}'. Luego ofrece ayuda con algo como '¿En qué trabajamos hoy?'.`;
     }
-    return `Enciende el micrófono y di exactamente: 'Hola, ${saludo}${nombreLabel}, ¿en qué trabajaremos hoy?' o '¿Necesita ayuda?'`;
+    return `Enciende el micrófono y saluda: 'Hola, ${saludo}${nombreLabel}, ¿en qué trabajaremos hoy?'. Recuérdale en 1 frase que puede registrar con una FOTO, una CAPTURA de pantalla, SUBIENDO un archivo o dictándotelo por voz.`;
   }
   if (motivo === 'inactividad') {
     return `Enciende el micrófono brevemente y di exactamente: '${tratamiento}${nombreLabel}, ¿tal vez le puedo ayudar en algo?'`;
