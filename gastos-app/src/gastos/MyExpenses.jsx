@@ -11,6 +11,14 @@ const CATEGORIES = [
 
 function clp(n) { return '$' + (Math.round(Number(n) || 0)).toLocaleString('es-CL'); }
 function fechaCorta(v) { if (!v) return ''; const s = String(v); return s.length >= 10 ? s.slice(0, 10) : s; }
+// Etiqueta clara del estado de pago: lo no pagado es "Pendiente de pago".
+function labelPago(v) {
+  const s = String(v || '').toLowerCase();
+  if (!s) return '';
+  if (s === 'pagada' || s === 'pagado') return 'Pagada';
+  if (s === 'conciliada') return 'Conciliada';
+  return 'Pendiente de pago';
+}
 
 function DetalleCards({ e, lineas }) {
   const esIngreso = e.tipo === 'ingreso';
@@ -61,7 +69,7 @@ function DetalleCards({ e, lineas }) {
       fields: [
         [t('exp.field.tipo'),  esIngreso ? t('exp.tipo.ingreso') : t('exp.tipo.gasto')],
         e.estado      ? [t('exp.field.estado'), e.estado]      : null,
-        e.estado_pago ? [t('exp.field.pago'),   e.estado_pago] : null,
+        e.estado_pago ? [t('exp.field.pago'),   labelPago(e.estado_pago)] : null,
       ].filter(Boolean),
     },
   ].filter(c => c.fields.length > 0), [e, esIngreso]);
@@ -124,7 +132,7 @@ function textoDetalle(e, lineas) {
   if (!esIngreso && e.categoria) L.push(t('exp.field.categoria') + ': ' + e.categoria);
   if (e.glosa) L.push(t('exp.field.glosa') + ': ' + e.glosa);
   if (e.estado) L.push(t('exp.field.estado') + ': ' + e.estado);
-  if (e.estado_pago) L.push(t('exp.field.pago') + ': ' + e.estado_pago);
+  if (e.estado_pago) L.push(t('exp.field.pago') + ': ' + labelPago(e.estado_pago));
   if (lineas && lineas.length) {
     L.push('');
     L.push(t('exp.card.productos') + ':');
@@ -329,7 +337,7 @@ function MovimientosCards({ rows, onSelect }) {
                     {esIngreso ? t('exp.badge.ingreso') : t('exp.badge.gasto')}
                   </span>
                   {e.estado ? <span style={{ fontSize: 9, padding: '2px 7px', borderRadius: 20, background: 'rgba(255,255,255,0.15)', color: '#fff', textTransform: 'capitalize' }}>{e.estado}</span> : null}
-                  {e.estado_pago ? <span style={{ fontSize: 9, padding: '2px 7px', borderRadius: 20, background: 'rgba(255,255,255,0.12)', color: '#fff' }}>{e.estado_pago}</span> : null}
+                  {e.estado_pago ? <span style={{ fontSize: 9, padding: '2px 7px', borderRadius: 20, background: 'rgba(255,255,255,0.12)', color: '#fff' }}>{labelPago(e.estado_pago)}</span> : null}
                 </div>
                 <div style={{ color: '#fff', fontWeight: 800, fontSize: 15, lineHeight: 1.15 }}>{e.proveedor || (esIngreso ? t('exp.confirm.sin_pagador') : t('exp.confirm.sin_proveedor'))}</div>
                 <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 8 }}>

@@ -104,10 +104,14 @@ function createAppRouter({ db, extractExpense, createLiveToken, sendText, sendIm
     }
     console.log('[kaly] token live emitido para', esOwner ? 'owner' : 'empleado', esOwner ? req.auth.userId : req.auth.employeeId);
     // Deja constancia en la Memoria de KALY de que hubo interacción (se actualiza,
-    // no duplica). Refleja "ya saludó / última vez que conversaron".
+    // no duplica). Refleja "ya saludó / última vez que conversaron". Y si ya está
+    // onboarded, marca el inicio de la relación una sola vez ("Kaly conoció a X").
     try {
       const hoy = new Intl.DateTimeFormat('es-CL', { timeZone: 'America/Santiago' }).format(new Date());
       await memoryRepo.upsertHechoAuto(db, req.auth.companyId, { tipo: 'dueño', prefijo: 'Última conversación con KALY', contenido: `Última conversación con KALY: ${hoy}` });
+      if (context.onboarded && context.nombre) {
+        await memoryRepo.crearHechoUnico(db, req.auth.companyId, { tipo: 'dueño', prefijo: 'Kaly conoció a', contenido: `Kaly conoció a ${context.nombre} el ${hoy}` });
+      }
     } catch (_) { /* memoria best-effort */ }
     return res.json({ ...tok, context });
   });
@@ -508,6 +512,9 @@ function createAppRouter({ db, extractExpense, createLiveToken, sendText, sendIm
       ...cuentaSii,
     });
     await aplicarContabilidad(db, req.auth.companyId, expense, 'confirmar');
+    // Si nace ya PAGADA, genera también el asiento de pago (Proveedores→Banco),
+    // para que Proveedores refleje solo lo realmente por pagar.
+    if (expense.estado_pago === 'pagada') await aplicarContabilidad(db, req.auth.companyId, expense, 'pagar');
     try { await memoriaMovimiento(req.auth.companyId, expense); } catch (_) { /* memoria best-effort */ }
     return res.status(201).json(expense);
   });
@@ -517,6 +524,7 @@ function createAppRouter({ db, extractExpense, createLiveToken, sendText, sendIm
     const confirmed = await confirmExpense(db, req.params.id);
     const exp = await getExpense(db, req.params.id);
     await aplicarContabilidad(db, req.auth.companyId, exp, 'confirmar');
+    if (exp.estado_pago === 'pagada') await aplicarContabilidad(db, req.auth.companyId, exp, 'pagar');
     try { await memoriaMovimiento(req.auth.companyId, exp); } catch (_) { /* memoria best-effort */ }
     return res.json(confirmed);
   });

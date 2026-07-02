@@ -107,4 +107,22 @@ async function upsertHechoAuto(db, companyId, { tipo = 'hecho', prefijo, conteni
   return crearMemoria(db, companyId, { tipo, contenido, origen: 'auto', owner_kind: ownerKind, owner_id: ownerId });
 }
 
-module.exports = { normalizeMemoria, formatMemoriaBlock, TIPOS, crearMemoria, listMemorias, borrarMemoria, borrarMemoriasDe, registrarHechoAuto, upsertHechoAuto };
+// Crea un hecho automático UNA sola vez: si ya existe uno activo con ese prefijo
+// (mismo alcance), no hace nada. Para datos que se sientan una vez (ej. "Kaly
+// conoció a X el ...").
+async function crearHechoUnico(db, companyId, { tipo = 'hecho', prefijo, contenido, owner = null } = {}) {
+  const ownerKind = owner && owner.kind ? owner.kind : 'company';
+  const ownerId = owner && owner.id ? owner.id : null;
+  try {
+    let existe;
+    if (ownerKind === 'company') {
+      existe = await db.query("SELECT 1 FROM kaly_memory WHERE company_id=$1 AND owner_kind='company' AND activo=true AND contenido LIKE $2 LIMIT 1", [companyId, prefijo + '%']);
+    } else {
+      existe = await db.query("SELECT 1 FROM kaly_memory WHERE company_id=$1 AND owner_kind=$2 AND owner_id=$3 AND activo=true AND contenido LIKE $4 LIMIT 1", [companyId, ownerKind, ownerId, prefijo + '%']);
+    }
+    if (existe.rows.length) return null;
+  } catch (_) { /* si falla la comprobación, mejor no duplicar: seguimos e insertamos */ }
+  return crearMemoria(db, companyId, { tipo, contenido, origen: 'auto', owner_kind: ownerKind, owner_id: ownerId });
+}
+
+module.exports = { normalizeMemoria, formatMemoriaBlock, TIPOS, crearMemoria, listMemorias, borrarMemoria, borrarMemoriasDe, registrarHechoAuto, upsertHechoAuto, crearHechoUnico };
