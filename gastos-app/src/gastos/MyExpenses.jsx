@@ -12,9 +12,8 @@ const CATEGORIES = [
 function clp(n) { return '$' + (Math.round(Number(n) || 0)).toLocaleString('es-CL'); }
 function fechaCorta(v) { if (!v) return ''; const s = String(v); return s.length >= 10 ? s.slice(0, 10) : s; }
 
-function DetalleCards({ e }) {
+function DetalleCards({ e, lineas }) {
   const esIngreso = e.tipo === 'ingreso';
-  const [activeIndex, setActiveIndex] = useState(0);
   const cards = useMemo(() => [
     {
       id: 'monto', title: t('exp.card.monto'), icon: '💰',
@@ -67,44 +66,74 @@ function DetalleCards({ e }) {
     },
   ].filter(c => c.fields.length > 0), [e, esIngreso]);
 
-  const gridStyle = useMemo(() => ({
-    gridTemplateColumns: cards.map((_, i) => i === activeIndex ? '5fr' : '1fr').join(' '),
-  }), [activeIndex, cards.length]);
-
+  // Todo el detalle visible de una (tarjetas apiladas, sin tocar). Las líneas de
+  // productos van al final, después de Estado.
   return (
-    <div style={{ display: 'grid', gap: 8, height: 210, transition: 'grid-template-columns 0.5s ease-out', ...gridStyle }}>
-      {cards.map((card, index) => (
-        <div
-          key={card.id}
-          onClick={() => setActiveIndex(index)}
-          onMouseEnter={() => setActiveIndex(index)}
-          style={{ position: 'relative', borderRadius: 12, overflow: 'hidden', cursor: 'pointer', border: '1px solid rgba(255,255,255,0.15)', background: card.gradient, minWidth: 0 }}
-        >
-          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top,rgba(0,0,0,0.45) 0%,transparent 55%)', pointerEvents: 'none' }} />
-          <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', padding: 10, overflow: 'hidden' }}>
-            {index !== activeIndex ? (
-              <span style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)', color: 'rgba(255,255,255,0.9)', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, whiteSpace: 'nowrap', userSelect: 'none' }}>
-                {card.icon} {card.title}
-              </span>
-            ) : (
-              <div style={{ overflow: 'hidden' }}>
-                <div style={{ fontSize: 14, marginBottom: 4 }}>{card.icon}</div>
-                <div style={{ color: '#fff', fontWeight: 800, fontSize: 10, marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 }}>{card.title}</div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 4, overflowY: 'auto', maxHeight: 130 }}>
-                  {card.fields.map(([k, v]) => (
-                    <div key={k}>
-                      <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: 10, marginBottom: 1 }}>{k}</div>
-                      <div style={{ color: '#fff', fontWeight: 700, fontSize: 11, wordBreak: 'break-word' }}>{v}</div>
-                    </div>
-                  ))}
-                </div>
+    <div style={{ display: 'grid', gap: 10 }}>
+      {cards.map((card) => (
+        <div key={card.id} style={{ borderRadius: 12, overflow: 'hidden', border: '1px solid rgba(0,0,0,0.08)', background: '#fff' }}>
+          <div style={{ background: card.gradient, color: '#fff', padding: '8px 12px', fontWeight: 800, fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span>{card.icon}</span><span>{card.title}</span>
+          </div>
+          <div style={{ padding: '10px 12px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px 12px', background: 'rgba(0,0,0,0.02)' }}>
+            {card.fields.map(([k, v]) => (
+              <div key={k} style={{ minWidth: 0 }}>
+                <div style={{ fontSize: 10, opacity: 0.55, marginBottom: 1, textTransform: 'uppercase', letterSpacing: 0.3 }}>{k}</div>
+                <div style={{ fontWeight: 700, fontSize: 13, wordBreak: 'break-word' }}>{v}</div>
               </div>
-            )}
+            ))}
           </div>
         </div>
       ))}
+      {lineas && lineas.length ? (
+        <div style={{ borderRadius: 12, overflow: 'hidden', border: '1px solid rgba(0,0,0,0.08)', background: '#fff' }}>
+          <div style={{ background: 'linear-gradient(135deg,#0891b2,#0e7490)', color: '#fff', padding: '8px 12px', fontWeight: 800, fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span>🧾</span><span>{t('exp.card.productos')} ({lineas.length})</span>
+          </div>
+          <div>
+            {lineas.map((l, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '9px 12px', borderTop: i ? '1px solid rgba(0,0,0,0.06)' : 'none' }}>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontWeight: 700, fontSize: 13, wordBreak: 'break-word' }}>{l.descripcion || '—'}</div>
+                  <div style={{ fontSize: 11, opacity: 0.55 }}>{l.cantidad != null ? l.cantidad + ' ' + (l.unidad || '') : ''}</div>
+                </div>
+                <div style={{ fontWeight: 800, fontSize: 13, whiteSpace: 'nowrap' }}>{clp(l.total)}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
     </div>
   );
+}
+
+// Texto plano del detalle (para copiar y pegar / crear un movimiento).
+function textoDetalle(e, lineas) {
+  const esIngreso = e.tipo === 'ingreso';
+  const L = [];
+  L.push((esIngreso ? t('exp.badge.ingreso') : t('exp.badge.gasto')) + ' — ' + clp(e.total));
+  if (e.proveedor) L.push((esIngreso ? t('exp.field.pagador') : t('exp.field.proveedor')) + ': ' + e.proveedor);
+  if (e.rut_emisor) L.push(t('exp.field.rut') + ': ' + e.rut_emisor);
+  L.push(t('exp.field.total') + ': ' + clp(e.total));
+  if (e.neto) L.push(t('exp.field.neto') + ': ' + clp(e.neto));
+  if (e.iva) L.push(t('exp.field.iva') + ': ' + clp(e.iva));
+  if (e.tipo_documento) L.push(t('exp.card.documento') + ': ' + e.tipo_documento);
+  if (e.folio) L.push(t('exp.field.folio') + ': ' + e.folio);
+  if (e.nro_operacion) L.push(t('exp.field.nro_op') + ': ' + e.nro_operacion);
+  if (e.fecha) L.push(t('exp.field.emision') + ': ' + fechaCorta(e.fecha));
+  if (!esIngreso && e.categoria) L.push(t('exp.field.categoria') + ': ' + e.categoria);
+  if (e.glosa) L.push(t('exp.field.glosa') + ': ' + e.glosa);
+  if (e.estado) L.push(t('exp.field.estado') + ': ' + e.estado);
+  if (e.estado_pago) L.push(t('exp.field.pago') + ': ' + e.estado_pago);
+  if (lineas && lineas.length) {
+    L.push('');
+    L.push(t('exp.card.productos') + ':');
+    lineas.forEach((l) => {
+      const qty = l.cantidad != null ? ' x' + l.cantidad + ' ' + (l.unidad || '') : '';
+      L.push('- ' + (l.descripcion || '—') + qty + '  ' + clp(l.total));
+    });
+  }
+  return L.join('\n');
 }
 
 function EditForm({ e, onSaved, onCancel }) {
@@ -165,7 +194,17 @@ function Detalle({ e: e0, onBack, onReload }) {
   const [busy, setBusy] = useState(false);
   const [fotoUrl, setFotoUrl] = useState(null);
   const [fotoMsg, setFotoMsg] = useState('');
+  const [lineas, setLineas] = useState([]);
+  const [copiado, setCopiado] = useState(false);
   const esIngreso = e.tipo === 'ingreso';
+  useEffect(() => {
+    let vivo = true;
+    api.getExpenseLineas(e.id).then((r) => { if (vivo) setLineas((r && r.lineas) || []); }).catch(() => {});
+    return () => { vivo = false; };
+  }, [e.id]);
+  async function copiar() {
+    try { await navigator.clipboard.writeText(textoDetalle(e, lineas)); setCopiado(true); setTimeout(() => setCopiado(false), 1800); } catch (_) {}
+  }
   async function verFoto() {
     setFotoMsg(t('exp.detalle.cargando_foto'));
     const url = await api.fotoUrl(e.id);
@@ -183,8 +222,11 @@ function Detalle({ e: e0, onBack, onReload }) {
       ) : (
         <>
           <span className="text-xs font-black w-fit px-2 py-0.5 rounded-full" style={{ background: esIngreso ? '#1f7a3f' : '#7a1f1f', color: '#fff' }}>{esIngreso ? t('exp.badge.ingreso') : t('exp.badge.gasto')}</span>
-          <div className="text-2xl font-black" style={{ color: '#C9A24B' }}>{clp(e.total)}</div>
-          <DetalleCards e={e} />
+          <div className="flex items-center justify-between gap-2">
+            <div className="text-2xl font-black" style={{ color: '#C9A24B' }}>{clp(e.total)}</div>
+            <button onClick={copiar} className="rounded-xl font-black py-2 px-3 text-sm text-black" style={{ background: '#C9A24B' }}>{copiado ? t('exp.copiado') : t('exp.copiar')}</button>
+          </div>
+          <DetalleCards e={e} lineas={lineas} />
           {fotoUrl ? (
             <img alt={t('exp.confirm.alt_factura')} src={fotoUrl} className="rounded-xl border w-full max-h-80 object-contain bg-black/20" />
           ) : (
@@ -209,13 +251,32 @@ function Detalle({ e: e0, onBack, onReload }) {
   );
 }
 
-function enPeriodo(e, filtro) {
-  if (filtro === 'todos') return true;
-  const raw = e.fecha || (e.created_at ? String(e.created_at).slice(0, 10) : '');
+function fechaDe(e) {
+  return String(e.fecha || (e.created_at ? String(e.created_at).slice(0, 10) : '')).slice(0, 10);
+}
+function enPeriodo(e, periodo, desde, hasta) {
+  if (periodo === 'todos') return true;
+  const raw = fechaDe(e);
   if (!raw) return true; // sin fecha → no la escondemos
   const d = new Date();
-  if (filtro === 'mes') return String(raw).slice(0, 7) === d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
-  if (filtro === 'anio') return String(raw).slice(0, 4) === String(d.getFullYear());
+  const hoy = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  if (periodo === 'hoy') return raw === hoy;
+  if (periodo === 'mes') return raw.slice(0, 7) === d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+  if (periodo === 'anio') return raw.slice(0, 4) === String(d.getFullYear());
+  if (periodo === 'rango') { if (desde && raw < desde) return false; if (hasta && raw > hasta) return false; return true; }
+  return true;
+}
+// Combina todos los filtros (período + tipo + estado + categoría + búsqueda).
+function pasaFiltros(e, f) {
+  if (!enPeriodo(e, f.periodo, f.desde, f.hasta)) return false;
+  if (f.tipo !== 'todos') { const tp = e.tipo === 'ingreso' ? 'ingreso' : 'gasto'; if (tp !== f.tipo) return false; }
+  if (f.estado !== 'todos' && String(e.estado || '').toLowerCase() !== f.estado) return false;
+  if (f.categoria && String(e.categoria || '') !== f.categoria) return false;
+  if (f.q) {
+    const q = f.q.trim().toLowerCase();
+    const hay = [e.proveedor, e.folio, e.glosa, e.rut_emisor, e.nro_operacion].filter(Boolean).join(' ').toLowerCase();
+    if (!hay.includes(q)) return false;
+  }
   return true;
 }
 
@@ -296,11 +357,14 @@ function MovimientosCards({ rows, onSelect }) {
   );
 }
 
+const FILTRO_INICIAL = { periodo: 'mes', desde: '', hasta: '', tipo: 'todos', estado: 'todos', categoria: '', q: '' };
+
 export default function MyExpenses() {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [sel, setSel] = useState(null);
-  const [filtro, setFiltro] = useState('mes');
+  const [f, setF] = useState(FILTRO_INICIAL);
+  const set = (k) => (ev) => setF((p) => ({ ...p, [k]: ev.target.value }));
   function load() {
     return api.listExpenses().then((r) => setRows(Array.isArray(r) ? r : [])).catch(() => {});
   }
@@ -310,23 +374,59 @@ export default function MyExpenses() {
       .catch(() => {}).finally(() => { if (alive) setLoading(false); });
     return () => { alive = false; };
   }, []);
+
+  // Opciones de categoría y estado salen de los datos → se adapta a negocio y personal.
+  const cats = useMemo(() => [...new Set(rows.map((r) => r.categoria).filter(Boolean))].sort(), [rows]);
+  const estados = useMemo(() => [...new Set(rows.map((r) => String(r.estado || '').toLowerCase()).filter(Boolean))], [rows]);
+  const visibles = useMemo(() => rows.filter((e) => pasaFiltros(e, f)), [rows, f]);
+  const total = useMemo(() => visibles.reduce((s, e) => s + (e.tipo === 'ingreso' ? 1 : -1) * (Number(e.total) || 0), 0), [visibles]);
+  const hayFiltros = f.periodo !== 'mes' || f.tipo !== 'todos' || f.estado !== 'todos' || !!f.categoria || !!f.q || !!f.desde || !!f.hasta;
+
   if (loading) return <div className="p-6">{t('exp.lista.cargando')}</div>;
   if (sel) return <Detalle e={sel} onBack={() => setSel(null)} onReload={load} />;
-  const visibles = rows.filter((e) => enPeriodo(e, filtro));
-  const N = visibles.length;
+
+  const periodos = [['hoy', t('exp.filtro.hoy')], ['mes', t('exp.filtro.mes')], ['anio', t('exp.filtro.anio')], ['rango', t('exp.filtro.rango')], ['todos', t('exp.filtro.todos')]];
+  const inp = 'rounded-lg border px-2 py-1.5 text-xs bg-white';
+
   return (
     <div className="h-full flex flex-col">
-      <div className="p-4 pb-2 grid gap-3 shrink-0">
-        <h2 className="text-xl font-black px-2" style={{ color: '#C9A24B' }}>{t('exp.lista.titulo')}</h2>
-        <div className="flex gap-2 px-2">
-          {[['mes', t('exp.filtro.mes')], ['anio', t('exp.filtro.anio')], ['todos', t('exp.filtro.todos')]].map(function (o) {
-            return (
-              <button key={o[0]} onClick={() => setFiltro(o[0])} className="text-xs font-black px-3 py-1 rounded-full border" style={filtro === o[0] ? { background: '#C9A24B', color: '#000' } : { opacity: 0.6 }}>{o[1]}</button>
-            );
-          })}
+      <div className="p-4 pb-2 grid gap-2 shrink-0">
+        <h2 className="text-xl font-black px-1" style={{ color: '#C9A24B' }}>{t('exp.lista.titulo')}</h2>
+        <div className="flex gap-1.5 flex-wrap">
+          {periodos.map((o) => (
+            <button key={o[0]} onClick={() => setF((p) => ({ ...p, periodo: o[0] }))} className="text-xs font-black px-3 py-1 rounded-full border" style={f.periodo === o[0] ? { background: '#C9A24B', color: '#000', borderColor: '#C9A24B' } : { opacity: 0.6 }}>{o[1]}</button>
+          ))}
+        </div>
+        {f.periodo === 'rango' ? (
+          <div className="flex gap-2">
+            <input type="date" value={f.desde} onChange={set('desde')} className={inp + ' flex-1'} aria-label={t('exp.filtro.desde')} />
+            <input type="date" value={f.hasta} onChange={set('hasta')} className={inp + ' flex-1'} aria-label={t('exp.filtro.hasta')} />
+          </div>
+        ) : null}
+        <div className="flex gap-2">
+          <select value={f.tipo} onChange={set('tipo')} className={inp + ' flex-1'}>
+            <option value="todos">{t('exp.field.tipo')}: {t('exp.filtro.todos')}</option>
+            <option value="gasto">{t('exp.tipo.gasto')}</option>
+            <option value="ingreso">{t('exp.tipo.ingreso')}</option>
+          </select>
+          <select value={f.estado} onChange={set('estado')} className={inp + ' flex-1'}>
+            <option value="todos">{t('exp.field.estado')}: {t('exp.filtro.todos')}</option>
+            {estados.map((s) => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
+          </select>
+        </div>
+        {cats.length ? (
+          <select value={f.categoria} onChange={set('categoria')} className={inp}>
+            <option value="">{t('exp.field.categoria')}: {t('exp.filtro.todas')}</option>
+            {cats.map((c) => <option key={c} value={c}>{c}</option>)}
+          </select>
+        ) : null}
+        <input value={f.q} onChange={set('q')} placeholder={t('exp.filtro.buscar_ph')} className={inp} />
+        <div className="flex items-center gap-2 text-xs px-1">
+          <span className="opacity-60 flex-1"><b>{visibles.length}</b> {t('exp.filtro.movimientos')} · {t('exp.filtro.total')} <b>{clp(Math.abs(total))}</b></span>
+          {hayFiltros ? <button onClick={() => setF(FILTRO_INICIAL)} className="font-black" style={{ color: '#b45309' }}>{t('exp.filtro.limpiar')}</button> : null}
         </div>
       </div>
-      {N === 0 ? (
+      {visibles.length === 0 ? (
         <p className="px-6 opacity-60">{rows.length ? t('exp.lista.sin_periodo') : t('exp.lista.sin_movimientos')}</p>
       ) : (
         <div className="flex-1 min-h-0 px-4 pb-4">
