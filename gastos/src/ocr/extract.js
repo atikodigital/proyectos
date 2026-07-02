@@ -17,9 +17,13 @@ async function extractExpense({ imageBuffer, mimeType = 'image/jpeg' }) {
   const processed = await preprocessForOcr(imageBuffer);
   const b64 = processed.toString('base64');
 
+  // Antes ambos motores se tragaban CUALQUIER error en silencio (.catch(() => ({})))
+  // — si los dos fallaban (cuota, API key, timeout, etc.) el usuario veía la pantalla
+  // de confirmación con todos los campos vacíos, sin ningún rastro en los logs para
+  // diagnosticar la causa real. Ahora se loguea el motivo antes de devolver vacío.
   const [docai, gem] = await Promise.all([
-    documentAiExtract(processed, mimeType).catch(() => ({})),
-    geminiExtract(b64, mimeType).catch(() => ({})),
+    documentAiExtract(processed, mimeType).catch((e) => { console.error('[ocr] documentAiExtract falló:', e && (e.message || e)); return {}; }),
+    geminiExtract(b64, mimeType).catch((e) => { console.error('[ocr] geminiExtract falló:', e && (e.response && e.response.data ? JSON.stringify(e.response.data).slice(0, 300) : (e.message || e))); return {}; }),
   ]);
 
   // Tipo de documento → exento (sin IVA) / nota de crédito (resta).
