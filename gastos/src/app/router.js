@@ -5,6 +5,7 @@ const { signToken } = require('../auth/jwt');
 const { requireAuth, requireKind, requireKindAny } = require('../auth/middleware');
 const { intakeFromImage } = require('../expenses/intake');
 const { getExpense, confirmExpense, updateExpense, rejectExpense, annulExpense, markExpensePaid, markExpenseConciliada, createExpense } = require('../expenses/repo');
+const { buildExpensesWorkbook } = require('../panel/excel');
 const { getLineas, getLineaConCompany, setLineaAuxiliar } = require('../expenses/lineas-repo');
 const { listAuxiliares } = require('../auxiliares/repo');
 const auxReportes = require('../auxiliares/reportes');
@@ -666,6 +667,24 @@ function createAppRouter({ db, extractExpense, createLiveToken, sendText, sendIm
       [req.auth.companyId, req.auth.employeeId]
     );
     return res.json(r.rows);
+  });
+
+  // Exporta a Excel los movimientos filtrados. El cliente manda los IDs visibles
+  // (los que quedaron tras aplicar sus filtros); si no manda ninguno, exporta todos.
+  router.post('/expenses/export', async (req, res) => {
+    try {
+      const ids = Array.isArray(req.body && req.body.ids) ? req.body.ids.filter(Boolean).slice(0, 3000) : [];
+      const r = ids.length
+        ? await db.query("SELECT * FROM expenses WHERE company_id=$1 AND employee_id=$2 AND id = ANY($3::uuid[]) ORDER BY fecha DESC NULLS LAST, created_at DESC", [req.auth.companyId, req.auth.employeeId, ids])
+        : await db.query("SELECT * FROM expenses WHERE company_id=$1 AND employee_id=$2 AND estado <> 'anulado' ORDER BY created_at DESC", [req.auth.companyId, req.auth.employeeId]);
+      const buf = await buildExpensesWorkbook(r.rows);
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', 'attachment; filename="movimientos.xlsx"');
+      res.end(buf);
+    } catch (e) {
+      console.error('[expenses/export]', e.message);
+      res.status(500).json({ error: 'export_error' });
+    }
   });
 
   router.get('/suscripcion', async (req, res) => {

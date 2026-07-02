@@ -35,6 +35,27 @@ export const api = {
   rejectExpense(id) { return req(`/api/app/expenses/${id}/reject`, { method: 'POST' }); },
   annulExpense(id) { return req(`/api/app/expenses/${id}/anular`, { method: 'POST' }); },
   listExpenses() { return req('/api/app/expenses'); },
+  // Descarga a Excel los movimientos filtrados (manda los IDs visibles). Abre el .xlsx.
+  async exportExpensesAbrir(ids) {
+    const t = getToken();
+    const res = await fetch(`${API_BASE}/api/app/expenses/export`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...(t ? { Authorization: `Bearer ${t}` } : {}) },
+      body: JSON.stringify({ ids: ids || [] }),
+    });
+    if (!res.ok) return false;
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    try {
+      const a = document.createElement('a');
+      a.href = url; a.download = 'movimientos.xlsx';
+      document.body.appendChild(a); a.click(); a.remove();
+    } catch (_e) {
+      try { window.open(url, '_blank'); } catch (_e2) { window.location.href = url; }
+    }
+    setTimeout(() => { try { URL.revokeObjectURL(url); } catch (_) {} }, 4000);
+    return true;
+  },
   async fotoUrl(id) {
     const t = getToken();
     const res = await fetch(`${API_BASE}/api/app/expenses/${id}/foto`, { headers: t ? { Authorization: `Bearer ${t}` } : {} });

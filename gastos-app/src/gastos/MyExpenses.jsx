@@ -364,6 +364,7 @@ export default function MyExpenses() {
   const [loading, setLoading] = useState(true);
   const [sel, setSel] = useState(null);
   const [f, setF] = useState(FILTRO_INICIAL);
+  const [exportando, setExportando] = useState(false);
   const set = (k) => (ev) => setF((p) => ({ ...p, [k]: ev.target.value }));
   function load() {
     return api.listExpenses().then((r) => setRows(Array.isArray(r) ? r : [])).catch(() => {});
@@ -381,6 +382,11 @@ export default function MyExpenses() {
   const visibles = useMemo(() => rows.filter((e) => pasaFiltros(e, f)), [rows, f]);
   const total = useMemo(() => visibles.reduce((s, e) => s + (e.tipo === 'ingreso' ? 1 : -1) * (Number(e.total) || 0), 0), [visibles]);
   const hayFiltros = f.periodo !== 'mes' || f.tipo !== 'todos' || f.estado !== 'todos' || !!f.categoria || !!f.q || !!f.desde || !!f.hasta;
+  async function descargarExcel() {
+    if (!visibles.length || exportando) return;
+    setExportando(true);
+    try { await api.exportExpensesAbrir(visibles.map((e) => e.id)); } finally { setExportando(false); }
+  }
 
   if (loading) return <div className="p-6">{t('exp.lista.cargando')}</div>;
   if (sel) return <Detalle e={sel} onBack={() => setSel(null)} onReload={load} />;
@@ -424,6 +430,7 @@ export default function MyExpenses() {
         <div className="flex items-center gap-2 text-xs px-1">
           <span className="opacity-60 flex-1"><b>{visibles.length}</b> {t('exp.filtro.movimientos')} · {t('exp.filtro.total')} <b>{clp(Math.abs(total))}</b></span>
           {hayFiltros ? <button onClick={() => setF(FILTRO_INICIAL)} className="font-black" style={{ color: '#b45309' }}>{t('exp.filtro.limpiar')}</button> : null}
+          <button onClick={descargarExcel} disabled={exportando || !visibles.length} className="font-black text-white rounded-lg px-3 py-1 disabled:opacity-40" style={{ background: '#137333' }}>{t('exp.filtro.excel')}</button>
         </div>
       </div>
       {visibles.length === 0 ? (
