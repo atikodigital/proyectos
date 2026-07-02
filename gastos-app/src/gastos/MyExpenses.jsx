@@ -280,6 +280,8 @@ function pasaFiltros(e, f) {
   return true;
 }
 
+// Carrusel deslizable: una tarjeta completa por movimiento; se corre con el dedo
+// (scroll-snap) y los puntitos indican en cuál vas. Reemplaza el "expande-de-a-uno".
 function MovimientosCards({ rows, onSelect }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [fotos, setFotos] = useState({});
@@ -297,62 +299,57 @@ function MovimientosCards({ rows, onSelect }) {
     return () => { alive = false; urls.forEach((u) => { try { URL.revokeObjectURL(u); } catch (_) {} }); };
   }, [rows]);
 
-  const gridStyle = useMemo(() => ({
-    gridTemplateColumns: rows.map((_, i) => i === activeIndex ? '5fr' : '1fr').join(' '),
-    transition: 'grid-template-columns 0.5s ease-out',
-  }), [activeIndex, rows.length]);
-
   if (!rows.length) return null;
 
-  return (
-    <div style={{ display: 'grid', gap: 8, height: '100%', ...gridStyle }}>
-      {rows.map((e, index) => {
-        const esIngreso = e.tipo === 'ingreso';
-        const foto = fotos[e.id];
-        const isActive = index === activeIndex;
-        const bg = esIngreso ? 'linear-gradient(135deg,#0b3d2e,#0f5132)' : 'linear-gradient(135deg,#2a2350,#3a1d1d)';
+  function onScroll(ev) {
+    const el = ev.currentTarget;
+    const paso = el.scrollWidth / rows.length;
+    const i = paso ? Math.round(el.scrollLeft / paso) : 0;
+    setActiveIndex(Math.max(0, Math.min(rows.length - 1, i)));
+  }
 
-        return (
-          <div
-            key={e.id}
-            onClick={() => isActive ? onSelect(e) : setActiveIndex(index)}
-            onMouseEnter={() => setActiveIndex(index)}
-            style={{ position: 'relative', borderRadius: 16, overflow: 'hidden', cursor: 'pointer', border: '1px solid rgba(255,255,255,0.12)', background: bg, minWidth: 0 }}
-          >
-            {foto && <img src={foto} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: isActive ? 0.35 : 0.2, transition: 'opacity 0.3s' }} />}
-            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.15) 100%)', pointerEvents: 'none' }} />
-            <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', padding: 12, overflow: 'hidden' }}>
-              {!isActive ? (
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-                  <span style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)', color: 'rgba(255,255,255,0.85)', fontSize: 10, fontWeight: 700, whiteSpace: 'nowrap', userSelect: 'none', maxHeight: '55%', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {e.proveedor || (esIngreso ? t('exp.tipo.ingreso') : t('exp.tipo.gasto'))}
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column' }}>
+      <div onScroll={onScroll} style={{ display: 'flex', gap: 12, overflowX: 'auto', overflowY: 'hidden', scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch', paddingBottom: 4 }}>
+        {rows.map((e) => {
+          const esIngreso = e.tipo === 'ingreso';
+          const foto = fotos[e.id];
+          const bg = esIngreso ? 'linear-gradient(135deg,#0b3d2e,#0f5132)' : 'linear-gradient(135deg,#2a2350,#3a1d1d)';
+          return (
+            <div
+              key={e.id}
+              onClick={() => onSelect(e)}
+              style={{ flex: '0 0 84%', height: 172, scrollSnapAlign: 'center', position: 'relative', borderRadius: 16, overflow: 'hidden', cursor: 'pointer', border: '1px solid rgba(255,255,255,0.12)', background: bg }}
+            >
+              {foto && <img src={foto} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.3 }} />}
+              <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.2) 100%)', pointerEvents: 'none' }} />
+              <div style={{ position: 'relative', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', padding: 13, gap: 3 }}>
+                <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: 9, fontWeight: 800, padding: '2px 7px', borderRadius: 20, background: esIngreso ? '#1f7a3f' : '#6d28d9', color: '#fff' }}>
+                    {esIngreso ? t('exp.badge.ingreso') : t('exp.badge.gasto')}
                   </span>
-                  <span style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)', color: esIngreso ? '#7CFC9B' : '#E7C46B', fontSize: 9, fontWeight: 800 }}>
-                    {esIngreso ? '+' : '−'}{clp(e.total)}
-                  </span>
+                  {e.estado ? <span style={{ fontSize: 9, padding: '2px 7px', borderRadius: 20, background: 'rgba(255,255,255,0.15)', color: '#fff', textTransform: 'capitalize' }}>{e.estado}</span> : null}
+                  {e.estado_pago ? <span style={{ fontSize: 9, padding: '2px 7px', borderRadius: 20, background: 'rgba(255,255,255,0.12)', color: '#fff' }}>{e.estado_pago}</span> : null}
                 </div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-                  <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
-                    <span style={{ fontSize: 10, fontWeight: 800, padding: '2px 8px', borderRadius: 20, background: esIngreso ? '#1f7a3f' : '#6d28d9', color: '#fff' }}>
-                      {esIngreso ? t('exp.badge.ingreso') : t('exp.badge.gasto')}
-                    </span>
-                    {e.estado ? <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 20, background: 'rgba(255,255,255,0.15)', color: '#fff', textTransform: 'capitalize' }}>{e.estado}</span> : null}
-                    {e.estado_pago ? <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 20, background: 'rgba(255,255,255,0.12)', color: '#fff' }}>{e.estado_pago}</span> : null}
-                  </div>
-                  <div style={{ color: '#fff', fontWeight: 800, fontSize: 14, lineHeight: 1.2 }}>{e.proveedor || (esIngreso ? t('exp.confirm.sin_pagador') : t('exp.confirm.sin_proveedor'))}</div>
-                  <div style={{ fontWeight: 900, fontSize: 24, color: esIngreso ? '#7CFC9B' : '#E7C46B' }}>{esIngreso ? '+' : '−'}{clp(e.total)}</div>
-                  {(e.fecha || e.glosa) ? <div style={{ color: 'rgba(255,255,255,0.65)', fontSize: 11 }}>{e.fecha ? fechaCorta(e.fecha) : ''}{e.glosa ? (e.fecha ? ' · ' : '') + e.glosa : ''}</div> : null}
-                  {!esIngreso && e.categoria ? <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11 }}>{e.categoria}</div> : null}
-                  <button onClick={(ev) => { ev.stopPropagation(); onSelect(e); }} style={{ alignSelf: 'flex-start', marginTop: 4, fontSize: 11, fontWeight: 800, color: '#5ad7ff', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
-                    {t('exp.lista.ver_detalle')}
-                  </button>
-                </div>
-              )}
+                <div style={{ color: '#fff', fontWeight: 800, fontSize: 15, lineHeight: 1.15 }}>{e.proveedor || (esIngreso ? t('exp.confirm.sin_pagador') : t('exp.confirm.sin_proveedor'))}</div>
+                <div style={{ fontWeight: 900, fontSize: 24, lineHeight: 1.05, color: esIngreso ? '#7CFC9B' : '#E7C46B' }}>{esIngreso ? '+' : '−'}{clp(e.total)}</div>
+                {(e.fecha || e.folio) ? <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: 11 }}>{e.fecha ? fechaCorta(e.fecha) : ''}{e.folio ? (e.fecha ? ' · ' : '') + e.folio : ''}</div> : null}
+                {!esIngreso && e.categoria ? <div style={{ color: 'rgba(255,255,255,0.55)', fontSize: 11, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{e.categoria}</div> : null}
+                <button onClick={(ev) => { ev.stopPropagation(); onSelect(e); }} style={{ alignSelf: 'flex-start', marginTop: 4, fontSize: 11, fontWeight: 800, color: '#fff', background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: 9, padding: '5px 11px', cursor: 'pointer' }}>
+                  {t('exp.lista.ver_detalle')}
+                </button>
+              </div>
             </div>
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
+      {rows.length > 1 ? (
+        <div style={{ display: 'flex', gap: 6, justifyContent: 'center', padding: '8px 0 2px', flexWrap: 'wrap' }}>
+          {rows.slice(0, 15).map((_, i) => (
+            <span key={i} style={{ height: 7, borderRadius: 99, transition: 'width .2s,background .2s', width: i === activeIndex ? 20 : 7, background: i === activeIndex ? '#C9A24B' : 'rgba(0,0,0,0.2)' }} />
+          ))}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -365,6 +362,7 @@ export default function MyExpenses() {
   const [sel, setSel] = useState(null);
   const [f, setF] = useState(FILTRO_INICIAL);
   const [exportando, setExportando] = useState(false);
+  const [mostrarFiltros, setMostrarFiltros] = useState(false);
   const set = (k) => (ev) => setF((p) => ({ ...p, [k]: ev.target.value }));
   function load() {
     return api.listExpenses().then((r) => setRows(Array.isArray(r) ? r : [])).catch(() => {});
@@ -396,41 +394,47 @@ export default function MyExpenses() {
 
   return (
     <div className="h-full flex flex-col">
-      <div className="p-4 pb-2 grid gap-2 shrink-0">
-        <h2 className="text-xl font-black px-1" style={{ color: '#C9A24B' }}>{t('exp.lista.titulo')}</h2>
-        <div className="flex gap-1.5 flex-wrap">
-          {periodos.map((o) => (
-            <button key={o[0]} onClick={() => setF((p) => ({ ...p, periodo: o[0] }))} className="text-xs font-black px-3 py-1 rounded-full border" style={f.periodo === o[0] ? { background: '#C9A24B', color: '#000', borderColor: '#C9A24B' } : { opacity: 0.6 }}>{o[1]}</button>
-          ))}
+      <div className="p-3 pb-1 grid gap-2 shrink-0">
+        <div className="flex items-center gap-2">
+          <div className="flex gap-1.5 flex-wrap flex-1 min-w-0">
+            {periodos.map((o) => (
+              <button key={o[0]} onClick={() => setF((p) => ({ ...p, periodo: o[0] }))} className="text-xs font-black px-3 py-1 rounded-full border" style={f.periodo === o[0] ? { background: '#C9A24B', color: '#000', borderColor: '#C9A24B' } : { opacity: 0.6 }}>{o[1]}</button>
+            ))}
+            <button onClick={() => setMostrarFiltros((v) => !v)} className="text-xs font-black px-3 py-1 rounded-full border" style={(mostrarFiltros || f.tipo !== 'todos' || f.estado !== 'todos' || f.categoria || f.q) ? { background: '#111827', color: '#fff', borderColor: '#111827' } : { opacity: 0.6 }}>⚙︎ {t('exp.filtro.mas')}</button>
+          </div>
+          <button onClick={descargarExcel} disabled={exportando || !visibles.length} className="text-xs font-black text-white rounded-lg px-3 py-1.5 disabled:opacity-40 shrink-0" style={{ background: '#137333' }}>{t('exp.filtro.excel')}</button>
         </div>
-        {f.periodo === 'rango' ? (
-          <div className="flex gap-2">
-            <input type="date" value={f.desde} onChange={set('desde')} className={inp + ' flex-1'} aria-label={t('exp.filtro.desde')} />
-            <input type="date" value={f.hasta} onChange={set('hasta')} className={inp + ' flex-1'} aria-label={t('exp.filtro.hasta')} />
+        {mostrarFiltros ? (
+          <div className="grid gap-2 rounded-xl border p-2" style={{ background: 'rgba(0,0,0,0.02)' }}>
+            {f.periodo === 'rango' ? (
+              <div className="flex gap-2">
+                <input type="date" value={f.desde} onChange={set('desde')} className={inp + ' flex-1'} aria-label={t('exp.filtro.desde')} />
+                <input type="date" value={f.hasta} onChange={set('hasta')} className={inp + ' flex-1'} aria-label={t('exp.filtro.hasta')} />
+              </div>
+            ) : null}
+            <div className="flex gap-2">
+              <select value={f.tipo} onChange={set('tipo')} className={inp + ' flex-1'}>
+                <option value="todos">{t('exp.field.tipo')}: {t('exp.filtro.todos')}</option>
+                <option value="gasto">{t('exp.tipo.gasto')}</option>
+                <option value="ingreso">{t('exp.tipo.ingreso')}</option>
+              </select>
+              <select value={f.estado} onChange={set('estado')} className={inp + ' flex-1'}>
+                <option value="todos">{t('exp.field.estado')}: {t('exp.filtro.todos')}</option>
+                {estados.map((s) => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
+              </select>
+            </div>
+            {cats.length ? (
+              <select value={f.categoria} onChange={set('categoria')} className={inp}>
+                <option value="">{t('exp.field.categoria')}: {t('exp.filtro.todas')}</option>
+                {cats.map((c) => <option key={c} value={c}>{c}</option>)}
+              </select>
+            ) : null}
+            <input value={f.q} onChange={set('q')} placeholder={t('exp.filtro.buscar_ph')} className={inp} />
           </div>
         ) : null}
-        <div className="flex gap-2">
-          <select value={f.tipo} onChange={set('tipo')} className={inp + ' flex-1'}>
-            <option value="todos">{t('exp.field.tipo')}: {t('exp.filtro.todos')}</option>
-            <option value="gasto">{t('exp.tipo.gasto')}</option>
-            <option value="ingreso">{t('exp.tipo.ingreso')}</option>
-          </select>
-          <select value={f.estado} onChange={set('estado')} className={inp + ' flex-1'}>
-            <option value="todos">{t('exp.field.estado')}: {t('exp.filtro.todos')}</option>
-            {estados.map((s) => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
-          </select>
-        </div>
-        {cats.length ? (
-          <select value={f.categoria} onChange={set('categoria')} className={inp}>
-            <option value="">{t('exp.field.categoria')}: {t('exp.filtro.todas')}</option>
-            {cats.map((c) => <option key={c} value={c}>{c}</option>)}
-          </select>
-        ) : null}
-        <input value={f.q} onChange={set('q')} placeholder={t('exp.filtro.buscar_ph')} className={inp} />
         <div className="flex items-center gap-2 text-xs px-1">
-          <span className="opacity-60 flex-1"><b>{visibles.length}</b> {t('exp.filtro.movimientos')} · {t('exp.filtro.total')} <b>{clp(Math.abs(total))}</b></span>
-          {hayFiltros ? <button onClick={() => setF(FILTRO_INICIAL)} className="font-black" style={{ color: '#b45309' }}>{t('exp.filtro.limpiar')}</button> : null}
-          <button onClick={descargarExcel} disabled={exportando || !visibles.length} className="font-black text-white rounded-lg px-3 py-1 disabled:opacity-40" style={{ background: '#137333' }}>{t('exp.filtro.excel')}</button>
+          <span className="opacity-60 flex-1"><b>{visibles.length}</b> {t('exp.filtro.movimientos')} · {t('exp.filtro.total')} <b>{clp(Math.abs(total))}</b>{visibles.length > 1 ? <span style={{ color: '#137333' }}> · {t('exp.filtro.desliza')}</span> : null}</span>
+          {hayFiltros ? <button onClick={() => { setF(FILTRO_INICIAL); setMostrarFiltros(false); }} className="font-black" style={{ color: '#b45309' }}>{t('exp.filtro.limpiar')}</button> : null}
         </div>
       </div>
       {visibles.length === 0 ? (

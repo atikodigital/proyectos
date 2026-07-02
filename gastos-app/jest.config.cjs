@@ -1,6 +1,6 @@
 module.exports = {
   testEnvironment: 'jsdom',
-  setupFilesAfterEnv: ['@testing-library/jest-dom'],
+  setupFilesAfterEnv: ['@testing-library/jest-dom', '<rootDir>/tests/setup.cjs'],
   testMatch: ['**/tests/**/*.test.{js,jsx}'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',

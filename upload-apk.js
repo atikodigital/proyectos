@@ -3,7 +3,7 @@ require('dotenv').config();
 const { Client } = require('ssh2');
 const path = require('path');
 
-const LOCAL = path.join(__dirname, 'gastos-app', 'android', 'app', 'build', 'outputs', 'apk', 'release', 'HashIA-release-v3.39.apk');
+const LOCAL = path.join(__dirname, 'gastos-app', 'android', 'app', 'build', 'outputs', 'apk', 'release', 'HashIA-release-v3.40.apk');
 const REMOTE_DIR = '/root/atiko-gastos/public/panel';
 const REMOTE = `${REMOTE_DIR}/HashIA.apk`;
 

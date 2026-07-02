@@ -392,6 +392,8 @@ export const EXTRA = {
     "exp.filtro.movimientos": "movimientos",
     "exp.filtro.total": "Total",
     "exp.filtro.excel": "⬇️ Excel",
+    "exp.filtro.mas": "Filtros",
+    "exp.filtro.desliza": "deslízalos →",
     "exp.estado.confirmado": "Confirmado",
     "exp.estado.pendiente": "Pendiente",
     "exp.estado.anulado": "Anulado"
@@ -788,6 +790,8 @@ export const EXTRA = {
     "exp.filtro.movimientos": "entries",
     "exp.filtro.total": "Total",
     "exp.filtro.excel": "⬇️ Excel",
+    "exp.filtro.mas": "Filters",
+    "exp.filtro.desliza": "swipe →",
     "exp.estado.confirmado": "Confirmed",
     "exp.estado.pendiente": "Pending",
     "exp.estado.anulado": "Voided"
@@ -1184,6 +1188,8 @@ export const EXTRA = {
     "exp.filtro.movimientos": "lançamentos",
     "exp.filtro.total": "Total",
     "exp.filtro.excel": "⬇️ Excel",
+    "exp.filtro.mas": "Filtros",
+    "exp.filtro.desliza": "deslize →",
     "exp.estado.confirmado": "Confirmado",
     "exp.estado.pendiente": "Pendente",
     "exp.estado.anulado": "Anulado"
