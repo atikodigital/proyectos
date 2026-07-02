@@ -27,13 +27,16 @@ async function mpFetch(path, opts = {}) {
 // backUrl: URL de vuelta al panel tras autorizar.
 // payerEmail: email del dueño (requerido por MP Chile).
 // Returns: { id, init_point }
-async function createPreapproval(planNombre, backUrl, payerEmail) {
+async function createPreapproval(planNombre, backUrl, payerEmail, companyId) {
   const p = PLANES[planNombre];
   const precioCLP = p && p.precios ? p.precios.CLP : null;
   if (!precioCLP) throw new Error(`Plan no pagable: ${planNombre}`);
   const label = PLAN_LABELS[planNombre] || planNombre;
   const body = {
     reason: label,
+    // external_reference lleva empresa:plan para que el webhook sepa QUÉ plan
+    // activar y para QUÉ empresa (subscriptions.plan sigue en 'free' hasta activar).
+    external_reference: `${companyId || ''}:${planNombre}`,
     auto_recurring: {
       frequency: 1,
       frequency_type: 'months',

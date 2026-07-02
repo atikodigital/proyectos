@@ -32,13 +32,31 @@ async function companyByExternalId(db, externalId) {
 }
 
 // Procesa un evento MP. opts: { type, preapprovalId, plan, companyId }
-async function procesarEventoMP(db, { type, preapprovalId, plan, companyId }) {
+async function procesarEventoMP(db, { type, preapprovalId, plan, companyId, status }) {
   if (type === 'subscription_authorized_payment' || type === 'authorized') {
     if (!companyId || !plan) return { ok: false, razon: 'datos_incompletos' };
     await activarSuscripcion(db, companyId, {
       plan, external_id: preapprovalId, source: 'mp', ciclo_fin: cicloFin30Dias(),
     });
     return { ok: true, accion: 'activada' };
+  }
+
+  // MP notifica la suscripción con 'subscription_preapproval'. Cuando su estado es
+  // 'authorized', el usuario ya autorizó el pago recurrente → activamos el plan.
+  if (type === 'subscription_preapproval') {
+    if (status === 'authorized') {
+      if (!companyId || !plan || plan === 'free') return { ok: false, razon: 'datos_incompletos' };
+      await activarSuscripcion(db, companyId, {
+        plan, external_id: preapprovalId, source: 'mp', ciclo_fin: cicloFin30Dias(),
+      });
+      return { ok: true, accion: 'activada' };
+    }
+    if (status === 'cancelled') {
+      const cid = companyId || await companyByExternalId(db, preapprovalId);
+      if (cid) await db.query(`UPDATE subscriptions SET estado='cancelada', updated_at=now() WHERE company_id=$1`, [cid]);
+      return { ok: true, accion: 'cancelada' };
+    }
+    return { ok: true, accion: 'ignorado_status', status };
   }
 
   if (type === 'payment' || type === 'subscription_payment') {

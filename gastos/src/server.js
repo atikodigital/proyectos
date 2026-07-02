@@ -86,13 +86,29 @@ app.post('/api/pagos/mp/webhook', async (req, res) => {
   const preapprovalId = (data && data.id) || null;
   try {
     const db = getPool();
-    let companyId = null, plan = null;
+    let companyId = null, plan = null, status = null;
     if (preapprovalId) {
       const r = await db.query(
         `SELECT company_id, plan FROM subscriptions WHERE external_id=$1`, [preapprovalId]);
       if (r.rows[0]) { companyId = r.rows[0].company_id; plan = r.rows[0].plan; }
+      // Eventos de suscripción (preapproval): consultamos a MP el estado real y el
+      // plan objetivo (external_reference = "companyId:plan"), porque subscriptions.plan
+      // sigue en 'free' hasta activar.
+      if (type && /preapproval/i.test(String(type))) {
+        try {
+          const { getPreapproval } = require('./billing/mp');
+          const pre = await getPreapproval(preapprovalId);
+          status = pre && pre.status;
+          const ref = pre && pre.external_reference;
+          if (ref && String(ref).indexOf(':') >= 0) {
+            const [cid, pl] = String(ref).split(':');
+            if (!companyId && cid) companyId = cid;
+            if (pl) plan = pl;
+          }
+        } catch (e) { console.warn('[mp-webhook] getPreapproval falló:', e.message); }
+      }
     }
-    const result = await procesarEventoMP(db, { type, preapprovalId, plan, companyId });
+    const result = await procesarEventoMP(db, { type, preapprovalId, plan, companyId, status });
     console.log('[mp-webhook] evento', type, '→', result.accion || result.razon);
     return res.json({ ok: true });
   } catch (e) {

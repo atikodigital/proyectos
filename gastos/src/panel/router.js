@@ -96,7 +96,7 @@ function createPanelRouter({ db, sendText, sendImage, varasGemini } = {}) {
       let id, url;
       if (proc === 'mp') {
         const backUrl = `${base}/panel/#plan`;
-        const result = await createPreapproval(plan, backUrl, owner.email);
+        const result = await createPreapproval(plan, backUrl, owner.email, req.auth.companyId);
         id = result.id;
         url = result.init_point;
       } else {

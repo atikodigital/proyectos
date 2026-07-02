@@ -812,7 +812,7 @@ function createAppRouter({ db, extractExpense, createLiveToken, sendText, sendIm
     try {
       let id, url;
       if (proc === 'mp') {
-        const result = await createPreapproval(plan, `${base}/panel/#plan`, email);
+        const result = await createPreapproval(plan, `${base}/panel/#plan`, email, req.auth.companyId);
         id = result.id; url = result.init_point;
       } else {
         const result = await crearSuscripcionPaypal({ plan, moneda, payerEmail: email, returnUrl: `${base}/panel/#plan`, cancelUrl: `${base}/panel/#plan`, companyId: req.auth.companyId, db });

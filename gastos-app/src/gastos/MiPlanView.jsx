@@ -34,10 +34,33 @@ export default function MiPlanView() {
   const [mejorando, setMejorando] = useState('');
   const [msgUp, setMsgUp] = useState('');
 
-  async function abrirUrl(url) {
+  async function recargar() {
+    try { const s = await api.suscripcion(); setDatos(s); return s; } catch { return null; }
+  }
+
+  // Tras volver del pago (el webhook activa el plan con unos segundos de retraso):
+  // reintenta unas veces hasta ver el plan pagado.
+  async function verificarPago() {
+    setMsgUp('Verificando tu pago…');
+    for (let i = 0; i < 7; i++) {
+      const s = await recargar();
+      if (s && s.plan && s.plan !== 'free') { setMsgUp('¡Listo! Tu plan quedó activo: ' + nombrePlan(s.plan)); return; }
+      await new Promise((r) => setTimeout(r, 3000));
+    }
+    setMsgUp('Si ya pagaste, tu plan se activará en breve. Vuelve a abrir "Mi Plan" en un momento.');
+  }
+
+  async function abrirUrl(url, onFinished) {
     let isNative = false;
     try { const { Capacitor } = await import('@capacitor/core'); isNative = !!(Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform()); } catch (_) {}
-    if (isNative) { try { const { Browser } = await import('@capacitor/browser'); await Browser.open({ url }); return; } catch (_) {} }
+    if (isNative) {
+      try {
+        const { Browser } = await import('@capacitor/browser');
+        const sub = await Browser.addListener('browserFinished', () => { try { sub.remove(); } catch (_) {} if (onFinished) onFinished(); });
+        await Browser.open({ url });
+        return;
+      } catch (_) { /* cae al window.open */ }
+    }
     try { window.open(url, '_blank'); } catch (_) { window.location.href = url; }
   }
 
@@ -45,7 +68,7 @@ export default function MiPlanView() {
     setMsgUp(''); setMejorando(plan);
     try {
       const r = await api.crearSuscripcion(plan, 'CLP');
-      if (r && r.url) { await abrirUrl(r.url); setMsgUp('Abrimos el pago en el navegador. Al terminar, tu plan se activa solo.'); }
+      if (r && r.url) { await abrirUrl(r.url, verificarPago); setMsgUp('Abrimos el pago en el navegador. Cuando termines, vuelve a la app y verificamos.'); }
       else setMsgUp('No se pudo iniciar el pago. Intenta de nuevo.');
     } catch (e) {
       setMsgUp((e && e.data && e.data.mensaje) || 'No se pudo iniciar el pago. Intenta de nuevo.');
@@ -63,6 +86,12 @@ export default function MiPlanView() {
         setCargando(false);
       }
     })();
+    // Al volver a la app (p.ej. tras pagar en el navegador), refresca el plan.
+    const onVis = () => { if (document.visibilityState === 'visible') recargar(); };
+    document.addEventListener('visibilitychange', onVis);
+    window.addEventListener('focus', recargar);
+    return () => { document.removeEventListener('visibilitychange', onVis); window.removeEventListener('focus', recargar); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function abrirPanel() {
