@@ -103,7 +103,8 @@
       'tab.varas_analizando': 'VARAS está analizando...',
       'tab.accion_sugerida': '✨ Acción sugerida',
       'tab.confirmar': 'Confirmar',
-      'tab.cancelar': 'Cancelar'
+      'tab.cancelar': 'Cancelar',
+      'tab.productos': 'Productos'
     },
     en: {
       'tab.canal': 'Channel',
@@ -204,7 +205,8 @@
       'tab.varas_analizando': 'VARAS is analyzing...',
       'tab.accion_sugerida': '✨ Suggested action',
       'tab.confirmar': 'Confirm',
-      'tab.cancelar': 'Cancel'
+      'tab.cancelar': 'Cancel',
+      'tab.productos': 'Products'
     },
     pt: {
       'tab.canal': 'Canal',
@@ -305,7 +307,8 @@
       'tab.varas_analizando': 'VARAS está analisando...',
       'tab.accion_sugerida': '✨ Ação sugerida',
       'tab.confirmar': 'Confirmar',
-      'tab.cancelar': 'Cancelar'
+      'tab.cancelar': 'Cancelar',
+      'tab.productos': 'Produtos'
     }
   };
   function libIdioma() {
@@ -452,7 +455,7 @@
     ].filter(function (f) { return f[1] !== undefined && f[1] !== null && String(f[1]).trim() !== ''; });
   }
 
-  function detalleHtml(e) {
+  function detalleHtml(e, lineas) {
     e = e || {};
     var esIngreso = e.tipo === 'ingreso';
     function ok(v) { return v !== undefined && v !== null && String(v).trim() !== ''; }
@@ -514,14 +517,47 @@
       return g.campos.some(function (c) { return ok(c[1]); });
     });
 
-    var cardsHtml = gruposFiltrados.map(function (g, i) {
+    var HEAD = 'color:#fff;padding:8px 12px;font-weight:800;font-size:11px;text-transform:uppercase;letter-spacing:.5px';
+    var CARD = 'border-radius:12px;overflow:hidden;border:1px solid rgba(0,0,0,.08);background:#fff';
+    var BODY = 'padding:10px 12px;display:grid;grid-template-columns:1fr 1fr;gap:8px 12px';
+    var KEY = 'font-size:10px;opacity:.55;text-transform:uppercase;letter-spacing:.3px';
+    var VAL = 'font-weight:700;font-size:13px;word-break:break-word';
+
+    function card(grad, icon, titulo, bodyHtml) {
+      return '<div style="' + CARD + '">'
+        + '<div style="background:' + grad + ';' + HEAD + '">' + icon + ' ' + escapeHtml(titulo) + '</div>'
+        + '<div style="' + BODY + '">' + bodyHtml + '</div>'
+        + '</div>';
+    }
+
+    var cardsHtml = gruposFiltrados.map(function (g) {
       var camposHtml = g.campos
         .filter(function (c) { return ok(c[1]); })
         .map(function (c) {
-          return '<div class="dc-row"><span class="dc-k">' + escapeHtml(c[0]) + '</span>'
-            + '<span class="dc-v">' + escapeHtml(String(c[1])) + '</span></div>';
+          return '<div><div style="' + KEY + '">' + escapeHtml(c[0]) + '</div>'
+            + '<div style="' + VAL + '">' + escapeHtml(String(c[1])) + '</div></div>';
         }).join('');
-      return '<li class="det-card" data-idx="' + i + '" tabindex="0" style="background:' + g.grad + '">'
+      return card(g.grad, g.icon, g.titulo, camposHtml);
+    }).join('');
+
+    if (lineas && lineas.length) {
+      var lineasHtml = lineas.map(function (l) {
+        var desc = escapeHtml(l.descripcion || '');
+        var cant = escapeHtml(((l.cantidad != null ? l.cantidad : '') + ' ' + (l.unidad || '')).trim());
+        return '<div style="grid-column:1/-1;display:flex;justify-content:space-between;gap:10px;align-items:baseline;border-top:1px solid rgba(0,0,0,.06);padding-top:6px">'
+          + '<div style="min-width:0"><div style="' + VAL + '">' + desc + '</div>'
+          + (cant ? '<div style="' + KEY + '">' + cant + '</div>' : '') + '</div>'
+          + '<div style="' + VAL + ';white-space:nowrap">' + fmtClp(l.total) + '</div></div>';
+      }).join('');
+      cardsHtml += card('linear-gradient(135deg,#0891b2,#0e7490)', '\u{1F6D2}', L('tab.productos') || 'Productos', lineasHtml);
+    }
+
+    return '<div style="display:grid;gap:10px">' + cardsHtml + '</div>';
+  }
+
+  // eslint-disable-next-line no-unused-vars
+  function __detalleHtml_legacy_unused(g, i, camposHtml) {
+    return ['<li class="det-card" data-idx="' + i + '" tabindex="0" style="background:' + g.grad + '">'
         + '<div class="dc-overlay"></div>'
         + '<article class="dc-article">'
         + '<span class="dc-label-col">' + g.icon + ' ' + escapeHtml(g.titulo) + '</span>'
@@ -531,10 +567,7 @@
         + '<div class="dc-campos">' + camposHtml + '</div>'
         + '</div>'
         + '</article>'
-        + '</li>';
-    }).join('');
-
-    return '<ul class="det-cards" data-n="' + gruposFiltrados.length + '">' + cardsHtml + '</ul>';
+        + '</li>'].join('');
   }
 
   function cuadreManual(lineas) {

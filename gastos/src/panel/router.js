@@ -9,6 +9,7 @@ const { fichaDerivada, telefonoDeContacto } = require('../chat/ficha');
 const { listExpenses } = require('../expenses/query');
 const { markExpensePaid, getExpense, updateExpense, annulExpense, createExpense } = require('../expenses/repo');
 const { intakeFromImage } = require('../expenses/intake');
+const { getLineas } = require('../expenses/lineas-repo');
 const { readImage, contentTypeFor } = require('../expenses/storage');
 const { buildExpensesWorkbook } = require('./excel');
 const xc = require('./excel-contabilidad');
@@ -348,6 +349,11 @@ function createPanelRouter({ db, sendText, sendImage, varasGemini } = {}) {
     const out = await annulExpense(db, req.auth.companyId, req.params.id);
     if (!out) return res.status(404).json({ error: 'no_existe' });
     return res.json(out);
+  });
+
+  router.get('/expenses/:id/lineas', async (req, res) => {
+    try { res.json({ lineas: await getLineas(db, req.params.id) }); }
+    catch (e) { res.status(500).json({ error: 'lineas_error' }); }
   });
 
   router.get('/expenses/:id/foto', async (req, res) => {

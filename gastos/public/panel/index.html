@@ -1781,6 +1781,9 @@
       'det.gasto': 'Gasto',
       'det.ingreso': 'Ingreso',
       'det.verFoto': '📷 Ver foto',
+      'det.copiar': '📋 Copiar',
+      'det.copiado': 'Copiado ✓',
+      'det.productos': 'Productos',
       'det.editar': '✏️ Editar',
       'det.anular': '🗑️ Anular',
       'det.sinFoto': 'Sin foto disponible (se guarda 2 meses y luego se elimina).',
@@ -1998,6 +2001,9 @@
       'det.gasto': 'Expense',
       'det.ingreso': 'Income',
       'det.verFoto': '📷 View photo',
+      'det.copiar': '📋 Copy',
+      'det.copiado': 'Copied ✓',
+      'det.productos': 'Products',
       'det.editar': '✏️ Edit',
       'det.anular': '🗑️ Void',
       'det.sinFoto': 'No photo available (kept for 2 months, then deleted).',
@@ -2215,6 +2221,9 @@
       'det.gasto': 'Despesa',
       'det.ingreso': 'Receita',
       'det.verFoto': '📷 Ver foto',
+      'det.copiar': '📋 Copiar',
+      'det.copiado': 'Copiado ✓',
+      'det.productos': 'Produtos',
       'det.editar': '✏️ Editar',
       'det.anular': '🗑️ Anular',
       'det.sinFoto': 'Sem foto disponível (guardada por 2 meses e depois excluída).',
@@ -2751,29 +2760,16 @@
       };
     });
   }
-  function initDetCards() {
-    var container = document.querySelector('#detalleBody .det-cards');
-    if (!container) return;
-    var cards = Array.prototype.slice.call(container.querySelectorAll('.det-card'));
-    function activate(idx) {
-      cards.forEach(function (c, i) { c.classList.toggle('dc-active', i === idx); });
-      container.style.gridTemplateColumns = cards.map(function (_, i) {
-        return i === idx ? '5fr' : '1fr';
-      }).join(' ');
-    }
-    activate(0);
-    cards.forEach(function (card, idx) {
-      card.addEventListener('mouseenter', function () { activate(idx); });
-      card.addEventListener('click',      function () { activate(idx); });
-      card.addEventListener('focus',      function () { activate(idx); });
-    });
-  }
+  function initDetCards() { /* no-op: el detalle ahora muestra todas las tarjetas a la vez */ }
 
   var detSel = null;
-  function openDetalle(row) {
+  var detLineas = [];
+  async function openDetalle(row) {
     detSel = row;
+    detLineas = [];
+    try { var lr = await apiFetch('/expenses/' + row.id + '/lineas'); detLineas = (await lr.json()).lineas || []; } catch (e) {}
     $('detalleTitulo').textContent = (row.tipo === 'ingreso' ? tp('det.ingreso') : tp('det.gasto')) + ' · ' + PanelLib.fmtClp(row.total);
-    $('detalleBody').innerHTML = PanelLib.detalleHtml(row);
+    $('detalleBody').innerHTML = PanelLib.detalleHtml(row, detLineas);
     initDetCards();
     defaultActions();
     $('detalleModal').classList.remove('hidden');
@@ -2781,11 +2777,45 @@
   function closeDetalle() { $('detalleModal').classList.add('hidden'); $('detalleActions').innerHTML = ''; }
   function defaultActions() {
     $('detalleActions').innerHTML = '<button id="detFotoBtn" class="btn-ghost" style="flex:1">' + tp('det.verFoto') + '</button>'
+      + '<button id="detCopiarBtn" class="btn-ghost" style="flex:1">' + tp('det.copiar') + '</button>'
       + '<button id="detEditBtn" class="btn-ghost" style="flex:1">' + tp('det.editar') + '</button>'
       + '<button id="detAnularBtn" class="btn-ghost" style="flex:1; color:#ff8a8a">' + tp('det.anular') + '</button>';
     $('detFotoBtn').onclick = onFoto;
+    $('detCopiarBtn').onclick = onCopiar;
     $('detEditBtn').onclick = onEdit;
     $('detAnularBtn').onclick = onAnular;
+  }
+  function onCopiar() {
+    var e = detSel; if (!e) return;
+    var esIngreso = e.tipo === 'ingreso';
+    var L = [];
+    L.push((esIngreso ? tp('det.ingreso') : tp('det.gasto')) + ': ' + PanelLib.fmtClp(e.total));
+    if (e.proveedor) L.push((esIngreso ? tp('det.pagador') : tp('det.proveedor')) + ': ' + e.proveedor);
+    if (e.rut_emisor) L.push('RUT: ' + e.rut_emisor);
+    if (e.neto) L.push('Neto: ' + PanelLib.fmtClp(e.neto));
+    if (e.iva) L.push('IVA: ' + PanelLib.fmtClp(e.iva));
+    if (e.tipo_documento) L.push(tp('det.tipo') + ' doc: ' + e.tipo_documento);
+    if (e.folio) L.push(tp('det.folio') + ': ' + e.folio);
+    if (e.nro_operacion) L.push(tp('det.nroOp') + ': ' + e.nro_operacion);
+    if (e.fecha) L.push(tp('det.fecha') + ': ' + String(e.fecha).slice(0, 10));
+    if (!esIngreso && e.categoria) L.push(tp('det.categoria') + ': ' + e.categoria);
+    if (e.estado) L.push('Estado: ' + e.estado);
+    if (e.estado_pago) L.push('Pago: ' + e.estado_pago);
+    if (detLineas && detLineas.length) {
+      L.push('');
+      L.push(tp('det.productos') + ':');
+      detLineas.forEach(function (l) {
+        var cant = ((l.cantidad != null ? l.cantidad : '') + ' ' + (l.unidad || '')).trim();
+        L.push('- ' + (l.descripcion || '') + (cant ? ' (' + cant + ')' : '') + ' · ' + PanelLib.fmtClp(l.total));
+      });
+    }
+    var txt = L.filter(function (s) { return s !== ''; }).join('\n');
+    var btn = $('detCopiarBtn');
+    function ok() { if (btn) { var t = btn.textContent; btn.textContent = tp('det.copiado'); setTimeout(function () { btn.textContent = t; }, 1500); } }
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(txt).then(ok, ok); }
+      else ok();
+    } catch (err) { ok(); }
   }
   async function onFoto() {
     if (!detSel) return;
