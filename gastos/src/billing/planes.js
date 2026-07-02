@@ -2,7 +2,7 @@
 // con el costo real de la API más adelante antes de cobrar.
 const PLANES = {
   free:      { nombre: 'free',      creditos: 30,        precios: { CLP: 0,     USD: 0,  EUR: 0  } },
-  basico:    { nombre: 'basico',    creditos: 100,       precios: { CLP: 1000,  USD: 15, EUR: 15 } },
+  basico:    { nombre: 'basico',    creditos: 100,       precios: { CLP: 9900,  USD: 15, EUR: 15 } },
   pyme:      { nombre: 'pyme',      creditos: 210,       precios: { CLP: 24900, USD: 35, EUR: 35 } },
   empresa:   { nombre: 'empresa',   creditos: 600,       precios: { CLP: 49900, USD: 69, EUR: 69 } },
   ilimitado: { nombre: 'ilimitado', creditos: 100000000, precios: { CLP: 0,     USD: 0,  EUR: 0  } },
