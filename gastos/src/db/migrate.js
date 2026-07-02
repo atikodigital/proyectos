@@ -171,6 +171,12 @@ const PAYPAL_DDL = [
   )`,
 ];
 
+// Lemon Squeezy: tabla de mapeo plan → variant_id (poblada manualmente tras crear
+// los productos/variants en el dashboard de LS).
+const LEMONSQUEEZY_DDL = [
+  `CREATE TABLE IF NOT EXISTS lemonsqueezy_variants (plan TEXT PRIMARY KEY, variant_id TEXT NOT NULL)`,
+];
+
 // Recuperación de contraseña: token hasheado, caduca en 1 hora, un solo uso.
 const PASSWORD_RESETS_DDL = [
   `CREATE TABLE IF NOT EXISTS password_resets (
@@ -247,6 +253,9 @@ async function migrate(db) {
     try { await db.query(stmt); } catch (e) { /* pg-mem / ya existe */ }
   }
   for (const stmt of PAYPAL_DDL) {
+    try { await db.query(stmt); } catch (e) { /* pg-mem / ya existe */ }
+  }
+  for (const stmt of LEMONSQUEEZY_DDL) {
     try { await db.query(stmt); } catch (e) { /* pg-mem / ya existe */ }
   }
   // Grandfathering: las empresas que YA existen (sin suscripción) parten ILIMITADAS

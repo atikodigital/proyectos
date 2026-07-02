@@ -51,9 +51,9 @@ test('procesadorPara CLP devuelve mp', () => {
   expect(procesadorPara('CLP')).toBe('mp');
 });
 
-test('procesadorPara USD/EUR devuelve paypal', () => {
-  expect(procesadorPara('USD')).toBe('paypal');
-  expect(procesadorPara('EUR')).toBe('paypal');
+test('procesadorPara USD/EUR devuelve lemonsqueezy', () => {
+  expect(procesadorPara('USD')).toBe('lemonsqueezy');
+  expect(procesadorPara('EUR')).toBe('lemonsqueezy');
 });
 
 // --- monedasSoportadas ---

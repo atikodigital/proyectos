@@ -44,7 +44,7 @@ const { createEphemeralToken } = require('../agent/token');
 const { suggestOrder } = require('../pedidos/suggest');
 const { saldo: saldoCreditos, consumirCredito, SinCreditosError } = require('../billing/creditos');
 const { createPreapproval } = require('../billing/mp');
-const { crearSuscripcionPaypal } = require('../billing/paypal');
+const { crearCheckoutLS } = require('../billing/lemonsqueezy');
 const { procesadorPara, monedasSoportadas } = require('../billing/planes');
 
 function parseFiltros(q = {}) {
@@ -100,10 +100,9 @@ function createPanelRouter({ db, sendText, sendImage, varasGemini } = {}) {
         id = result.id;
         url = result.init_point;
       } else {
-        const result = await crearSuscripcionPaypal({
+        const result = await crearCheckoutLS({
           plan, moneda, payerEmail: owner.email,
-          returnUrl: `${base}/panel/#plan`,
-          cancelUrl: `${base}/panel/#plan`,
+          redirectUrl: `${base}/panel/#plan`,
           companyId: req.auth.companyId,
           db,
         });
@@ -128,6 +127,12 @@ function createPanelRouter({ db, sendText, sendImage, varasGemini } = {}) {
         return res.status(502).json({
           error: 'pago_error',
           mensaje: 'MercadoPago no pudo procesar este correo. Si ya tienes una cuenta MercadoPago, intenta con otro correo.',
+        });
+      }
+      if (proc === 'lemonsqueezy') {
+        return res.status(502).json({
+          error: 'pago_error',
+          mensaje: 'No pudimos iniciar el pago con Lemon Squeezy. Intenta de nuevo en un momento.',
         });
       }
       return res.status(502).json({ error: 'pago_error', mensaje: 'No pudimos iniciar el pago. Intenta de nuevo en un momento.' });

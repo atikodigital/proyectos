@@ -39,9 +39,9 @@ function precioDe(plan, moneda) {
 }
 
 // Devuelve el procesador de pago para la moneda dada.
-// CLP → MercadoPago ('mp'), cualquier otra → PayPal ('paypal').
+// CLP → MercadoPago ('mp'), cualquier otra → Lemon Squeezy ('lemonsqueezy').
 function procesadorPara(moneda) {
-  return moneda === 'CLP' ? 'mp' : 'paypal';
+  return moneda === 'CLP' ? 'mp' : 'lemonsqueezy';
 }
 
 // Lista de monedas soportadas en el sistema de billing.

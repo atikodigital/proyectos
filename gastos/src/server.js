@@ -11,6 +11,8 @@ const { verificarFirmaStripe } = require('./billing/stripe');
 const { procesarEventoStripe } = require('./billing/webhook-stripe');
 const { verificarWebhookPaypal } = require('./billing/paypal');
 const { procesarEventoPaypal } = require('./billing/webhook-paypal');
+const { verificarFirmaLS } = require('./billing/lemonsqueezy');
+const { procesarEventoLS } = require('./billing/webhook-lemonsqueezy');
 const { createAppRouter } = require('./app/router');
 const { createPanelRouter } = require('./panel/router');
 const { createAdminRouter } = require('./admin/router');
@@ -167,6 +169,31 @@ app.post('/api/pagos/paypal/webhook', async (req, res) => {
     return res.json({ ok: true });
   } catch (e) {
     console.error('[paypal-webhook]', e.message);
+    return res.status(200).json({ ok: false });
+  }
+});
+// Webhook público de Lemon Squeezy: firma HMAC-SHA256 hex sobre el raw body (header X-Signature).
+// Raw body ya capturado por el verify callback de express.json() global.
+app.post('/api/pagos/lemonsqueezy/webhook', async (req, res) => {
+  try {
+    if (!process.env.LEMONSQUEEZY_WEBHOOK_SECRET) {
+      console.warn('[lemonsqueezy-webhook] LEMONSQUEEZY_WEBHOOK_SECRET no configurado — rechazado (fail-closed)');
+      return res.status(503).json({ error: 'webhook_no_configurado' });
+    }
+    const rawBuf = req.rawBody;
+    const rawStr = rawBuf ? rawBuf.toString('utf8') : JSON.stringify(req.body || {});
+    const ok = verificarFirmaLS(rawStr, req.headers['x-signature']);
+    if (!ok) {
+      console.warn('[lemonsqueezy-webhook] firma inválida');
+      return res.status(400).json({ error: 'firma_invalida' });
+    }
+    const evento = req.body && req.body.meta ? req.body : JSON.parse(rawStr);
+    const db = getPool();
+    const r = await procesarEventoLS(db, evento);
+    console.log('[lemonsqueezy-webhook] evento', evento.meta && evento.meta.event_name, '→', r.accion || r.razon);
+    return res.json({ ok: true });
+  } catch (e) {
+    console.error('[lemonsqueezy-webhook]', e.message);
     return res.status(200).json({ ok: false });
   }
 });
