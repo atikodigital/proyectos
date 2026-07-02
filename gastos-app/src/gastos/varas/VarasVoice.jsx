@@ -71,6 +71,18 @@ export default function VarasVoice() {
     session.sendText(instruccionInicialVoz(motivo));
   }, [stop]);
 
+  // Auto-saludo UNA vez por apertura de la app (igual que KALY): al abrir la vista de
+  // VARAS, se presenta solo. No repite al cambiar de pestaña (sessionStorage).
+  useEffect(() => {
+    let ya = false;
+    try { ya = sessionStorage.getItem('varas_greeted_session') === '1'; } catch (_) {}
+    if (!ya) {
+      try { sessionStorage.setItem('varas_greeted_session', '1'); } catch (_) {}
+      start('saludo');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => () => {
     if (sessionRef.current) { sessionRef.current.close(); sessionRef.current = null; }
   }, []);

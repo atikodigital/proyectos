@@ -11,11 +11,10 @@ export function hoyStr(d = new Date()) { return d.toISOString().slice(0, 10); }
 const GREETED_KEY = 'kaly_greeted_session';
 const LAST_GREET_KEY = 'kaly_last_greet';
 
-export function decideAutoStart({ onboarded, yaSaludoHoy: yaHoy }) {
-  // "Ya interactuó hoy" manda SIEMPRE: si ya saludó/onboardeó hoy (recordado en el
-  // celular), no repetir nada al volver de otra pestaña. Recién al día siguiente
-  // vuelve a saludar. Esto evita el re-saludo al cambiar Captura↔Movimientos.
-  if (yaHoy) return null;
+export function decideAutoStart({ onboarded, yaSaludo }) {
+  // Saluda UNA vez por apertura de la app: si ya saludó en esta sesión (sessionStorage),
+  // no repite al cambiar de pestaña; pero al cerrar y volver a abrir, saluda de nuevo.
+  if (yaSaludo) return null;
   return onboarded ? 'saludo' : 'onboarding';
 }
 
