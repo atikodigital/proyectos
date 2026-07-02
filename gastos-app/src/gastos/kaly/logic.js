@@ -12,9 +12,11 @@ const GREETED_KEY = 'kaly_greeted_session';
 const LAST_GREET_KEY = 'kaly_last_greet';
 
 export function decideAutoStart({ onboarded, yaSaludoHoy: yaHoy }) {
-  if (!onboarded) return 'onboarding';
-  if (yaHoy) return null; // ya saludó hoy (recordado en el celular): no repetir
-  return 'saludo';
+  // "Ya interactuó hoy" manda SIEMPRE: si ya saludó/onboardeó hoy (recordado en el
+  // celular), no repetir nada al volver de otra pestaña. Recién al día siguiente
+  // vuelve a saludar. Esto evita el re-saludo al cambiar Captura↔Movimientos.
+  if (yaHoy) return null;
+  return onboarded ? 'saludo' : 'onboarding';
 }
 
 // ¿Ya saludó HOY? (persistido en el celular, sobrevive a cerrar/reabrir la app).

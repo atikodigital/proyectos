@@ -90,6 +90,9 @@ export default function KalyAgent() {
       // Marcar ANTES de conectar: si KalyAgent se desmonta/remonta a mitad de la
       // conexión (navegación entre pestañas), el remontaje no debe repetir el saludo.
       if (motivo === 'saludo' || motivo === 'onboarding') marcarSaludado();
+      // Tras el onboarding, recuérdalo en el celular para que los próximos días
+      // salude normal (no vuelva a hacer el onboarding largo cada día).
+      if (motivo === 'onboarding') { try { localStorage.setItem('kaly_onboarded', '1'); } catch (_) {} }
       setState('connecting');
       setMessages([{ sender: 'kaly', text: 'Conectando con Kaly...', isSystem: true }]);
 

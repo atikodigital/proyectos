@@ -151,6 +151,11 @@ function createAppRouter({ db, extractExpense, createLiveToken, sendText, sendIm
     const owner = esOwner ? { kind: 'user', id: req.auth.userId } : { kind: 'employee', id: req.auth.employeeId };
     try {
       const r = await responderKaly(db, { companyId: req.auth.companyId, employeeId: esOwner ? null : req.auth.employeeId, owner }, messages, { gemini: _varasGemini });
+      // Igual que la voz: deja constancia en la Memoria de que hubo interacción hoy.
+      try {
+        const hoy = new Intl.DateTimeFormat('es-CL', { timeZone: 'America/Santiago' }).format(new Date());
+        await memoryRepo.upsertHechoAuto(db, req.auth.companyId, { tipo: 'dueño', prefijo: 'Última conversación con KALY', contenido: `Última conversación con KALY: ${hoy}` });
+      } catch (_) { /* memoria best-effort */ }
       return res.json(r);
     } catch (e) {
       return res.status(500).json({ error: 'kaly_chat_error', reply: 'No pude procesar tu mensaje ahora.' });
