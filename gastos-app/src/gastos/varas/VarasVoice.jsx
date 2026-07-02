@@ -87,7 +87,7 @@ export default function VarasVoice() {
   }, []);
 
   return (
-    <div className="w-full flex flex-col items-center pt-1 pb-2">
+    <div className="w-full flex flex-col items-center pt-0.5 pb-1">
       <div className="flex items-center gap-3">
         <VarasOrb state={state} audioLevel={level} onTap={handleTap} />
         <button

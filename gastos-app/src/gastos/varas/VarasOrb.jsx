@@ -82,8 +82,8 @@ export default function VarasOrb({ state = 'off', audioLevel = 0, onTap }) {
         <div
           className="absolute rounded-full blur-3xl"
           style={{
-            width: 190,
-            height: 190,
+            width: 122,
+            height: 122,
             background: 'radial-gradient(circle, #C9A24B 0%, #5c4513 70%, transparent 100%)',
             opacity: (0.15 + lvl * 0.35 + (speaking ? 0.25 : 0) + breathOpacity) * baseOpacity,
             transform: `scale(${(1 + lvl * 0.45) * breathScale})`,
@@ -93,8 +93,8 @@ export default function VarasOrb({ state = 'off', audioLevel = 0, onTap }) {
         <div
           className="absolute rounded-full blur-2xl"
           style={{
-            width: 110,
-            height: 110,
+            width: 72,
+            height: 72,
             background: 'radial-gradient(circle, #e6c55f 0%, #b08b3a 70%, transparent 100%)',
             opacity: (0.28 + lvl * 0.5 + (speaking ? 0.15 : 0)) * baseOpacity,
             transform: `scale(${(1 + lvl * 0.25) * breathScale})`,
@@ -102,7 +102,7 @@ export default function VarasOrb({ state = 'off', audioLevel = 0, onTap }) {
           }}
         />
 
-        <svg width="170" height="170" viewBox="0 0 300 300" style={{ overflow: 'visible' }}>
+        <svg width="128" height="128" viewBox="0 0 300 300" style={{ overflow: 'visible' }}>
           <defs>
             <radialGradient id="varas-core" cx="50%" cy="50%" r="50%">
               <stop offset="0%" stopColor="#fff" stopOpacity=".95" />

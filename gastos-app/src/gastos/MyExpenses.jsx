@@ -319,11 +319,11 @@ function MovimientosCards({ rows, onSelect }) {
             <div
               key={e.id}
               onClick={() => onSelect(e)}
-              style={{ flex: '0 0 84%', height: 172, scrollSnapAlign: 'center', position: 'relative', borderRadius: 16, overflow: 'hidden', cursor: 'pointer', border: '1px solid rgba(255,255,255,0.12)', background: bg }}
+              style={{ flex: '0 0 84%', height: 155, scrollSnapAlign: 'center', position: 'relative', borderRadius: 16, overflow: 'hidden', cursor: 'pointer', border: '1px solid rgba(255,255,255,0.12)', background: bg }}
             >
               {foto && <img src={foto} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.3 }} />}
               <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.2) 100%)', pointerEvents: 'none' }} />
-              <div style={{ position: 'relative', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', padding: 13, gap: 3 }}>
+              <div style={{ position: 'relative', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', padding: 11, gap: 2 }}>
                 <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
                   <span style={{ fontSize: 9, fontWeight: 800, padding: '2px 7px', borderRadius: 20, background: esIngreso ? '#1f7a3f' : '#6d28d9', color: '#fff' }}>
                     {esIngreso ? t('exp.badge.ingreso') : t('exp.badge.gasto')}

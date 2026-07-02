@@ -67,7 +67,7 @@ export default function VarasChat() {
 
   return (
     <div className="h-full flex flex-col">
-      <div className="shrink-0 border-b pb-1">
+      <div className="shrink-0 border-b">
         <VarasVoice />
       </div>
       <div className="flex-1 min-h-0 overflow-y-auto p-3 grid gap-2 content-start">
