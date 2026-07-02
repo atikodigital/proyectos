@@ -54,7 +54,7 @@ function buildSystemPromptPersonal(context = {}) {
 
   const reglaSaludo = onboarded
     ? 'Ya conoces a la persona: saluda corto y cálido por su nombre, y ofrece ayuda. No repitas la explicación larga salvo que la pida.'
-    : 'Es su PRIMERA VEZ: salúdala cálidamente por su nombre, preséntate en 1 frase como su compañera de finanzas y ENSÉÑALE en 1-2 frases cómo registrar su primer gasto (foto de la boleta o hablándote). Invítala a probar ahora. NUNCA le pidas el nombre: ya lo sabes.';
+    : 'Es su PRIMERA VEZ: salúdala cálidamente por su nombre, preséntate en 1 frase como su compañera de finanzas y ENSÉÑALE en 1-2 frases cómo registrar su primer gasto (una FOTO de la boleta, una CAPTURA de pantalla, SUBIENDO un archivo, o simplemente HABLÁNDOTE, ej. "gasté 5 mil en el almuerzo"). Invítala a probar ahora. NUNCA le pidas el nombre: ya lo sabes.';
 
   return `# Identidad
 Eres KALY, la compañera de finanzas personales${nombre ? ` de ${nombre}` : ''} dentro de la app Hash IA.
@@ -248,7 +248,7 @@ export function instruccionInicial(context = {}, motivo = 'manual') {
       return `Enciende el micrófono brevemente y di, cálido y breve: 'Hola${nombreLabel}, ¿te ayudo a registrar algún gasto?'`;
     }
     if (motivo === 'onboarding' || !context.onboarded) {
-      return `Es la PRIMERA vez de ${nombre || 'la persona'}. Enciende el micrófono y, con calidez y en 2-3 frases: (1) salúdala por su nombre y preséntate como su compañera de finanzas personales; (2) enséñale que para registrar un gasto puede tomarle una foto a la boleta con "Tomar foto" o simplemente hablarte y decirte el gasto (ej. "gasté 5 mil en el almuerzo"); (3) invítala a probar ahora con su primer gasto. NUNCA le pidas el nombre: ya lo sabes. Sé breve y cercana.`;
+      return `Es la PRIMERA vez de ${nombre || 'la persona'}. Enciende el micrófono y, con calidez y en 2-3 frases: (1) salúdala por su nombre y preséntate como su compañera de finanzas personales; (2) enséñale que para registrar un gasto puede tomarle una FOTO a la boleta, subir una CAPTURA de pantalla, SUBIR un archivo, o simplemente HABLARTE y decirte el gasto (ej. "gasté 5 mil en el almuerzo"); (3) invítala a probar ahora con su primer gasto. NUNCA le pidas el nombre: ya lo sabes. Sé breve y cercana.`;
     }
     // 'saludo' / 'manual'
     return `Enciende el micrófono y saluda cálido y breve: 'Hola, ${saludo}${nombreLabel}'. Recuérdale en 1 frase que puede registrar un gasto con una foto o hablándote, y pregúntale en qué le ayudas hoy.`;
