@@ -125,7 +125,8 @@ export const api = {
   listAuxiliaresApp() { return req('/api/app/auxiliares'); },
   setLineaAuxiliar(lineaId, auxiliar_id) { return req(`/api/app/lineas/${lineaId}`, { method: 'PATCH', body: { auxiliar_id } }); },
 
-  // KALY — memoria personalizada
+  // KALY — chat de texto (HTTP, no la sesión de voz) + memoria personalizada
+  kalyChat(messages) { return req('/api/app/kaly/chat', { method: 'POST', body: { messages } }); },
   kalyMemorias() { return req('/api/app/kaly/memoria'); },
   kalyRecordar(m) { return req('/api/app/kaly/memoria', { method: 'POST', body: m }); },
   kalyBorrarMemoria(id) { return req(`/api/app/kaly/memoria/${id}`, { method: 'DELETE' }); },

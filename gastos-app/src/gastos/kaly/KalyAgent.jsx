@@ -26,6 +26,7 @@ export default function KalyAgent() {
   const [level, setLevel] = useState(0);
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
+  const [busyText, setBusyText] = useState(false);
   const [muted, setMutedState] = useState(() => {
     try { return localStorage.getItem('kaly_muted') === '1'; } catch (_) { return false; }
   });
@@ -225,16 +226,42 @@ export default function KalyAgent() {
     if (state === 'off') start('manual'); else stop();
   }, [state, start, stop]);
 
+  // El texto NO usa la sesión de voz Live (mezclar audio + turnos de texto es
+  // inestable y a veces no responde). Va por un chat HTTP dedicado que devuelve
+  // { reply, accionPropuesta }; las acciones se confirman con la tarjeta (proponer)
+  // y se ejecutan con executeTool (que refresca la app).
   const handleSendText = useCallback(async () => {
-    unlockAudio();
     const txt = inputText.trim();
-    if (!txt) return;
+    if (!txt || busyText) return;
     setInputText('');
-    if (!sessionRef.current) { await start('manual'); }
-    clearSilenceTimer();
+    const historial = messages
+      .filter((m) => !m.isSystem)
+      .map((m) => ({ role: m.sender === 'kaly' ? 'assistant' : 'user', text: m.text }))
+      .concat([{ role: 'user', text: txt }]);
     setMessages((prev) => [...prev, { sender: 'user', text: txt }]);
-    if (sessionRef.current) sessionRef.current.sendText(txt);
-  }, [inputText, start]);
+    setBusyText(true);
+    try {
+      const r = await api.kalyChat(historial);
+      if (r && r.reply) setMessages((prev) => [...prev, { sender: 'kaly', text: r.reply }]);
+      if (r && r.accionPropuesta) {
+        const out = await executeTool(r.accionPropuesta.tipo, r.accionPropuesta.args, {
+          onPrefsSaved: (p) => { contextRef.current = { ...contextRef.current, ...p, onboarded: true }; localStorage.setItem('kaly_onboarded', '1'); },
+          proponer, pedirEvidencia,
+        });
+        const CAMBIA = new Set(['crear_movimiento_manual', 'marcar_pagada', 'anular_movimiento', 'pedir_documento']);
+        if (out && !out.error && !out.cancelado) {
+          if (CAMBIA.has(r.accionPropuesta.tipo)) { try { window.dispatchEvent(new CustomEvent('hash:data-changed')); } catch (_) {} }
+          setMessages((prev) => [...prev, { sender: 'kaly', text: '✅ Listo, quedó registrado.' }]);
+        } else if (out && out.error) {
+          setMessages((prev) => [...prev, { sender: 'kaly', text: 'No pude completar la acción.' }]);
+        }
+      }
+    } catch (_e) {
+      setMessages((prev) => [...prev, { sender: 'kaly', text: 'No pude procesar tu mensaje.' }]);
+    } finally {
+      setBusyText(false);
+    }
+  }, [inputText, busyText, messages, proponer, pedirEvidencia]);
 
   const toggleMute = useCallback(() => { aplicarMute(!mutedRef.current); }, [aplicarMute]);
 
@@ -276,10 +303,10 @@ export default function KalyAgent() {
         />
         <button
           onClick={handleSendText}
-          disabled={!inputText.trim()}
+          disabled={busyText || !inputText.trim()}
           className="px-3 py-1.5 text-[12px] bg-[#C9A24B] hover:bg-[#b08b3a] disabled:opacity-40 text-white rounded-lg font-black transition-colors"
         >
-          Enviar
+          {busyText ? '…' : 'Enviar'}
         </button>
       </div>
     </div>

@@ -37,6 +37,7 @@ const { REGIONES_COMUNAS } = require('../pedidos/comunas-chile');
 const { mapCategoryToSii } = require('../domain/categories');
 const { crearAsientoManual, anularAsientoManual } = require('../contabilidad/manual');
 const { responder } = require('../varas/chat');
+const { responderKaly } = require('../agent/kaly-chat');
 const { geminiChat } = require('../varas/gemini');
 const { ejecutarAccion } = require('../varas/acciones');
 const { TOOLS_READ } = require('../varas/tools');
@@ -129,6 +130,20 @@ function createAppRouter({ db, extractExpense, createLiveToken, sendText, sendIm
     } catch (e) {
       if (e instanceof SinCreditosError) return res.status(402).json({ error: 'sin_creditos', saldo: e.saldo });
       return res.status(500).json({ error: 'voz_end_error' });
+    }
+  });
+
+  // Chat de TEXTO de KALY (dueños y empleados). Va antes del requireKind global,
+  // como /agent/session, porque los dueños entran con token kind='user'.
+  router.post('/kaly/chat', requireAuth, requireKindAny(['employee', 'user']), async (req, res) => {
+    const messages = (req.body && req.body.messages) || [];
+    const esOwner = req.auth.kind === 'user';
+    const owner = esOwner ? { kind: 'user', id: req.auth.userId } : { kind: 'employee', id: req.auth.employeeId };
+    try {
+      const r = await responderKaly(db, { companyId: req.auth.companyId, employeeId: esOwner ? null : req.auth.employeeId, owner }, messages, { gemini: _varasGemini });
+      return res.json(r);
+    } catch (e) {
+      return res.status(500).json({ error: 'kaly_chat_error', reply: 'No pude procesar tu mensaje ahora.' });
     }
   });
 
