@@ -74,8 +74,10 @@ export default function VarasChat() {
         {mensajes.map((m, i) => (
           <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
             <div
-              className="max-w-[80%] rounded-2xl px-3 py-2 text-sm whitespace-pre-wrap"
-              style={m.role === 'user' ? { background: ORO + '22', color: '#3a2f12' } : { background: 'rgba(0,0,0,0.05)' }}
+              className="max-w-[82%] px-3 py-2 text-sm whitespace-pre-wrap shadow-sm"
+              style={m.role === 'user'
+                ? { background: ORO + '22', color: '#3a2f12', borderRadius: '16px 16px 4px 16px' }
+                : { background: '#fffdf5', color: '#3a2f12', border: '1px solid rgba(201,162,75,0.45)', borderRadius: '16px 16px 16px 4px' }}
             >
               {m.text}
             </div>

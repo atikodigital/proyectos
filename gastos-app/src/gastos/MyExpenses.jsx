@@ -319,7 +319,7 @@ function MovimientosCards({ rows, onSelect }) {
             <div
               key={e.id}
               onClick={() => onSelect(e)}
-              style={{ flex: '0 0 84%', height: 155, scrollSnapAlign: 'center', position: 'relative', borderRadius: 16, overflow: 'hidden', cursor: 'pointer', border: '1px solid rgba(255,255,255,0.12)', background: bg }}
+              style={{ flex: '0 0 84%', height: 140, scrollSnapAlign: 'center', position: 'relative', borderRadius: 16, overflow: 'hidden', cursor: 'pointer', border: '1px solid rgba(255,255,255,0.12)', background: bg }}
             >
               {foto && <img src={foto} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.3 }} />}
               <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.2) 100%)', pointerEvents: 'none' }} />
