@@ -60,7 +60,12 @@ export default function ContabilidadView({ initialTab = 'varas' }) {
         </div>
       </div>
       <div className="flex-1 min-h-0 overflow-y-auto">
-        {tab === 'varas' ? <VarasChat />
+        {tab === 'varas' ? (
+            <div className="h-full overflow-y-auto">
+              <div className="border-b" style={{ height: '55%', minHeight: 320 }}><VarasChat /></div>
+              <MatchView />
+            </div>
+          )
           : tab === 'concil' ? <MatchView />
           : tab === 'manual' ? <AsientoManual onSaved={() => setTab('diario')} />
           : busy ? <div className="p-4 text-sm opacity-70">{t('con.cargando')}</div>
