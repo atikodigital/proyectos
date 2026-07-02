@@ -61,9 +61,9 @@ export default function ContabilidadView({ initialTab = 'varas' }) {
       </div>
       <div className="flex-1 min-h-0 overflow-y-auto">
         {tab === 'varas' ? (
-            <div className="h-full overflow-y-auto">
-              <div className="border-b" style={{ height: '55%', minHeight: 320 }}><VarasChat /></div>
-              <MatchView />
+            <div className="h-full flex flex-col overflow-hidden">
+              <div className="flex-1 min-h-0 border-b"><VarasChat /></div>
+              <div className="shrink-0 overflow-y-auto" style={{ maxHeight: '55%' }}><MatchView embedded /></div>
             </div>
           )
           : tab === 'concil' ? <MatchView />

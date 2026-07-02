@@ -17,7 +17,7 @@ const TIPO_LABEL = {
   error_banco_menos: t('match.tipo_error_banco'),
 };
 
-export default function MatchView() {
+export default function MatchView({ embedded = false }) {
   const [busy, setBusy] = useState(false);
   const [inf, setInf] = useState(null);
   const [err, setErr] = useState('');
@@ -63,7 +63,7 @@ export default function MatchView() {
   }
 
   return (
-    <div className="flex flex-col p-4 gap-2 pb-28">
+    <div className={`flex flex-col gap-2 ${embedded ? 'px-4 pt-2 pb-4' : 'p-4 pb-28'}`}>
       <h2 className="text-xl font-black shrink-0" style={{ color: '#b91c1c' }}>{t('match.titulo')}</h2>
       <p className="text-xs opacity-70 shrink-0">{t('match.subtitulo')}</p>
 
