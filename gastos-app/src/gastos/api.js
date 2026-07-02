@@ -17,6 +17,16 @@ async function req(path, { method = 'GET', body, auth = true } = {}) {
   return data;
 }
 
+// Blob → base64 (sin el prefijo data:...;base64,) para escribir con Filesystem.
+function blobToBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onloadend = () => { const s = String(r.result || ''); const i = s.indexOf(','); resolve(i >= 0 ? s.slice(i + 1) : s); };
+    r.onerror = reject;
+    r.readAsDataURL(blob);
+  });
+}
+
 export const api = {
   async login(usuario, password) {
     const data = await req('/api/app/login', { method: 'POST', body: { usuario, password }, auth: false });
@@ -45,10 +55,30 @@ export const api = {
     });
     if (!res.ok) return false;
     const blob = await res.blob();
+    const fileName = 'movimientos.xlsx';
+
+    // ¿App nativa (Android/Capacitor)? El WebView NO descarga blobs: escribimos el
+    // archivo con Filesystem y abrimos el diálogo de compartir/abrir (Sheets, Drive…).
+    let isNative = false;
+    try { const { Capacitor } = await import('@capacitor/core'); isNative = !!(Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform()); } catch (_) {}
+
+    if (isNative) {
+      try {
+        const base64 = await blobToBase64(blob);
+        const { Filesystem, Directory } = await import('@capacitor/filesystem');
+        const { Share } = await import('@capacitor/share');
+        const written = await Filesystem.writeFile({ path: fileName, data: base64, directory: Directory.Cache });
+        try { await Share.share({ title: 'Movimientos', text: 'Movimientos exportados (Excel)', url: written.uri }); }
+        catch (_e) { /* el usuario cerró el diálogo: el archivo ya quedó guardado */ }
+        return true;
+      } catch (_e) { return false; }
+    }
+
+    // Navegador (localhost / web): descarga clásica.
     const url = URL.createObjectURL(blob);
     try {
       const a = document.createElement('a');
-      a.href = url; a.download = 'movimientos.xlsx';
+      a.href = url; a.download = fileName;
       document.body.appendChild(a); a.click(); a.remove();
     } catch (_e) {
       try { window.open(url, '_blank'); } catch (_e2) { window.location.href = url; }

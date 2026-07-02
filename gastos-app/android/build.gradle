@@ -23,7 +23,9 @@ allprojects {
         mavenCentral()
     }
 
-    // Forzar Java 17 en todos los módulos (incluido capacitor-local-notifications)
+    // Forzar Java 17 en todos los módulos (incluido capacitor-filesystem, que por
+    // defecto pide 21). Igualamos también el Kotlin a 17 para que Java y Kotlin
+    // coincidan (evita "Inconsistent JVM Target"). Así compila con el JDK 17 local.
     afterEvaluate {
         if (it.hasProperty('android')) {
             android {
@@ -32,6 +34,9 @@ allprojects {
                     targetCompatibility JavaVersion.VERSION_17
                 }
             }
+        }
+        tasks.matching { it.name.startsWith('compile') && it.name.endsWith('Kotlin') }.configureEach {
+            kotlinOptions { jvmTarget = "17" }
         }
     }
 }

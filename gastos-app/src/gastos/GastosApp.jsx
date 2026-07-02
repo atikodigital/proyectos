@@ -223,7 +223,9 @@ export default function GastosApp() {
                  </div>
         ) : tab === 'mis' ? (
           <div className="h-full flex flex-col">
-            <div className="shrink-0 border-b overflow-hidden" style={{ height: '40%' }}><VarasChat /></div>
+            <div className="shrink-0 border-b overflow-hidden" style={{ height: '40%' }}>
+              {esPersonal ? <KalyAgent /> : <VarasChat />}
+            </div>
             <div className="flex-1 min-h-0 overflow-y-auto"><MyExpenses /></div>
           </div>
         ) : (tab === 'chat' && chatHabilitado) ? (
