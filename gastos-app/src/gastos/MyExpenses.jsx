@@ -395,14 +395,12 @@ export default function MyExpenses() {
   return (
     <div className="h-full flex flex-col">
       <div className="p-3 pb-1 grid gap-2 shrink-0">
-        <div className="flex items-center gap-2">
-          <div className="flex gap-1.5 flex-wrap flex-1 min-w-0">
-            {periodos.map((o) => (
-              <button key={o[0]} onClick={() => setF((p) => ({ ...p, periodo: o[0] }))} className="text-xs font-black px-3 py-1 rounded-full border" style={f.periodo === o[0] ? { background: '#C9A24B', color: '#000', borderColor: '#C9A24B' } : { opacity: 0.6 }}>{o[1]}</button>
-            ))}
-            <button onClick={() => setMostrarFiltros((v) => !v)} className="text-xs font-black px-3 py-1 rounded-full border" style={(mostrarFiltros || f.tipo !== 'todos' || f.estado !== 'todos' || f.categoria || f.q) ? { background: '#111827', color: '#fff', borderColor: '#111827' } : { opacity: 0.6 }}>⚙︎ {t('exp.filtro.mas')}</button>
-          </div>
-          <button onClick={descargarExcel} disabled={exportando || !visibles.length} className="text-xs font-black text-white rounded-lg px-3 py-1.5 disabled:opacity-40 shrink-0" style={{ background: '#137333' }}>{t('exp.filtro.excel')}</button>
+        <div className="flex gap-1.5 flex-wrap items-center">
+          {periodos.map((o) => (
+            <button key={o[0]} onClick={() => setF((p) => ({ ...p, periodo: o[0] }))} className="text-xs font-black px-3 py-1 rounded-full border" style={f.periodo === o[0] ? { background: '#C9A24B', color: '#000', borderColor: '#C9A24B' } : { opacity: 0.6 }}>{o[1]}</button>
+          ))}
+          <button onClick={() => setMostrarFiltros((v) => !v)} className="text-xs font-black px-3 py-1 rounded-full border" style={(mostrarFiltros || f.tipo !== 'todos' || f.estado !== 'todos' || f.categoria || f.q) ? { background: '#111827', color: '#fff', borderColor: '#111827' } : { opacity: 0.6 }}>⚙︎ {t('exp.filtro.mas')}</button>
+          <button onClick={descargarExcel} disabled={exportando || !visibles.length} className="text-xs font-black text-white rounded-full px-3 py-1 border disabled:opacity-40" style={{ background: '#137333', borderColor: '#137333' }}>{t('exp.filtro.excel')}</button>
         </div>
         {mostrarFiltros ? (
           <div className="grid gap-2 rounded-xl border p-2" style={{ background: 'rgba(0,0,0,0.02)' }}>
