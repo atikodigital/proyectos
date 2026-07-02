@@ -24,7 +24,10 @@ export default function MemoriaKalyView() {
   async function cargar() {
     setCargando(true);
     try {
-      setItems(await api.kalyMemorias());
+      const r = await api.kalyMemorias();
+      // El backend responde { empresa:[...], personal:[...] }; aplanamos a un solo array.
+      const arr = Array.isArray(r) ? r : [...((r && r.empresa) || []), ...((r && r.personal) || [])];
+      setItems(arr);
     } catch (e) {
       setErr(t('match.kaly_err_cargar'));
     } finally {
