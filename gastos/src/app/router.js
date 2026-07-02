@@ -57,6 +57,17 @@ function createAppRouter({ db, extractExpense, createLiveToken, sendText, sendIm
   const _varasGemini = varasGemini || geminiChat;
   const router = express.Router();
 
+  // Deja un rastro automático en la Memoria de KALY por cada movimiento registrado
+  // (voz/manual o captura confirmada). Best-effort: nunca debe romper el registro.
+  async function memoriaMovimiento(companyId, exp) {
+    if (!exp) return;
+    const fechaTxt = exp.fecha ? String(exp.fecha).slice(0, 10) : '';
+    const signo = exp.tipo === 'ingreso' ? 'Ingreso' : 'Gasto';
+    const monto = '$' + Number(exp.total || 0).toLocaleString('es-CL');
+    const partes = [exp.proveedor, monto, exp.categoria, fechaTxt].filter(Boolean);
+    await memoryRepo.registrarHechoAuto(db, companyId, { contenido: `${signo} registrado: ${partes.join(' · ')}` });
+  }
+
   router.post('/login', async (req, res) => {
     const { usuario, password } = req.body || {};
     const emp = await getEmployeeByUsuario(db, usuario);
@@ -92,6 +103,12 @@ function createAppRouter({ db, extractExpense, createLiveToken, sendText, sendIm
       if (ownerPrefs.onboarded_at) context.onboarded = true;
     }
     console.log('[kaly] token live emitido para', esOwner ? 'owner' : 'empleado', esOwner ? req.auth.userId : req.auth.employeeId);
+    // Deja constancia en la Memoria de KALY de que hubo interacción (se actualiza,
+    // no duplica). Refleja "ya saludó / última vez que conversaron".
+    try {
+      const hoy = new Intl.DateTimeFormat('es-CL', { timeZone: 'America/Santiago' }).format(new Date());
+      await memoryRepo.upsertHechoAuto(db, req.auth.companyId, { tipo: 'dueño', prefijo: 'Última conversación con KALY', contenido: `Última conversación con KALY: ${hoy}` });
+    } catch (_) { /* memoria best-effort */ }
     return res.json({ ...tok, context });
   });
 
@@ -491,6 +508,7 @@ function createAppRouter({ db, extractExpense, createLiveToken, sendText, sendIm
       ...cuentaSii,
     });
     await aplicarContabilidad(db, req.auth.companyId, expense, 'confirmar');
+    try { await memoriaMovimiento(req.auth.companyId, expense); } catch (_) { /* memoria best-effort */ }
     return res.status(201).json(expense);
   });
 
@@ -499,6 +517,7 @@ function createAppRouter({ db, extractExpense, createLiveToken, sendText, sendIm
     const confirmed = await confirmExpense(db, req.params.id);
     const exp = await getExpense(db, req.params.id);
     await aplicarContabilidad(db, req.auth.companyId, exp, 'confirmar');
+    try { await memoriaMovimiento(req.auth.companyId, exp); } catch (_) { /* memoria best-effort */ }
     return res.json(confirmed);
   });
 

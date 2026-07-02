@@ -81,4 +81,30 @@ async function borrarMemoriasDe(db, companyId, { ownerKind, ownerId }) {
   return r.rows.length;
 }
 
-module.exports = { normalizeMemoria, formatMemoriaBlock, TIPOS, crearMemoria, listMemorias, borrarMemoria, borrarMemoriasDe };
+// Registra un HECHO automático (origen 'auto'). Cada llamada crea una entrada.
+// Úsalo para datos que se acumulan (ej. cada gasto/ingreso registrado).
+async function registrarHechoAuto(db, companyId, { tipo = 'hecho', contenido, owner = null } = {}) {
+  return crearMemoria(db, companyId, {
+    tipo, contenido, origen: 'auto',
+    owner_kind: owner && owner.kind ? owner.kind : 'company',
+    owner_id: owner && owner.id ? owner.id : null,
+  });
+}
+
+// Upsert de un hecho automático por prefijo: desactiva el anterior con ese
+// prefijo (mismo alcance) y crea el nuevo. Para datos que evolucionan y no
+// deben duplicarse (ej. "Última conversación con KALY: ...").
+async function upsertHechoAuto(db, companyId, { tipo = 'hecho', prefijo, contenido, owner = null } = {}) {
+  const ownerKind = owner && owner.kind ? owner.kind : 'company';
+  const ownerId = owner && owner.id ? owner.id : null;
+  try {
+    if (ownerKind === 'company') {
+      await db.query("UPDATE kaly_memory SET activo=false, updated_at=now() WHERE company_id=$1 AND owner_kind='company' AND origen='auto' AND activo=true AND contenido LIKE $2", [companyId, prefijo + '%']);
+    } else {
+      await db.query("UPDATE kaly_memory SET activo=false, updated_at=now() WHERE company_id=$1 AND owner_kind=$2 AND owner_id=$3 AND origen='auto' AND activo=true AND contenido LIKE $4", [companyId, ownerKind, ownerId, prefijo + '%']);
+    }
+  } catch (_) { /* si falla el limpiado, igual insertamos */ }
+  return crearMemoria(db, companyId, { tipo, contenido, origen: 'auto', owner_kind: ownerKind, owner_id: ownerId });
+}
+
+module.exports = { normalizeMemoria, formatMemoriaBlock, TIPOS, crearMemoria, listMemorias, borrarMemoria, borrarMemoriasDe, registrarHechoAuto, upsertHechoAuto };
