@@ -69,6 +69,19 @@ export default function GastosApp() {
     if (tab === 'chat' && !chatHabilitado) setTab('capturar');
   }, [chatHabilitado, tab]);
 
+  // Cuando la app vuelve a primer plano (o recupera foco), avisa a todas las
+  // pantallas para que recarguen sus datos (balance, movimientos, informes).
+  useEffect(() => {
+    const avisar = () => { try { window.dispatchEvent(new CustomEvent('hash:data-changed')); } catch (_) {} };
+    const onVisible = () => { if (document.visibilityState === 'visible') avisar(); };
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('focus', avisar);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('focus', avisar);
+    };
+  }, []);
+
   if (!authed) return <LoginScreen onLoggedIn={() => setAuthed(true)} />;
 
   async function submit(imageBase64, mimeType, override, overrideReceptor, forceIngreso) {
@@ -197,7 +210,7 @@ export default function GastosApp() {
           </div>
         ) : pending ? (
           <div className="h-full overflow-y-auto">
-            <ConfirmScreen expense={pending.exp} photo={{ base64: pending.img, mime: pending.mime }} onDone={() => { setPending(null); setRefreshKey((k) => k + 1); setTab('mis'); }} />
+            <ConfirmScreen expense={pending.exp} photo={{ base64: pending.img, mime: pending.mime }} onDone={() => { setPending(null); setRefreshKey((k) => k + 1); try { window.dispatchEvent(new CustomEvent('hash:data-changed')); } catch (_) {} setTab('mis'); }} />
           </div>
         ) : tab === 'capturar' ? (
           busy ? <div className="p-6">{t('app.procesando')}</div>

@@ -28,6 +28,21 @@ export default function ContabilidadView({ initialTab = 'varas' }) {
 
   function recargar() { setRefreshCount((n) => n + 1); }
 
+  // Recarga los informes cuando cambian los datos (registro por voz, match, captura)
+  // o cuando la app vuelve a primer plano.
+  useEffect(() => {
+    const onCambio = () => setRefreshCount((n) => n + 1);
+    const onVisible = () => { if (document.visibilityState === 'visible') onCambio(); };
+    window.addEventListener('hash:data-changed', onCambio);
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('focus', onCambio);
+    return () => {
+      window.removeEventListener('hash:data-changed', onCambio);
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('focus', onCambio);
+    };
+  }, []);
+
   useEffect(() => {
     if (tab === 'varas' || tab === 'concil' || tab === 'manual') { setData(null); return; }
     let vivo = true;
