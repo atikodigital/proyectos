@@ -42,9 +42,13 @@ export default function KalyAgent() {
 
   const { proponer, pedirEvidencia, interaccionAbierta } = useAgentInteraction();
 
+  // OJO: antes esto silenciaba la voz de KALY mientras la tarjeta de confirmación
+  // estaba abierta (interaccionAbierta) → el usuario decía un gasto y KALY "no
+  // hablaba al tiro" (su respuesta salía muteada). Ahora KALY sigue hablando con
+  // la tarjeta abierta; solo respeta el mute manual del usuario.
   useEffect(() => {
     if (sessionRef.current && sessionRef.current.setMuted) {
-      sessionRef.current.setMuted(interaccionAbierta || mutedRef.current);
+      sessionRef.current.setMuted(mutedRef.current);
     }
   }, [interaccionAbierta]);
 
