@@ -338,7 +338,7 @@ function MovimientosCards({ rows, onSelect }) {
                     {t('exp.lista.ver_detalle')}
                   </button>
                 </div>
-                {(e.fecha || e.folio) ? <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: 11 }}>{e.fecha ? fechaCorta(e.fecha) : ''}{e.folio ? (e.fecha ? ' · ' : '') + e.folio : ''}</div> : null}
+                {(e.fecha || e.folio) ? <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: 11 }}>{e.fecha ? fechaCorta(e.fecha) : ''}{e.folio ? (e.fecha ? ' · ' : '') + 'Factura ' + e.folio : ''}</div> : null}
                 {!esIngreso && e.categoria ? <div style={{ color: 'rgba(255,255,255,0.55)', fontSize: 11, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{e.categoria}</div> : null}
               </div>
             </div>
