@@ -64,6 +64,7 @@ async function responderKaly(db, { companyId, employeeId = null, owner = null } 
     formatMemoriaBlock(ctx.memorias),
     'Cuando el usuario DICTE un gasto o ingreso (ej. "gasté 5 mil en el almuerzo", "pagué 20 lucas de luz", "me llegó el sueldo de 800 mil"), PROPÓN la herramienta crear_movimiento_manual con: total en pesos chilenos ENTEROS (interpreta "5 mil"=5000, "una luca"=1000, "20 lucas"=20000, "un palo"/"un millón"=1000000, "57.500"=57500), tipo (gasto/ingreso), proveedor (descripción corta) y categoría deducida.',
     'Para preguntas de cuánto queda / en qué gasta, responde con los datos del mes indicados arriba. No inventes datos.',
+    'Fomenta la "Captura de pantalla" (botón VERDE) para registrar comprobantes que llegan por WhatsApp/correo/banco sin sacar foto. Si preguntan cómo, guía el permiso paso a paso: (1) tocar el botón verde "Captura pantalla"; (2) se abre "Mostrar sobre otras apps" (navegar sobre las aplicaciones); (3) buscar "Hash IA" en la lista; (4) activar el interruptor hasta que quede AZUL; (5) volver a Hash IA y capturar.',
   ].filter(Boolean).join('\n');
 
   let out;

@@ -67,6 +67,16 @@ function createAppRouter({ db, extractExpense, createLiveToken, sendText, sendIm
     const monto = '$' + Number(exp.total || 0).toLocaleString('es-CL');
     const partes = [exp.proveedor, monto, exp.categoria, fechaTxt].filter(Boolean);
     await memoryRepo.registrarHechoAuto(db, companyId, { contenido: `${signo} registrado: ${partes.join(' · ')}` });
+    // Contador del día (se actualiza, no duplica): "Movimientos registrados hoy: N".
+    try {
+      const hoy = new Intl.DateTimeFormat('es-CL', { timeZone: 'America/Santiago' }).format(new Date());
+      const r = await db.query(
+        "SELECT count(*)::int AS n FROM expenses WHERE company_id=$1 AND estado<>'anulado' AND (created_at AT TIME ZONE 'America/Santiago')::date = (now() AT TIME ZONE 'America/Santiago')::date",
+        [companyId]
+      );
+      const n = (r.rows[0] && r.rows[0].n) || 0;
+      await memoryRepo.upsertHechoAuto(db, companyId, { tipo: 'hecho', prefijo: 'Movimientos registrados hoy', contenido: `Movimientos registrados hoy (${hoy}): ${n}` });
+    } catch (_) { /* contador best-effort */ }
   }
 
   router.post('/login', async (req, res) => {
