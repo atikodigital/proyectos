@@ -7,7 +7,7 @@ const PANEL_URL = 'https://gastos.atikodigital.cl/panel';
 
 // Planes pagables (mismos precios/creditos que el backend billing/planes.js).
 const PLANES_UP = [
-  { id: 'basico', nombre: 'Básico', creditos: 100, precio: 500 },
+  { id: 'basico', nombre: 'Básico', creditos: 100, precio: 1000 },
   { id: 'pyme', nombre: 'Pyme', creditos: 210, precio: 24900 },
   { id: 'empresa', nombre: 'Empresa', creditos: 600, precio: 49900 },
 ];
