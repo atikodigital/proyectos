@@ -43,6 +43,10 @@ const { ejecutarAccion } = require('../varas/acciones');
 const { TOOLS_READ } = require('../varas/tools');
 const memoryRepo = require('../agent/memory');
 const { saldo: saldoCreditos, consumirCredito, SinCreditosError } = require('../billing/creditos');
+const { createPreapproval } = require('../billing/mp');
+const { crearSuscripcionPaypal } = require('../billing/paypal');
+const { procesadorPara, monedasSoportadas } = require('../billing/planes');
+const { getUserById } = require('../users/repo');
 const { calcularResumenPersonal } = require('../personal/repo');
 
 function createAppRouter({ db, extractExpense, createLiveToken, sendText, sendImage, extractCartola, componer, extraerProductos, extractLibroSii, varasGemini, extraerHechos, juzgarHecho } = {}) {
@@ -779,6 +783,50 @@ function createAppRouter({ db, extractExpense, createLiveToken, sendText, sendIm
       res.json(s);
     } catch (e) {
       res.status(500).json({ error: 'saldo_error' });
+    }
+  });
+
+  // Email del pagador para el checkout desde el APK: dueño (userId) o, en cuentas
+  // personales, el usuario del empleado (que es su email); si no, owner_email.
+  async function emailDelPagador(auth) {
+    if (auth.userId) { try { const u = await getUserById(db, auth.userId); if (u && u.email) return u.email; } catch (_) {} }
+    if (auth.employeeId) {
+      try { const r = await db.query('SELECT usuario FROM employees WHERE id=$1', [auth.employeeId]); const u = r.rows[0] && r.rows[0].usuario; if (u && /@/.test(u)) return u; } catch (_) {}
+    }
+    try { const r = await db.query('SELECT owner_email FROM companies WHERE id=$1', [auth.companyId]); return (r.rows[0] && r.rows[0].owner_email) || null; } catch (_) { return null; }
+  }
+
+  // Crea el checkout de suscripción DESDE EL APK y devuelve la URL de pago
+  // (MercadoPago para CLP, PayPal para USD/EUR). El usuario paga en el navegador.
+  router.post('/suscripcion/crear', async (req, res) => {
+    const { plan, moneda = 'CLP' } = req.body || {};
+    if (!plan || !['basico', 'pyme', 'empresa'].includes(plan)) return res.status(400).json({ error: 'plan_invalido' });
+    if (!monedasSoportadas().includes(moneda)) return res.status(400).json({ error: 'moneda_invalida' });
+    const sub = await saldoCreditos(db, req.auth.companyId);
+    if (sub.plan === 'ilimitado') return res.status(409).json({ error: 'plan_especial' });
+    if (sub.estado === 'activa' && sub.plan === plan) return res.status(409).json({ error: 'ya_activa' });
+    const email = await emailDelPagador(req.auth);
+    if (!email) return res.status(400).json({ error: 'email_requerido' });
+    const proc = procesadorPara(moneda);
+    const base = process.env.PANEL_BASE_URL || 'https://gastos.atikodigital.cl';
+    try {
+      let id, url;
+      if (proc === 'mp') {
+        const result = await createPreapproval(plan, `${base}/panel/#plan`, email);
+        id = result.id; url = result.init_point;
+      } else {
+        const result = await crearSuscripcionPaypal({ plan, moneda, payerEmail: email, returnUrl: `${base}/panel/#plan`, cancelUrl: `${base}/panel/#plan`, companyId: req.auth.companyId, db });
+        id = result.id; url = result.url;
+      }
+      try { await db.query(`UPDATE subscriptions SET external_id=$2, procesador=$3, moneda=$4, updated_at=now() WHERE company_id=$1`, [req.auth.companyId, id, proc, moneda]); } catch (_) {}
+      console.log(`[billing/app] ${proc} checkout`, id, 'empresa', req.auth.companyId, 'plan', plan);
+      return res.json({ url });
+    } catch (e) {
+      console.error('[billing/app] error checkout:', e.message);
+      if (/Payer and collector cannot be the same/i.test(String(e.message || ''))) {
+        return res.status(409).json({ error: 'payer_es_colector', mensaje: 'No puedes suscribirte con el mismo correo que recibe los pagos. Usa otro correo.' });
+      }
+      return res.status(502).json({ error: 'pago_error' });
     }
   });
 

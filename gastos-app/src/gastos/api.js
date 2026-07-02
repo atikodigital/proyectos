@@ -208,6 +208,8 @@ export const api = {
   },
   // Suscripción (solo lectura — para gestionar ir al panel web)
   suscripcion() { return req('/api/app/suscripcion'); },
+  // Crea el checkout de suscripción y devuelve { url } para pagar en el navegador.
+  crearSuscripcion(plan, moneda = 'CLP') { return req('/api/app/suscripcion/crear', { method: 'POST', body: { plan, moneda } }); },
 
   // Recuperación de contraseña: envía el link por correo y/o WhatsApp. Cubre tanto
   // cuentas de empresa (owner) como personales (empleado). Siempre responde ok.

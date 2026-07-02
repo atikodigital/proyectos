@@ -5,6 +5,14 @@ import { t } from './i18n';
 const GOLD = '#C9A24B';
 const PANEL_URL = 'https://gastos.atikodigital.cl/panel';
 
+// Planes pagables (mismos precios/creditos que el backend billing/planes.js).
+const PLANES_UP = [
+  { id: 'basico', nombre: 'Básico', creditos: 100, precio: 9900 },
+  { id: 'pyme', nombre: 'Pyme', creditos: 210, precio: 24900 },
+  { id: 'empresa', nombre: 'Empresa', creditos: 600, precio: 49900 },
+];
+function clp(n) { return '$' + Number(n || 0).toLocaleString('es-CL'); }
+
 const PLANES = ['free', 'basico', 'pyme', 'empresa', 'ilimitado'];
 function nombrePlan(plan) {
   return PLANES.includes(plan) ? t('mp.plan_' + plan) : plan;
@@ -23,6 +31,26 @@ export default function MiPlanView() {
   const [datos, setDatos] = useState(null);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
+  const [mejorando, setMejorando] = useState('');
+  const [msgUp, setMsgUp] = useState('');
+
+  async function abrirUrl(url) {
+    let isNative = false;
+    try { const { Capacitor } = await import('@capacitor/core'); isNative = !!(Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform()); } catch (_) {}
+    if (isNative) { try { const { Browser } = await import('@capacitor/browser'); await Browser.open({ url }); return; } catch (_) {} }
+    try { window.open(url, '_blank'); } catch (_) { window.location.href = url; }
+  }
+
+  async function mejorar(plan) {
+    setMsgUp(''); setMejorando(plan);
+    try {
+      const r = await api.crearSuscripcion(plan, 'CLP');
+      if (r && r.url) { await abrirUrl(r.url); setMsgUp('Abrimos el pago en el navegador. Al terminar, tu plan se activa solo.'); }
+      else setMsgUp('No se pudo iniciar el pago. Intenta de nuevo.');
+    } catch (e) {
+      setMsgUp((e && e.data && e.data.mensaje) || 'No se pudo iniciar el pago. Intenta de nuevo.');
+    } finally { setMejorando(''); }
+  }
 
   useEffect(() => {
     (async () => {
@@ -156,12 +184,34 @@ export default function MiPlanView() {
             )}
           </div>
 
+          {/* Mejorar mi plan (checkout desde el APK) */}
+          {!esIlimitado && (
+            <div style={{ marginBottom: 18 }}>
+              <div style={{ fontSize: 14, fontWeight: 900, color: GOLD, marginBottom: 10 }}>Mejorar mi plan</div>
+              <div style={{ display: 'grid', gap: 10 }}>
+                {PLANES_UP.filter((p) => p.id !== datos.plan).map((p) => (
+                  <div key={p.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(201,162,75,0.25)', borderRadius: 12, padding: '12px 14px' }}>
+                    <div>
+                      <div style={{ fontWeight: 800, color: '#f4f4f5' }}>{p.nombre}</div>
+                      <div style={{ fontSize: 12, opacity: 0.6 }}>{p.creditos} créditos/mes · {clp(p.precio)}/mes</div>
+                    </div>
+                    <button onClick={() => mejorar(p.id)} disabled={!!mejorando}
+                      style={{ background: GOLD, color: '#000', fontWeight: 900, fontSize: 13, border: 'none', borderRadius: 10, padding: '10px 16px', cursor: 'pointer', opacity: mejorando ? 0.6 : 1, whiteSpace: 'nowrap' }}>
+                      {mejorando === p.id ? '…' : 'Mejorar'}
+                    </button>
+                  </div>
+                ))}
+              </div>
+              {msgUp && <div style={{ fontSize: 12, color: '#93c5fd', marginTop: 10, lineHeight: 1.5 }}>{msgUp}</div>}
+            </div>
+          )}
+
           {/* Nota explicativa */}
           <p style={{ fontSize: 12, opacity: 0.5, marginBottom: 18, lineHeight: 1.5 }}>
             {t('mp.nota')}
           </p>
 
-          {/* Botón principal */}
+          {/* Botón secundario: panel web */}
           <button
             onClick={abrirPanel}
             style={{
