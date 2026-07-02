@@ -80,7 +80,7 @@ async function deactivateEmployee(db, companyId, id) {
 }
 
 async function getCompany(db, companyId) {
-  const r = await db.query('SELECT id, nombre, rut, wa_phone_number_id, owner_nombre, owner_whatsapp, resumen_frecuencia, created_at FROM companies WHERE id=$1', [companyId]);
+  const r = await db.query('SELECT id, nombre, rut, wa_phone_number_id, owner_nombre, owner_whatsapp, resumen_frecuencia, created_at, productos, plan, idioma, tipo_cuenta FROM companies WHERE id=$1', [companyId]);
   return r.rows[0] || null;
 }
 

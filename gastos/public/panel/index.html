@@ -4,6 +4,8 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Hash IA — Panel</title>
+<link rel="icon" type="image/png" href="logo.png" />
+<link rel="apple-touch-icon" href="logo.png" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;600;800;900&display=swap" rel="stylesheet">
@@ -883,9 +885,7 @@
 <div id="loginView" class="flex items-center justify-center min-h-screen">
   <div class="glass-card rounded-2xl p-8 max-w-sm w-full border border-[#ffd700]/10 shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
     <div class="flex items-center gap-3 mb-6">
-      <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-[#ffd700] to-[#e9c400] flex items-center justify-center shadow-[0_0_15px_rgba(255,215,0,0.3)]">
-        <span class="material-symbols-outlined text-[#3a3000] text-[20px]">hexagon</span>
-      </div>
+      <img src="logo.png" alt="Hash IA" class="w-10 h-10 rounded-xl bg-white/95 object-contain p-1 shadow-[0_0_15px_rgba(255,215,0,0.25)]" />
       <div>
         <h1 class="text-xl font-bold text-[#ffd700] tracking-wide font-['Hanken_Grotesk'] leading-tight">Hash IA</h1>
         <p class="text-[9px] font-bold text-[#d0c6ab] tracking-widest uppercase" data-i18n="login.exec">Executive Control</p>
@@ -947,9 +947,7 @@
   <!-- SIDEBAR -->
   <aside class="sidebar bg-[#121414] border-r border-[#343535]/50 flex flex-col h-screen overflow-hidden py-6 shadow-[4px_0_24px_rgba(0,0,0,0.5)]">
     <div class="px-6 mb-8 flex items-center gap-3">
-      <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-[#ffd700] to-[#e9c400] flex items-center justify-center shadow-[0_0_15px_rgba(255,215,0,0.3)]">
-        <span class="material-symbols-outlined text-[#3a3000] text-[20px]">hexagon</span>
-      </div>
+      <img src="logo.png" alt="Hash IA" class="w-9 h-9 rounded-xl bg-white/95 object-contain p-1 shadow-[0_0_15px_rgba(255,215,0,0.25)]" />
       <div>
         <h1 class="text-base font-bold text-[#ffd700] tracking-wide font-['Hanken_Grotesk'] leading-tight">Hash IA</h1>
         <p class="text-[9px] font-bold text-[#d0c6ab] tracking-widest uppercase">Executive Control</p>
@@ -957,30 +955,11 @@
     </div>
     
     <nav class="flex-1 flex flex-col gap-1 px-4 overflow-y-auto">
+      <p class="text-[9px] font-bold text-[#d0c6ab]/50 uppercase tracking-widest px-4 pt-1 pb-0.5">Operación</p>
       <button class="side-tab active relative text-[#ffd700] bg-[#ffd700]/10 border border-[#ffd700]/20 rounded-xl flex items-center gap-3 px-4 py-3 transition-all duration-300 w-full text-left" data-tab="gastos">
         <span class="material-symbols-outlined text-[20px]">dashboard</span>
         <span class="text-sm font-semibold" data-i18n="nav.gastos">Gastos / Ingresos</span>
         <div class="tab-bar-highlight absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-[#ffd700] rounded-r-full shadow-[0_0_8px_rgba(255,215,0,0.8)]"></div>
-      </button>
-
-      <button class="side-tab text-[#d0c6ab] hover:text-[#e3e2e2] hover:bg-[#343535]/50 transition-all duration-300 flex items-center gap-3 px-4 py-3 rounded-xl border border-transparent hover:border-[#343535] w-full text-left" data-tab="empleados">
-        <span class="material-symbols-outlined text-[20px]">group</span>
-        <span class="text-sm" data-i18n="nav.empleados">Empleados</span>
-      </button>
-
-      <button class="side-tab text-[#d0c6ab] hover:text-[#e3e2e2] hover:bg-[#343535]/50 transition-all duration-300 flex items-center gap-3 px-4 py-3 rounded-xl border border-transparent hover:border-[#343535] w-full text-left" data-tab="productos">
-        <span class="material-symbols-outlined text-[20px]">inventory_2</span>
-        <span class="text-sm" data-i18n="nav.productos">Productos</span>
-      </button>
-
-      <button class="side-tab text-[#d0c6ab] hover:text-[#e3e2e2] hover:bg-[#343535]/50 transition-all duration-300 flex items-center gap-3 px-4 py-3 rounded-xl border border-transparent hover:border-[#343535] w-full text-left" data-tab="auxiliares">
-        <span class="material-symbols-outlined text-[20px]">business_center</span>
-        <span class="text-sm" data-i18n="nav.auxiliares">Auxiliares</span>
-      </button>
-
-      <button class="side-tab text-[#d0c6ab] hover:text-[#e3e2e2] hover:bg-[#343535]/50 transition-all duration-300 flex items-center gap-3 px-4 py-3 rounded-xl border border-transparent hover:border-[#343535] w-full text-left" data-tab="ajustes">
-        <span class="material-symbols-outlined text-[20px]">settings</span>
-        <span class="text-sm" data-i18n="nav.ajustes">Ajustes</span>
       </button>
 
       <!-- COLLAPSIBLE CONTABILIDAD -->
@@ -991,21 +970,37 @@
         </button>
       </div>
 
-      <!-- CRM -->
-      <button class="side-tab text-[#d0c6ab] hover:text-[#e3e2e2] hover:bg-[#343535]/50 transition-all duration-300 flex items-center gap-3 px-4 py-3 rounded-xl border border-transparent hover:border-[#343535] w-full text-left" data-tab="crm">
+      <!-- Ventas (solo si la cuenta tiene el módulo CRM/chat habilitado) -->
+      <p id="navVentasLabel" class="text-[9px] font-bold text-[#d0c6ab]/50 uppercase tracking-widest px-4 pt-3 pb-0.5 hidden">Ventas</p>
+      <button id="tabCrmBtn" class="side-tab hidden text-[#d0c6ab] hover:text-[#e3e2e2] hover:bg-[#343535]/50 transition-all duration-300 flex items-center gap-3 px-4 py-3 rounded-xl border border-transparent hover:border-[#343535] w-full text-left" data-tab="crm">
         <span class="material-symbols-outlined text-[20px]">chat_bubble</span>
         <span class="text-sm" data-i18n="nav.crm">CRM</span>
-        <span class="ml-auto text-[9px] font-bold bg-green-500/20 text-green-400 border border-green-500/30 rounded-full px-2 py-0.5">3</span>
       </button>
-
-      <!-- Agente IA -->
-      <button class="side-tab text-[#d0c6ab] hover:text-[#e3e2e2] hover:bg-[#343535]/50 transition-all duration-300 flex items-center gap-3 px-4 py-3 rounded-xl border border-transparent hover:border-[#343535] w-full text-left" data-tab="agente">
+      <button id="tabAgenteBtn" class="side-tab hidden text-[#d0c6ab] hover:text-[#e3e2e2] hover:bg-[#343535]/50 transition-all duration-300 flex items-center gap-3 px-4 py-3 rounded-xl border border-transparent hover:border-[#343535] w-full text-left" data-tab="agente">
         <span class="material-symbols-outlined text-[20px]">smart_toy</span>
         <span class="text-sm" data-i18n="nav.agente">Agente IA</span>
         <span class="ml-auto text-[9px] font-bold bg-[#ffd700]/20 text-[#ffd700] border border-[#ffd700]/30 rounded-full px-2 py-0.5">Beta</span>
       </button>
 
-      <!-- Mi Plan -->
+      <p class="text-[9px] font-bold text-[#d0c6ab]/50 uppercase tracking-widest px-4 pt-3 pb-0.5">Administración</p>
+      <button class="side-tab text-[#d0c6ab] hover:text-[#e3e2e2] hover:bg-[#343535]/50 transition-all duration-300 flex items-center gap-3 px-4 py-3 rounded-xl border border-transparent hover:border-[#343535] w-full text-left" data-tab="productos">
+        <span class="material-symbols-outlined text-[20px]">inventory_2</span>
+        <span class="text-sm" data-i18n="nav.productos">Productos</span>
+      </button>
+      <button class="side-tab text-[#d0c6ab] hover:text-[#e3e2e2] hover:bg-[#343535]/50 transition-all duration-300 flex items-center gap-3 px-4 py-3 rounded-xl border border-transparent hover:border-[#343535] w-full text-left" data-tab="auxiliares">
+        <span class="material-symbols-outlined text-[20px]">business_center</span>
+        <span class="text-sm" data-i18n="nav.auxiliares">Auxiliares</span>
+      </button>
+      <button class="side-tab text-[#d0c6ab] hover:text-[#e3e2e2] hover:bg-[#343535]/50 transition-all duration-300 flex items-center gap-3 px-4 py-3 rounded-xl border border-transparent hover:border-[#343535] w-full text-left" data-tab="empleados">
+        <span class="material-symbols-outlined text-[20px]">group</span>
+        <span class="text-sm" data-i18n="nav.empleados">Empleados</span>
+      </button>
+
+      <p class="text-[9px] font-bold text-[#d0c6ab]/50 uppercase tracking-widest px-4 pt-3 pb-0.5">Cuenta</p>
+      <button class="side-tab text-[#d0c6ab] hover:text-[#e3e2e2] hover:bg-[#343535]/50 transition-all duration-300 flex items-center gap-3 px-4 py-3 rounded-xl border border-transparent hover:border-[#343535] w-full text-left" data-tab="ajustes">
+        <span class="material-symbols-outlined text-[20px]">settings</span>
+        <span class="text-sm" data-i18n="nav.ajustes">Ajustes</span>
+      </button>
       <button class="side-tab text-[#d0c6ab] hover:text-[#e3e2e2] hover:bg-[#343535]/50 transition-all duration-300 flex items-center gap-3 px-4 py-3 rounded-xl border border-transparent hover:border-[#343535] w-full text-left" data-tab="plan">
         <span class="material-symbols-outlined text-[20px]">credit_card</span>
         <span class="text-sm" data-i18n="nav.plan">Mi Plan</span>
@@ -1033,6 +1028,7 @@
   <main class="main-content flex flex-col h-screen overflow-hidden bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-[#1a1a1a] via-[#0a0a0a] to-[#0a0a0a]">
     <header class="glass-panel border-b border-[#343535]/50 flex justify-between items-center w-full px-8 py-3 sticky top-0 z-30 backdrop-blur-md">
       <div class="flex items-center gap-4">
+        <img src="logo.png" alt="Hash IA" class="w-7 h-7 rounded-lg bg-white/95 object-contain p-0.5" />
         <div class="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#ffd700] to-[#fff6df] font-['Hanken_Grotesk']">Hash IA</div>
         <div class="h-6 w-[1px] bg-[#343535] mx-1"></div>
         <span class="text-xs text-[#d0c6ab] font-medium uppercase tracking-widest font-['Hanken_Grotesk']" data-i18n="header.panel">Panel de Control</span>
@@ -1075,8 +1071,8 @@
             </div>
           </div>
 
-          <!-- CRM Chats Card -->
-          <div class="glass-card rounded-2xl p-5 border border-[#343535]/50 flex flex-col">
+          <!-- CRM Chats Card (solo si la cuenta tiene el módulo chat) -->
+          <div id="crmChatsCard" class="glass-card rounded-2xl p-5 border border-[#343535]/50 flex flex-col hidden">
             <h3 class="text-sm font-bold text-[#ffd700] flex items-center gap-2 mb-4">
               <span class="material-symbols-outlined text-[18px]">chat</span>
               CRM Chats
@@ -2342,6 +2338,20 @@
       el.style.color = sinCreditos ? '#ffb4ab' : '#d0c6ab';
     } catch (e) {}
   }
+  // Muestra CRM / Agente IA solo si la cuenta tiene el módulo 'chat' habilitado
+  // (se activa por cuenta desde gastos.atikodigital.cl/admin, igual que el APK).
+  async function aplicarModulos() {
+    try {
+      var res = await apiFetch('/company');
+      var c = await res.json();
+      var prods = Array.isArray(c.productos) ? c.productos : [];
+      var chatOn = prods.indexOf('chat') >= 0;
+      ['tabCrmBtn', 'tabAgenteBtn', 'navVentasLabel', 'crmChatsCard'].forEach(function (id) {
+        var el = $(id); if (el) el.classList.toggle('hidden', !chatOn);
+      });
+    } catch (e) { /* si falla, se quedan ocultos */ }
+  }
+
   function showApp() {
     $('loginView').classList.add('hidden');
     $('appView').classList.remove('hidden');
@@ -2350,6 +2360,7 @@
     try { aplicarI18n(); } catch (e) {}
     loadGastos();
     loadSaldoCreditos();
+    aplicarModulos();
     try { window.dispatchEvent(new CustomEvent('panel:login')); } catch (_) {}
   }
 
