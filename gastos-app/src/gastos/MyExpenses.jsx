@@ -362,7 +362,7 @@ export default function MyExpenses() {
   const [sel, setSel] = useState(null);
   const [f, setF] = useState(FILTRO_INICIAL);
   const [exportando, setExportando] = useState(false);
-  const [mostrarFiltros, setMostrarFiltros] = useState(false);
+  const [mostrarFiltros, setMostrarFiltros] = useState(true);
   const set = (k) => (ev) => setF((p) => ({ ...p, [k]: ev.target.value }));
   function load() {
     return api.listExpenses().then((r) => setRows(Array.isArray(r) ? r : [])).catch(() => {});
