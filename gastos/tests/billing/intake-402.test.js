@@ -111,6 +111,32 @@ test('POST /api/app/expenses → 201 cuando hay créditos disponibles', async ()
   expect(res.status).toBe(201);
 });
 
+// Bug real: si la empresa se borra (p.ej. desde /admin) pero el teléfono sigue
+// con la sesión vieja (token con ese companyId), antes se gastaba un crédito,
+// se llamaba a Gemini igual, y recién al insertar en `expenses` fallaba con una
+// violación de foreign key → 500 genérico sin ninguna pista para el usuario.
+// Los 3 caminos de captura (screenshot, foto, archivo) comparten este mismo
+// endpoint, así que los 3 fallaban igual.
+test('POST /api/app/expenses → 401 empresa_no_existe si la company fue borrada (sesión vieja)', async () => {
+  const db = await freshDb();
+  const co = await createCompany(db, { nombre: 'BorradaLuego' });
+  await seedAppEmployee(db, co.id);
+
+  const app = buildAppInstance(db);
+  const tok = await getAppToken(app);
+
+  // Simula: el owner eliminó la empresa desde /admin después de emitido el token.
+  await db.query('DELETE FROM companies WHERE id=$1', [co.id]);
+
+  const res = await request(app)
+    .post('/api/app/expenses')
+    .set('Authorization', `Bearer ${tok}`)
+    .send({ imageBase64: FAKE_IMAGE_B64, mimeType: 'image/jpeg' });
+
+  expect(res.status).toBe(401);
+  expect(res.body.error).toBe('empresa_no_existe');
+});
+
 test('POST /api/panel/expenses/ocr → 402 cuando empresa sin créditos', async () => {
   const db = await freshDb();
   const co = await createCompany(db, { nombre: 'TestPanel' });

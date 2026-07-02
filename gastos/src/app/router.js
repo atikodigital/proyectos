@@ -431,6 +431,11 @@ function createAppRouter({ db, extractExpense, createLiveToken, sendText, sendIm
     const { imageBase64, mimeType, override, override_receptor, force_ingreso } = req.body || {};
     if (!imageBase64) return res.status(400).json({ error: 'falta_imagen' });
     const company = await getCompany(db, req.auth.companyId).catch(() => null);
+    // La empresa del token ya no existe (p.ej. se borró desde /admin y el teléfono
+    // sigue con la sesión vieja). Sin este corte, seguía adelante, gastaba un
+    // crédito y hacía la llamada a Gemini para terminar fallando igual al insertar
+    // en expenses (foreign key), devolviendo un 500 genérico sin pista alguna.
+    if (!company) return res.status(401).json({ error: 'empresa_no_existe' });
     const companyRut = (company && company.rut) || '';
     let intakeResult;
     try {
