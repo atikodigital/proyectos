@@ -332,12 +332,14 @@ function MovimientosCards({ rows, onSelect }) {
                   {e.estado_pago ? <span style={{ fontSize: 9, padding: '2px 7px', borderRadius: 20, background: 'rgba(255,255,255,0.12)', color: '#fff' }}>{e.estado_pago}</span> : null}
                 </div>
                 <div style={{ color: '#fff', fontWeight: 800, fontSize: 15, lineHeight: 1.15 }}>{e.proveedor || (esIngreso ? t('exp.confirm.sin_pagador') : t('exp.confirm.sin_proveedor'))}</div>
-                <div style={{ fontWeight: 900, fontSize: 24, lineHeight: 1.05, color: esIngreso ? '#7CFC9B' : '#E7C46B' }}>{esIngreso ? '+' : '−'}{clp(e.total)}</div>
+                <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 8 }}>
+                  <div style={{ fontWeight: 900, fontSize: 24, lineHeight: 1.05, color: esIngreso ? '#7CFC9B' : '#E7C46B' }}>{esIngreso ? '+' : '−'}{clp(e.total)}</div>
+                  <button onClick={(ev) => { ev.stopPropagation(); onSelect(e); }} style={{ flexShrink: 0, fontSize: 11, fontWeight: 800, color: '#fff', background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: 9, padding: '5px 11px', cursor: 'pointer' }}>
+                    {t('exp.lista.ver_detalle')}
+                  </button>
+                </div>
                 {(e.fecha || e.folio) ? <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: 11 }}>{e.fecha ? fechaCorta(e.fecha) : ''}{e.folio ? (e.fecha ? ' · ' : '') + e.folio : ''}</div> : null}
                 {!esIngreso && e.categoria ? <div style={{ color: 'rgba(255,255,255,0.55)', fontSize: 11, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{e.categoria}</div> : null}
-                <button onClick={(ev) => { ev.stopPropagation(); onSelect(e); }} style={{ alignSelf: 'flex-start', marginTop: 4, fontSize: 11, fontWeight: 800, color: '#fff', background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: 9, padding: '5px 11px', cursor: 'pointer' }}>
-                  {t('exp.lista.ver_detalle')}
-                </button>
               </div>
             </div>
           );
