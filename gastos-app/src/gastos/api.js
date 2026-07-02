@@ -99,6 +99,8 @@ export const api = {
   agentPrefs(patch) { return req('/api/app/agent/prefs', { method: 'PATCH', body: patch }); },
   getAgentPrefs() { return req('/api/app/agent/prefs'); },
   pagarExpense(id) { return req(`/api/app/expenses/${id}/pagar`, { method: 'PATCH' }); },
+  // Cambia estado de pago en ambos sentidos: pagada <-> pendiente de pago.
+  setPagoEstado(id, pagada) { return req(`/api/app/expenses/${id}/pago`, { method: 'PATCH', body: { pagada } }); },
   resumenWhatsapp() { return req('/api/app/agent/resumen-whatsapp', { method: 'POST', body: {} }); },
   createManualExpense(data) { return req('/api/app/expenses/manual', { method: 'POST', body: data }); },
 

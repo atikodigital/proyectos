@@ -4,7 +4,7 @@ const { verifyPassword } = require('../auth/password');
 const { signToken } = require('../auth/jwt');
 const { requireAuth, requireKind, requireKindAny } = require('../auth/middleware');
 const { intakeFromImage } = require('../expenses/intake');
-const { getExpense, confirmExpense, updateExpense, rejectExpense, annulExpense, markExpensePaid, markExpenseConciliada, createExpense } = require('../expenses/repo');
+const { getExpense, confirmExpense, updateExpense, rejectExpense, annulExpense, markExpensePaid, markExpensePendiente, markExpenseConciliada, createExpense } = require('../expenses/repo');
 const { buildExpensesWorkbook } = require('../panel/excel');
 const { getLineas, getLineaConCompany, setLineaAuxiliar } = require('../expenses/lineas-repo');
 const { listAuxiliares } = require('../auxiliares/repo');
@@ -524,6 +524,22 @@ function createAppRouter({ db, extractExpense, createLiveToken, sendText, sendIm
       cuentaSii = { cuenta_sii_codigo: cuenta.codigo, cuenta_sii_nombre: cuenta.nombre };
     }
 
+    // IVA automático para registros por voz/texto (las capturas ya traen neto/iva del
+    // OCR). Solo NEGOCIO: el monto afecto (19%) se descompone en neto + IVA. En
+    // personal no aplica IVA, se deja solo el total.
+    let netoN = Math.round(Number(neto) || 0);
+    let ivaN = Math.round(Number(iva) || 0);
+    const totalN = Math.round(Number(total) || 0);
+    if (!netoN && !ivaN && totalN > 0) {
+      try {
+        const prof = await getCompanyProfile(db, req.auth.companyId);
+        if (prof && prof.tipo_cuenta !== 'personal') {
+          netoN = Math.round(totalN / 1.19);
+          ivaN = totalN - netoN;
+        }
+      } catch (_) { /* si falla, seguimos sin desglose */ }
+    }
+
     const expense = await createExpense(db, {
       company_id: req.auth.companyId,
       employee_id: req.auth.employeeId,
@@ -534,9 +550,9 @@ function createAppRouter({ db, extractExpense, createLiveToken, sendText, sendIm
       rut_emisor,
       folio,
       fecha: fecha || new Date().toISOString().slice(0, 10),
-      neto: Number(neto) || 0,
-      iva: Number(iva) || 0,
-      total: Number(total) || 0,
+      neto: netoN,
+      iva: ivaN,
+      total: totalN,
       categoria,
       estado_pago: estado_pago || 'pendiente',
       ...cuentaSii,
@@ -565,6 +581,19 @@ function createAppRouter({ db, extractExpense, createLiveToken, sendText, sendIm
     const exp = await getExpense(db, req.params.id);
     await aplicarContabilidad(db, req.auth.companyId, exp, 'pagar');
     return res.json(paid);
+  });
+
+  // Cambia el estado de pago en ambos sentidos: pagada <-> pendiente de pago.
+  // Ajusta la contabilidad (crea o anula el asiento de pago Proveedores<->Banco).
+  router.patch('/expenses/:id/pago', async (req, res) => {
+    if (!(await ownedExpense(req, res))) return;
+    const pagada = !!(req.body && req.body.pagada);
+    const row = pagada
+      ? await markExpensePaid(db, req.auth.companyId, req.params.id)
+      : await markExpensePendiente(db, req.auth.companyId, req.params.id);
+    const exp = await getExpense(db, req.params.id);
+    await aplicarContabilidad(db, req.auth.companyId, exp, pagada ? 'pagar' : 'despagar');
+    return res.json(row);
   });
 
   router.patch('/expenses/:id', async (req, res) => {

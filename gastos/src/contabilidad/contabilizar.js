@@ -27,6 +27,15 @@ async function contabilizarMovimiento(db, companyId, expense, tipoAsiento) {
   return repo.guardarAsiento(db, companyId, asiento);
 }
 
+// Anula SOLO el asiento de pago (Proveedores→Banco), dejando vivo el devengo.
+// Sirve para volver un movimiento de "pagado" a "pendiente de pago".
+async function descontabilizarPago(db, companyId, origenRef) {
+  await repo.ensureAsientosTables(db);
+  const previo = await repo.buscarAsientoVivo(db, companyId, 'pago', origenRef, 'pago');
+  if (previo) { await repo.anularAsiento(db, previo.id); return 1; }
+  return 0;
+}
+
 async function descontabilizarMovimiento(db, companyId, origenRef) {
   await repo.ensureAsientosTables(db);
   const r = await db.query(
@@ -42,6 +51,7 @@ async function descontabilizarMovimiento(db, companyId, origenRef) {
 async function aplicarContabilidad(db, companyId, expense, accion) {
   try {
     if (accion === 'anular') return { ok: true, anulados: await descontabilizarMovimiento(db, companyId, expense.id) };
+    if (accion === 'despagar') return { ok: true, anulados: await descontabilizarPago(db, companyId, expense.id) };
     if (accion === 'pagar') return { ok: true, asiento: await contabilizarMovimiento(db, companyId, expense, 'pago') };
     // 'confirmar' y 'editar' -> (re)genera el devengo
     return { ok: true, asiento: await contabilizarMovimiento(db, companyId, expense, 'devengo') };

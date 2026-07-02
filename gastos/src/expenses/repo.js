@@ -67,6 +67,14 @@ async function markExpensePaid(db, companyId, id) {
   return r.rows[0] || null;
 }
 
+async function markExpensePendiente(db, companyId, id) {
+  const r = await db.query(
+    "UPDATE expenses SET estado_pago='registrada' WHERE id=$1 AND company_id=$2 RETURNING *",
+    [id, companyId]
+  );
+  return r.rows[0] || null;
+}
+
 async function markExpenseConciliada(db, companyId, id) {
   const r = await db.query(
     "UPDATE expenses SET estado_pago='conciliada' WHERE id=$1 AND company_id=$2 RETURNING *",
@@ -83,4 +91,4 @@ async function annulExpense(db, companyId, id) {
   return r.rows[0] || null;
 }
 
-module.exports = { createExpense, getExpense, confirmExpense, updateExpense, getLatestPending, rejectExpense, markExpensePaid, markExpenseConciliada, annulExpense };
+module.exports = { createExpense, getExpense, confirmExpense, updateExpense, getLatestPending, rejectExpense, markExpensePaid, markExpensePendiente, markExpenseConciliada, annulExpense };

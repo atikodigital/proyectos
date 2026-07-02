@@ -14,10 +14,15 @@ function fechaCorta(v) { if (!v) return ''; const s = String(v); return s.length
 // Etiqueta clara del estado de pago: lo no pagado es "Pendiente de pago".
 function labelPago(v) {
   const s = String(v || '').toLowerCase();
-  if (!s) return '';
+  if (!s) return 'Pendiente de pago';
   if (s === 'pagada' || s === 'pagado') return 'Pagada';
   if (s === 'conciliada') return 'Conciliada';
   return 'Pendiente de pago';
+}
+function esPagada(e) { return ['pagada', 'pagado', 'conciliada'].includes(String(e && e.estado_pago || '').toLowerCase()); }
+// Cambia pagado<->pendiente en el backend y refresca toda la app.
+async function togglePago(e) {
+  try { await api.setPagoEstado(e.id, !esPagada(e)); window.dispatchEvent(new CustomEvent('hash:data-changed')); } catch (_) {}
 }
 
 function DetalleCards({ e, lineas }) {
@@ -235,6 +240,20 @@ function Detalle({ e: e0, onBack, onReload }) {
             <button onClick={copiar} className="rounded-xl font-black py-2 px-3 text-sm text-black" style={{ background: '#C9A24B' }}>{copiado ? t('exp.copiado') : t('exp.copiar')}</button>
           </div>
           <DetalleCards e={e} lineas={lineas} />
+          <button
+            onClick={async () => {
+              const nuevoPagada = !esPagada(e);
+              try {
+                await api.setPagoEstado(e.id, nuevoPagada);
+                setE({ ...e, estado_pago: nuevoPagada ? 'pagada' : 'registrada' });
+                window.dispatchEvent(new CustomEvent('hash:data-changed'));
+                onReload && onReload();
+              } catch (_) {}
+            }}
+            className="rounded-xl font-black py-3 text-white text-sm"
+            style={{ background: esPagada(e) ? '#1f7a3f' : '#b45a14' }}>
+            {esPagada(e) ? '✓ Pagado — tocar para marcar pendiente de pago' : '○ Pendiente de pago — tocar para marcar como pagado'}
+          </button>
           {fotoUrl ? (
             <img alt={t('exp.confirm.alt_factura')} src={fotoUrl} className="rounded-xl border w-full max-h-80 object-contain bg-black/20" />
           ) : (
@@ -337,7 +356,11 @@ function MovimientosCards({ rows, onSelect }) {
                     {esIngreso ? t('exp.badge.ingreso') : t('exp.badge.gasto')}
                   </span>
                   {e.estado ? <span style={{ fontSize: 9, padding: '2px 7px', borderRadius: 20, background: 'rgba(255,255,255,0.15)', color: '#fff', textTransform: 'capitalize' }}>{e.estado}</span> : null}
-                  {e.estado_pago ? <span style={{ fontSize: 9, padding: '2px 7px', borderRadius: 20, background: 'rgba(255,255,255,0.12)', color: '#fff' }}>{labelPago(e.estado_pago)}</span> : null}
+                  <button onClick={(ev) => { ev.stopPropagation(); togglePago(e); }}
+                    title="Tocar para cambiar pagado / pendiente"
+                    style={{ fontSize: 9, fontWeight: 800, padding: '2px 8px', borderRadius: 20, border: 'none', cursor: 'pointer', color: '#fff', background: esPagada(e) ? 'rgba(31,122,63,0.7)' : 'rgba(180,90,20,0.7)' }}>
+                    {esPagada(e) ? '✓ ' : '○ '}{labelPago(e.estado_pago)}
+                  </button>
                 </div>
                 <div style={{ color: '#fff', fontWeight: 800, fontSize: 15, lineHeight: 1.15 }}>{e.proveedor || (esIngreso ? t('exp.confirm.sin_pagador') : t('exp.confirm.sin_proveedor'))}</div>
                 <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 8 }}>

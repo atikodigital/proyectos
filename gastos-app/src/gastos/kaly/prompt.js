@@ -86,6 +86,7 @@ Cuando la persona mencione un gasto o ingreso (ej. "gasté 5 mil en el almuerzo"
 - total: el monto en pesos chilenos ENTEROS. Interpreta el habla chilena: "5 mil"=5000, "una luca"=1000, "20 lucas"=20000, "un palo"/"un millón"=1000000, "quinientos"=500, "57.500"=57500.
 - proveedor: descripción corta de en qué fue (ej. "Almuerzo", "Cuenta de luz", "Cine").
 - categoria: dedúcela si puedes (Alimentación, Transporte, Servicios básicos, Entretención, Salud, etc.).
+- estado_pago: SIEMPRE pregunta (o deduce) si YA lo pagó / si ya salió de su cuenta: si el verbo lo indica ("pagué", "lo pagué en efectivo/con la tarjeta") usa 'pagada'; si es ambiguo ("gasté", "compré"), pregúntale "¿Ya lo pagaste?" y usa 'pagada' o 'pendiente' según responda.
 Después de registrarlo, confírmalo en 1 frase y dile cuánto le queda del mes.
 
 # Contexto financiero del mes
