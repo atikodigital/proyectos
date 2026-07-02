@@ -529,19 +529,14 @@ function createAppRouter({ db, extractExpense, createLiveToken, sendText, sendIm
     }
 
     // IVA automático para registros por voz/texto (las capturas ya traen neto/iva del
-    // OCR). Solo NEGOCIO: el monto afecto (19%) se descompone en neto + IVA. En
-    // personal no aplica IVA, se deja solo el total.
+    // OCR). En Chile el precio incluye IVA: neto = total/1.19, IVA = resto. Aplica a
+    // NEGOCIO y PERSONAL (se guarda el desglose aunque KALY no lo mencione).
     let netoN = Math.round(Number(neto) || 0);
     let ivaN = Math.round(Number(iva) || 0);
     const totalN = Math.round(Number(total) || 0);
     if (!netoN && !ivaN && totalN > 0) {
-      try {
-        const prof = await getCompanyProfile(db, req.auth.companyId);
-        if (prof && prof.tipo_cuenta !== 'personal') {
-          netoN = Math.round(totalN / 1.19);
-          ivaN = totalN - netoN;
-        }
-      } catch (_) { /* si falla, seguimos sin desglose */ }
+      netoN = Math.round(totalN / 1.19);
+      ivaN = totalN - netoN;
     }
 
     const expense = await createExpense(db, {
