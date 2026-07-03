@@ -2362,7 +2362,43 @@
         var hw = $('headerWelcomeUser');
         if (hw) { hw.textContent = c.nombre; hw.removeAttribute('data-i18n'); }
       }
+      // SOLO PERSONAL: guardar datos para el saldo (sueldo + día de pago), re-pintar
+      // la tarjeta, y si aún no tiene ingreso configurado, preguntarlo al comienzo.
+      _companyInfo = c;
+      try { renderSaldo(lastRows); } catch (_) {}
+      if (c.tipo_cuenta === 'personal' && !(Number(c.sueldo_mensual) > 0)) pedirIngresoPersonal();
     } catch (e) { /* si falla, se quedan ocultos */ }
+  }
+
+  // Modal de primer uso (SOLO cuentas personales): pide ingreso mensual y día de pago.
+  function pedirIngresoPersonal() {
+    if (document.getElementById('incomeModal')) return;
+    var d = document.createElement('div');
+    d.id = 'incomeModal';
+    d.style.cssText = 'position:fixed;inset:0;z-index:60;background:rgba(0,0,0,0.72);display:flex;align-items:center;justify-content:center;padding:16px';
+    d.innerHTML = '<div class="glass-card" style="max-width:380px;width:100%;border-radius:16px;padding:24px;border:1px solid rgba(255,215,0,0.25);background:#141518">'
+      + '<h3 style="color:#ffd700;font-weight:800;font-size:16px;margin-bottom:6px">💰 Tu ingreso mensual</h3>'
+      + '<p style="font-size:12px;color:#d0c6ab;margin-bottom:14px;line-height:1.5">Para calcular cuánto te queda cada mes, cuéntanos tu ingreso y qué día te pagan.</p>'
+      + '<label style="font-size:10px;color:#d0c6ab;text-transform:uppercase;font-weight:700;letter-spacing:.5px">Ingreso mensual (CLP)</label>'
+      + '<input id="incMonto" type="number" min="0" placeholder="Ej: 800000" style="width:100%;background:#26272b;border:1px solid #3a3b40;border-radius:10px;padding:9px 12px;color:#fff;margin:4px 0 12px;outline:none" />'
+      + '<label style="font-size:10px;color:#d0c6ab;text-transform:uppercase;font-weight:700;letter-spacing:.5px">Día de pago (1–31)</label>'
+      + '<input id="incDia" type="number" min="1" max="31" placeholder="Ej: 5" style="width:100%;background:#26272b;border:1px solid #3a3b40;border-radius:10px;padding:9px 12px;color:#fff;margin:4px 0 16px;outline:none" />'
+      + '<div style="display:flex;gap:8px">'
+      + '<button id="incSave" style="flex:1;background:linear-gradient(90deg,#ffd700,#e9c400);color:#3a3000;font-weight:800;border:0;border-radius:10px;padding:11px;cursor:pointer">Guardar</button>'
+      + '<button id="incSkip" style="background:transparent;color:#9d9da0;border:1px solid #3a3b40;border-radius:10px;padding:11px 16px;cursor:pointer">Después</button>'
+      + '</div></div>';
+    document.body.appendChild(d);
+    d.querySelector('#incSkip').onclick = function () { d.remove(); };
+    d.querySelector('#incSave').onclick = async function () {
+      var monto = Math.round(Number(d.querySelector('#incMonto').value) || 0);
+      if (!monto) { d.querySelector('#incMonto').style.borderColor = '#ef4444'; return; }
+      var dia = Math.max(1, Math.min(31, Math.round(Number(d.querySelector('#incDia').value) || 1)));
+      try {
+        await apiFetch('/company', { method: 'PATCH', body: JSON.stringify({ sueldo_mensual: monto, dia_pago: dia }) });
+        d.remove();
+        aplicarModulos(); // recarga _companyInfo y re-pinta el saldo
+      } catch (e) { /* mantener el modal para reintentar */ }
+    };
   }
 
   function showApp() {
@@ -2765,6 +2801,7 @@
              estado: $('fEstado').value, proveedor: $('fProveedor').value };
   }
   var lastRows = [];
+  var _companyInfo = null; // datos de la cuenta (/company): tipo_cuenta, sueldo_mensual, dia_pago…
   async function loadGastos() {
     $('expensesTable').innerHTML = '<p class="muted" style="padding:16px">Cargando…</p>';
     try {
@@ -2895,10 +2932,29 @@
   $('detalleModal').onclick = function (ev) { if (ev.target === $('detalleModal')) closeDetalle(); };
   function renderSaldo(rows) {
     var c = PanelLib.cashflowFromRows(rows);
-    $('sIngresos').textContent = PanelLib.fmtClp(c.ingresos);
+    var ingresos = c.ingresos, saldo = c.saldo;
+    var esPersonal = _companyInfo && _companyInfo.tipo_cuenta === 'personal';
+    var sueldo = esPersonal ? (Number(_companyInfo.sueldo_mensual) || 0) : 0;
+    // SOLO cuentas personales: el ingreso base del mes es su sueldo/ingreso mensual
+    // (más los ingresos registrados), y el saldo es lo que le queda.
+    if (esPersonal && sueldo > 0) {
+      ingresos = sueldo + c.ingresos;
+      saldo = ingresos - c.gastos;
+    }
+    $('sIngresos').textContent = PanelLib.fmtClp(ingresos);
     $('sGastos').textContent = PanelLib.fmtClp(c.gastos);
-    $('sSaldo').textContent = PanelLib.fmtClp(c.saldo);
-    $('saldoCard').classList.toggle('hidden', !rows.length);
+    $('sSaldo').textContent = PanelLib.fmtClp(saldo);
+    // Nota bajo Ingresos: sueldo y día de pago (solo personal).
+    var nota = document.getElementById('sIngresosNota');
+    if (esPersonal && sueldo > 0) {
+      var txt = 'Ingreso mensual ' + PanelLib.fmtClp(sueldo) + (_companyInfo.dia_pago ? ' · te pagan el día ' + _companyInfo.dia_pago : '');
+      if (!nota) {
+        var host = $('sIngresos') && $('sIngresos').parentElement;
+        if (host) { nota = document.createElement('div'); nota.id = 'sIngresosNota'; nota.style.cssText = 'font-size:10px;color:#9fb0c8;margin-top:2px'; host.appendChild(nota); }
+      }
+      if (nota) nota.textContent = txt;
+    } else if (nota) { nota.remove(); }
+    $('saldoCard').classList.toggle('hidden', !rows.length && !(esPersonal && sueldo > 0));
   }
   function wirePayButtons() {
     $('expensesTable').querySelectorAll('[data-pay]').forEach(function (b) {
