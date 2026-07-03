@@ -996,13 +996,12 @@
         <span class="text-sm" data-i18n="nav.empleados">Empleados</span>
       </button>
 
-      <p class="text-[9px] font-bold text-[#d0c6ab]/50 uppercase tracking-widest px-4 pt-3 pb-0.5">Cuenta</p>
-      <button class="side-tab text-[#d0c6ab] hover:text-[#e3e2e2] hover:bg-[#343535]/50 transition-all duration-300 flex items-center gap-3 px-4 py-3 rounded-xl border border-transparent hover:border-[#343535] w-full text-left" data-tab="ajustes">
-        <span class="material-symbols-outlined text-[20px]">settings</span>
+      <!-- Ajustes y Mi Plan viven ARRIBA en el header (junto al dueño). Estos botones
+           quedan ocultos solo como destino del mecanismo de pestañas (data-tab). -->
+      <button id="tabAjustesBtn" class="side-tab hidden text-[#d0c6ab] w-full text-left" data-tab="ajustes">
         <span class="text-sm" data-i18n="nav.ajustes">Ajustes</span>
       </button>
-      <button class="side-tab text-[#d0c6ab] hover:text-[#e3e2e2] hover:bg-[#343535]/50 transition-all duration-300 flex items-center gap-3 px-4 py-3 rounded-xl border border-transparent hover:border-[#343535] w-full text-left" data-tab="plan">
-        <span class="material-symbols-outlined text-[20px]">credit_card</span>
+      <button id="tabPlanBtn" class="side-tab hidden text-[#d0c6ab] w-full text-left" data-tab="plan">
         <span class="text-sm" data-i18n="nav.plan">Mi Plan</span>
       </button>
     </nav>
@@ -1033,11 +1032,18 @@
         <div class="h-6 w-[1px] bg-[#343535] mx-1"></div>
         <span class="text-xs text-[#d0c6ab] font-medium uppercase tracking-widest font-['Hanken_Grotesk']" data-i18n="header.panel">Panel de Control</span>
       </div>
-      <div class="flex items-center gap-6">
+      <div class="flex items-center gap-4">
         <div class="flex flex-col items-end">
           <div class="text-[#e3e2e2] font-semibold text-xs leading-none" id="headerWelcomeUser" data-i18n="pnl.dueno">Dueño</div>
           <div class="text-[10px] font-mono text-[#d0c6ab] mt-1" id="headerDate"></div>
         </div>
+        <!-- Ajustes y Mi Plan: acceso rápido junto al dueño (disparan las pestañas ocultas del sidebar) -->
+        <button id="headerAjustesBtn" title="Ajustes" class="text-[#d0c6ab] hover:text-[#ffd700] hover:bg-[#343535]/40 border border-[#343535]/60 rounded-xl px-3 py-2 transition-all flex items-center gap-1.5 text-xs font-semibold">
+          <span class="material-symbols-outlined text-[16px]">settings</span><span data-i18n="nav.ajustes">Ajustes</span>
+        </button>
+        <button id="headerPlanBtn" title="Mi Plan" class="text-[#d0c6ab] hover:text-[#ffd700] hover:bg-[#343535]/40 border border-[#343535]/60 rounded-xl px-3 py-2 transition-all flex items-center gap-1.5 text-xs font-semibold">
+          <span class="material-symbols-outlined text-[16px]">credit_card</span><span data-i18n="nav.plan">Mi Plan</span>
+        </button>
         <span id="saldoCreditos" class="text-[10px] font-mono text-[#d0c6ab]"></span>
         <div class="h-8 w-[1px] bg-[#343535]"></div>
         <button id="headerNewExpenseBtn" class="bg-gradient-to-r from-[#ffd700] to-[#e9c400] text-[#3a3000] hover:shadow-[0_0_20px_rgba(255,215,0,0.4)] transition-all px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1">
@@ -2304,6 +2310,7 @@
     sideTabs.forEach(function (btn) {
       var tab = btn.getAttribute('data-tab');
       var isActive = (tab === activeTab);
+      var estabaOculto = btn.classList.contains('hidden'); // preservar módulos ocultos (CRM/Agente)
       btn.classList.toggle('active', isActive);
       var bar = btn.querySelector('.tab-bar-highlight');
       if (bar) bar.remove();
@@ -2313,6 +2320,7 @@
       } else {
         btn.className = "side-tab text-[#d0c6ab] hover:text-[#e3e2e2] hover:bg-[#343535]/50 transition-all duration-300 flex items-center gap-3 px-4 py-3 rounded-xl border border-transparent hover:border-[#343535] w-full text-left";
       }
+      if (estabaOculto) btn.classList.add('hidden');
     });
     var subTabs = document.querySelectorAll('.csub');
     subTabs.forEach(function (btn) {
@@ -2349,6 +2357,11 @@
       ['tabCrmBtn', 'tabAgenteBtn', 'navVentasLabel', 'crmChatsCard'].forEach(function (id) {
         var el = $(id); if (el) el.classList.toggle('hidden', !chatOn);
       });
+      // Nombre del dueño/cuenta en el header (ej. "elizabeth flores").
+      if (c.nombre) {
+        var hw = $('headerWelcomeUser');
+        if (hw) { hw.textContent = c.nombre; hw.removeAttribute('data-i18n'); }
+      }
     } catch (e) { /* si falla, se quedan ocultos */ }
   }
 
@@ -2737,6 +2750,10 @@
       if (tab === 'auxiliares') loadAuxiliares();
     };
   });
+
+  // Ajustes y Mi Plan del header: disparan las pestañas ocultas del sidebar.
+  if ($('headerAjustesBtn')) $('headerAjustesBtn').onclick = function () { var b = document.querySelector('.side-tab[data-tab="ajustes"]'); if (b) b.click(); };
+  if ($('headerPlanBtn')) $('headerPlanBtn').onclick = function () { var b = document.querySelector('.side-tab[data-tab="plan"]'); if (b) b.click(); };
 
   CATEGORIES.forEach(function (c) {
     var o = document.createElement('option'); o.value = c; o.textContent = c; $('fCategoria').appendChild(o);

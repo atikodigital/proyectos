@@ -2,7 +2,7 @@ const express = require('express');
 const { getUserByEmail, getUserById, setUserPassword } = require('../users/repo');
 const { verifyPassword, hashPassword } = require('../auth/password');
 const { signToken } = require('../auth/jwt');
-const { requireAuth, requireKind } = require('../auth/middleware');
+const { requireAuth, requireKind, requireKindAny } = require('../auth/middleware');
 const chatRepo = require('../chat/repo');
 const contactosRepo = require('../chat/contactos-repo');
 const { fichaDerivada, telefonoDeContacto } = require('../chat/ficha');
@@ -70,7 +70,10 @@ function createPanelRouter({ db, sendText, sendImage, varasGemini } = {}) {
     return res.json({ token, user: { id: user.id, email: user.email, rol: user.rol } });
   });
 
-  router.use(requireAuth, requireKind('user'));
+  // El panel acepta dueños de empresa (kind='user') Y cuentas personales, cuyo
+  // login social entrega token de empleado (kind='employee'). Todas las rutas
+  // filtran por companyId; las pocas que usan userId tienen su propio guard.
+  router.use(requireAuth, requireKindAny(['user', 'employee']));
 
   router.get('/suscripcion', async (req, res) => {
     try { res.json(await saldoCreditos(db, req.auth.companyId)); }
@@ -88,8 +91,15 @@ function createPanelRouter({ db, sendText, sendImage, varasGemini } = {}) {
     const sub = await saldoCreditos(db, req.auth.companyId);
     if (sub.plan === 'ilimitado') return res.status(409).json({ error: 'plan_especial' });
     if (sub.estado === 'activa' && sub.plan === plan) return res.status(409).json({ error: 'ya_activa' });
-    const owner = await getUserById(db, req.auth.userId);
-    if (!owner || !owner.email) return res.status(400).json({ error: 'email_requerido' });
+    // Email del pagador: dueño (kind=user) o, en cuentas personales (kind=employee),
+    // el usuario del empleado (que es su email de registro).
+    let payerEmail = null;
+    if (req.auth.userId) { const owner = await getUserById(db, req.auth.userId); payerEmail = owner && owner.email; }
+    else if (req.auth.employeeId) {
+      try { const r0 = await db.query('SELECT usuario FROM employees WHERE id=$1', [req.auth.employeeId]); const u = r0.rows[0] && r0.rows[0].usuario; if (u && /@/.test(u)) payerEmail = u; } catch (_) {}
+    }
+    const owner = { email: payerEmail };
+    if (!owner.email) return res.status(400).json({ error: 'email_requerido' });
     const proc = procesadorPara(moneda);
     try {
       const base = process.env.PANEL_BASE_URL || 'https://gastos.atikodigital.cl';
@@ -156,6 +166,7 @@ function createPanelRouter({ db, sendText, sendImage, varasGemini } = {}) {
   // Cambiar la propia contraseña del panel (requiere la clave actual). El usuario
   // elige la nueva en el navegador; el backend nunca la guarda en claro.
   router.post('/cambiar-clave', async (req, res) => {
+    if (!req.auth.userId) return res.status(400).json({ error: 'solo_dueno' }); // cuentas personales cambian clave desde el APK
     const { actual, nueva } = req.body || {};
     if (!nueva || String(nueva).length < 8) return res.status(400).json({ error: 'clave_min8' });
     const user = await getUserById(db, req.auth.userId);
@@ -569,7 +580,7 @@ function createPanelRouter({ db, sendText, sendImage, varasGemini } = {}) {
   });
   router.post('/varas/accion', async (req, res) => {
     const b = req.body || {};
-    res.json(await ejecutarAccion(db, req.auth.companyId, b.tipo, b.args || {}, { sendText: _sendText, owner: { kind: 'user', id: req.auth.userId } }));
+    res.json(await ejecutarAccion(db, req.auth.companyId, b.tipo, b.args || {}, { sendText: _sendText, owner: ownerDelCaller(req) }));
   });
   // Lectura server-side para la voz (Gemini Live): ejecuta una tool de lectura scoped por empresa.
   router.post('/varas/tool', async (req, res) => {
@@ -595,7 +606,11 @@ function createPanelRouter({ db, sendText, sendImage, varasGemini } = {}) {
 
   // ── KALY memoria (hechos del negocio, scoped por empresa) ──
   // Memoria del agente (nivel 2): empresa (compartida) + personal (del dueño).
-  function ownerDelCaller(req) { return { kind: 'user', id: req.auth.userId }; }
+  function ownerDelCaller(req) {
+    return req.auth.userId
+      ? { kind: 'user', id: req.auth.userId }
+      : { kind: 'employee', id: req.auth.employeeId };
+  }
 
   router.get('/kaly/memoria', async (req, res) => {
     const owner = ownerDelCaller(req);
@@ -651,8 +666,8 @@ function createPanelRouter({ db, sendText, sendImage, varasGemini } = {}) {
     }
     const context = await buildAgentContext(db, {
       companyId: req.auth.companyId,
-      employeeId: null,
-      owner: { kind: 'user', id: req.auth.userId },
+      employeeId: req.auth.employeeId || null,
+      owner: ownerDelCaller(req),
     });
     // El dueño no tiene employeeId: superponemos sus preferencias guardadas a nivel empresa.
     const ownerPrefs = await getOwnerAgentPrefs(db, req.auth.companyId);
