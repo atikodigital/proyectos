@@ -136,9 +136,14 @@ function createAppRouter({ db, extractExpense, createLiveToken, sendText, sendIm
     if (!Number.isFinite(duracion_seg) || duracion_seg <= 0) {
       return res.status(400).json({ error: 'duracion_invalida' });
     }
-    const minutos = Math.max(1, Math.ceil(duracion_seg / 60));
+    // Primer minuto GRATIS: una voz corta para registrar un movimiento ya paga su shot
+    // por movimiento (en /expenses/manual), así que no se cobra minuto encima. Solo la
+    // conversación Live extendida (>1 min) suma voz_min por cada minuto adicional.
+    const minutos = Math.max(0, Math.ceil(duracion_seg / 60) - 1);
     try {
-      await consumirCredito(db, req.auth.companyId, { tipo: 'voz_min', cantidad: minutos, meta: { duracion_seg } });
+      if (minutos > 0) {
+        await consumirCredito(db, req.auth.companyId, { tipo: 'voz_min', cantidad: minutos, meta: { duracion_seg } });
+      }
       const s = await saldoCreditos(db, req.auth.companyId);
       return res.json({ ok: true, saldo: s });
     } catch (e) {
@@ -517,6 +522,15 @@ function createAppRouter({ db, extractExpense, createLiveToken, sendText, sendIm
     const { tipo, proveedor, rut_emisor, folio, fecha, neto, iva, total, categoria, estado_pago } = req.body || {};
     if (!tipo || total === undefined) {
       return res.status(400).json({ error: 'tipo_y_total_requeridos' });
+    }
+    // Registro por KALY (voz o texto): en la APK este endpoint solo lo llama la IA
+    // (tools.js → crear_movimiento_manual). Cobra 1 shot por movimiento, igual que la
+    // foto. Se cobra ANTES de crear: sin créditos = no se registra (402).
+    try {
+      await consumirCredito(db, req.auth.companyId, { tipo: 'movimiento', cantidad: 1, meta: { via: 'kaly' } });
+    } catch (e) {
+      if (e instanceof SinCreditosError) return res.status(402).json({ error: 'sin_creditos', saldo: e.saldo });
+      throw e;
     }
     const { createExpense } = require('../expenses/repo');
     const { mapCategoryToSii } = require('../domain/categories');

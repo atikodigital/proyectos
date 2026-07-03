@@ -8,9 +8,16 @@ test('planes tienen límite de créditos', () => {
 
 test('creditosDe pondera por tipo y cantidad', () => {
   expect(creditosDe('imagen', 1)).toBe(PESOS.imagen);          // 1 imagen
+  expect(creditosDe('movimiento', 1)).toBe(PESOS.movimiento);  // 1 movimiento por voz/texto
   expect(creditosDe('voz_min', 3)).toBe(PESOS.voz_min * 3);    // 3 minutos de voz
   expect(creditosDe('texto', 1)).toBe(PESOS.texto);
   expect(creditosDe('tipo_raro', 1)).toBe(0);                  // tipo desconocido = 0
+});
+
+test('movimiento cuesta 1 shot (unificado con imagen)', () => {
+  expect(PESOS.movimiento).toBe(1);
+  expect(creditosDe('movimiento', 1)).toBe(1);
+  expect(creditosDe('movimiento', 3)).toBe(3);
 });
 
 // --- Multi-currency: estructura precios ---

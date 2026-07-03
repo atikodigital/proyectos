@@ -17,10 +17,13 @@ const PLAN_LABELS = {
 };
 
 // Cuántos créditos cuesta una unidad de cada operación. Provisional (calibrar).
+// Regla unificada de cara al cliente: "1 shot = 1 movimiento registrado por la IA
+// (foto, voz o texto)". Por eso `imagen` y `movimiento` valen ambos 1.
 const PESOS = {
-  imagen: 1,    // 1 imagen interpretada (boleta, cartola, catálogo)
-  voz_min: 3,   // 1 minuto de voz (Gemini Live) — el más caro
-  texto: 0,     // chat/Match/parsing — incluido por ahora (subir tras calibrar)
+  imagen: 1,     // 1 imagen interpretada (boleta, cartola, catálogo) = 1 movimiento
+  movimiento: 1, // 1 gasto/ingreso registrado por KALY por voz o texto = 1 movimiento
+  voz_min: 3,    // 1 minuto de conversación Live EXTENDIDA (tras el 1º minuto gratis)
+  texto: 0,      // chat/Match/parsing SIN registrar movimiento — incluido por ahora
 };
 
 function getPlan(nombre) {

@@ -13,9 +13,9 @@ Hash IA registra gastos e ingresos por foto o por voz, calcula el IVA, concilia 
 
 - **Free:** $0 — 30 shots
 - **Básico:** $9.900 — 100 shots
-- **Pyme:** $24.900 — 250 shots (el más elegido)
-- **Empresa:** $49.900 — 800 shots
-- 1 shot = 1 imagen interpretada por la IA. Todos los planes incluyen cuentas y ventas.
+- **Pyme:** $24.900 — 210 shots (el más elegido)
+- **Empresa:** $49.900 — 600 shots
+- 1 shot = 1 movimiento (gasto o ingreso) registrado por la IA, ya sea por foto de boleta/factura, por voz o escribiéndole a KALY. Todos los planes incluyen cuentas y ventas.
 
 ## Datos
 

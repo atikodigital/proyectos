@@ -71,7 +71,7 @@ async function getPanelToken(app) {
 // APP ROUTER TESTS
 // ─────────────────────────────────────────────────────────────────────────────
 
-test('app: 90s → cobra 2 min (ceil(90/60)=2), devuelve ok y saldo', async () => {
+test('app: 1er minuto gratis → 90s cobra solo 1 min (ceil(90/60)-1=1)', async () => {
   const db = await freshDb();
   const co = await createCompany(db, { nombre: 'TestApp' });
   await seedAppEmployee(db, co.id);
@@ -87,12 +87,12 @@ test('app: 90s → cobra 2 min (ceil(90/60)=2), devuelve ok y saldo', async () =
   expect(res.status).toBe(200);
   expect(res.body.ok).toBe(true);
   expect(res.body.saldo).toBeDefined();
-  // 2 min × 3 peso = 6 créditos usados; free plan = 30 → restante = 24
-  expect(res.body.saldo.usado).toBe(6);
-  expect(res.body.saldo.restante).toBe(24);
+  // Primer minuto gratis: 90s → ceil(90/60)-1 = 1 min × 3 = 3 créditos; free 30 → restante 27
+  expect(res.body.saldo.usado).toBe(3);
+  expect(res.body.saldo.restante).toBe(27);
 });
 
-test('app: 30s → cobra mínimo 1 min (Math.max(1, ceil(30/60))=1)', async () => {
+test('app: voz corta (30s) NO cobra minuto — solo pagó su shot de movimiento aparte', async () => {
   const db = await freshDb();
   const co = await createCompany(db, { nombre: 'TestApp30' });
   await seedAppEmployee(db, co.id);
@@ -107,8 +107,8 @@ test('app: 30s → cobra mínimo 1 min (Math.max(1, ceil(30/60))=1)', async () =
 
   expect(res.status).toBe(200);
   expect(res.body.ok).toBe(true);
-  // 1 min × 3 = 3 créditos
-  expect(res.body.saldo.usado).toBe(3);
+  // 30s → ceil(30/60)-1 = 0 min → 0 créditos por voz (el 1er minuto es gratis)
+  expect(res.body.saldo.usado).toBe(0);
 });
 
 test('app: duracion_seg=0 → 400 duracion_invalida', async () => {
@@ -140,10 +140,11 @@ test('app: empresa sin créditos → 402 sin_creditos', async () => {
   const app = buildAppInstance(db);
   const tok = await getAppToken(app);
 
+  // 120s → ceil(120/60)-1 = 1 min a cobrar; sin créditos → 402
   const res = await request(app)
     .post('/api/app/agent/session/end')
     .set('Authorization', `Bearer ${tok}`)
-    .send({ duracion_seg: 60 });
+    .send({ duracion_seg: 120 });
 
   expect(res.status).toBe(402);
   expect(res.body.error).toBe('sin_creditos');
