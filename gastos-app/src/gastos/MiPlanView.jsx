@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from './api';
+import { clearToken } from './session';
 import { t } from './i18n';
 
 const GOLD = '#C9A24B';
@@ -7,7 +8,7 @@ const PANEL_URL = 'https://gastos.atikodigital.cl/panel';
 
 // Planes pagables (mismos precios/creditos que el backend billing/planes.js).
 const PLANES_UP = [
-  { id: 'basico', nombre: 'Básico', creditos: 100, precio: 1000 },
+  { id: 'basico', nombre: 'Básico', creditos: 100, precio: 9900 },
   { id: 'pyme', nombre: 'Pyme', creditos: 210, precio: 24900 },
   { id: 'empresa', nombre: 'Empresa', creditos: 600, precio: 49900 },
 ];
@@ -33,6 +34,25 @@ export default function MiPlanView() {
   const [error, setError] = useState('');
   const [mejorando, setMejorando] = useState('');
   const [msgUp, setMsgUp] = useState('');
+  const [confirmarBorrar, setConfirmarBorrar] = useState(false);
+  const [borrando, setBorrando] = useState(false);
+  const [errBorrar, setErrBorrar] = useState('');
+
+  async function eliminarCuenta() {
+    setBorrando(true); setErrBorrar('');
+    try {
+      await api.deleteAccount();
+      clearToken();
+      // Recarga completa: vuelve al login sin datos de la sesión anterior.
+      try { window.location.reload(); } catch (_) { window.location.href = '/'; }
+    } catch (e) {
+      const err = e && e.data && e.data.error;
+      setErrBorrar(err === 'prohibido'
+        ? 'Solo el dueño de la cuenta puede eliminarla.'
+        : 'No se pudo eliminar la cuenta. Intenta de nuevo o escríbenos a atikodigital@gmail.com.');
+      setBorrando(false);
+    }
+  }
 
   async function recargar() {
     try { const s = await api.suscripcion(); setDatos(s); return s; } catch { return null; }
@@ -258,6 +278,41 @@ export default function MiPlanView() {
           >
             {t('mp.gestionar')}
           </button>
+
+          {/* Zona de peligro: eliminar cuenta (requisito Google Play, irreversible) */}
+          <div style={{ marginTop: 28, paddingTop: 18, borderTop: '1px solid rgba(239,68,68,0.25)' }}>
+            {!confirmarBorrar ? (
+              <button
+                onClick={() => { setErrBorrar(''); setConfirmarBorrar(true); }}
+                style={{ width: '100%', background: 'transparent', color: '#f87171', fontWeight: 700, fontSize: 13, border: '1px solid rgba(239,68,68,0.4)', borderRadius: 12, padding: '12px 0', cursor: 'pointer' }}
+              >
+                Eliminar mi cuenta
+              </button>
+            ) : (
+              <div style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.35)', borderRadius: 12, padding: 14 }}>
+                <div style={{ fontSize: 13, color: '#fca5a5', lineHeight: 1.5, marginBottom: 12 }}>
+                  Esto elimina <b>de forma permanente</b> tu cuenta y todos tus datos (movimientos, documentos, catálogo, pedidos y la memoria de KALY). No se puede deshacer.
+                </div>
+                <div style={{ display: 'grid', gap: 8 }}>
+                  <button
+                    onClick={eliminarCuenta}
+                    disabled={borrando}
+                    style={{ width: '100%', background: '#dc2626', color: '#fff', fontWeight: 900, fontSize: 14, border: 'none', borderRadius: 10, padding: '12px 0', cursor: 'pointer', opacity: borrando ? 0.6 : 1 }}
+                  >
+                    {borrando ? 'Eliminando…' : 'Sí, eliminar todo definitivamente'}
+                  </button>
+                  <button
+                    onClick={() => setConfirmarBorrar(false)}
+                    disabled={borrando}
+                    style={{ width: '100%', background: 'transparent', color: '#e5e7eb', fontWeight: 700, fontSize: 13, border: '1px solid rgba(255,255,255,0.2)', borderRadius: 10, padding: '10px 0', cursor: 'pointer' }}
+                  >
+                    Cancelar
+                  </button>
+                </div>
+                {errBorrar && <div style={{ fontSize: 12, color: '#fca5a5', marginTop: 10, lineHeight: 1.5 }}>{errBorrar}</div>}
+              </div>
+            )}
+          </div>
         </>
       )}
     </div>

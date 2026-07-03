@@ -1,5 +1,5 @@
 const express = require('express');
-const { getEmployeeByUsuario, getAgentPrefs, setAgentPrefs, getCompanyWa, getCompanyProfile, setOnboarded, setOnboardingSaltado, updateCompany, setGiro, getCompany, getOwnerAgentPrefs } = require('../companies/repo');
+const { getEmployeeByUsuario, getAgentPrefs, setAgentPrefs, getCompanyWa, getCompanyProfile, setOnboarded, setOnboardingSaltado, updateCompany, setGiro, getCompany, getOwnerAgentPrefs, eliminarEmpresa } = require('../companies/repo');
 const { verifyPassword } = require('../auth/password');
 const { signToken } = require('../auth/jwt');
 const { requireAuth, requireKind, requireKindAny } = require('../auth/middleware');
@@ -168,6 +168,20 @@ function createAppRouter({ db, extractExpense, createLiveToken, sendText, sendIm
       return res.json(r);
     } catch (e) {
       return res.status(500).json({ error: 'kaly_chat_error', reply: 'No pude procesar tu mensaje ahora.' });
+    }
+  });
+
+  // Eliminación de cuenta self-service (requisito de Google Play para apps con
+  // registro). Solo el DUEÑO (kind='user'); borra la empresa y TODOS sus datos.
+  // Va antes del requireKind('employee') global, como /agent/session, porque el
+  // dueño entra con token kind='user'. Es irreversible.
+  router.delete('/company', requireAuth, requireKindAny(['user']), async (req, res) => {
+    try {
+      const eliminada = await eliminarEmpresa(db, req.auth.companyId);
+      if (!eliminada) return res.status(404).json({ error: 'no_existe' });
+      return res.json({ ok: true, empresa: eliminada.nombre });
+    } catch (e) {
+      return res.status(500).json({ error: 'eliminar_error' });
     }
   });
 

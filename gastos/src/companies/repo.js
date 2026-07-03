@@ -80,7 +80,7 @@ async function deactivateEmployee(db, companyId, id) {
 }
 
 async function getCompany(db, companyId) {
-  const r = await db.query('SELECT id, nombre, rut, wa_phone_number_id, owner_nombre, owner_whatsapp, resumen_frecuencia, created_at, productos, plan, idioma, tipo_cuenta FROM companies WHERE id=$1', [companyId]);
+  const r = await db.query('SELECT id, nombre, rut, wa_phone_number_id, owner_nombre, owner_whatsapp, resumen_frecuencia, created_at, productos, plan, idioma, tipo_cuenta, sueldo_mensual, dia_pago FROM companies WHERE id=$1', [companyId]);
   return r.rows[0] || null;
 }
 
@@ -207,9 +207,31 @@ async function setOnboardingSaltado(db, companyId) {
   return getCompanyProfile(db, companyId);
 }
 
+// Elimina por completo una empresa y TODOS sus datos asociados (eliminación de
+// cuenta self-service para Google Play). Borra dinámicamente cada tabla que tenga
+// company_id y luego la empresa. Devuelve { id, nombre } o null si no existía.
+async function eliminarEmpresa(db, companyId) {
+  const existe = await db.query('SELECT id, nombre FROM companies WHERE id=$1', [companyId]);
+  if (!existe.rows[0]) return null;
+  let tablas = [];
+  try {
+    const t = await db.query(
+      "SELECT table_name FROM information_schema.columns WHERE column_name='company_id' AND table_schema='public' AND table_name <> 'companies'"
+    );
+    tablas = t.rows.map((r) => r.table_name);
+  } catch (e) { /* pg-mem u otro: usamos el fallback */ }
+  if (!tablas.length) tablas = ['users', 'employees', 'expenses', 'subscriptions', 'ia_consumo', 'kaly_memory', 'contactos', 'productos', 'pedidos'];
+  for (const tabla of tablas) {
+    try { await db.query(`DELETE FROM "${tabla}" WHERE company_id=$1`, [companyId]); } catch (e) { /* tabla inexistente: tolerante */ }
+  }
+  const r = await db.query('DELETE FROM companies WHERE id=$1 RETURNING id, nombre', [companyId]);
+  return r.rows[0] || null;
+}
+
 module.exports = {
   createCompany, createEmployee, getEmployeeByProvider, linkProviderEmployee, getCompanyByPhoneNumberId, getEmployeeByPhone, getEmployeeByUsuario,
   listEmployees, updateEmployee, deactivateEmployee, getCompany, updateCompany, getCompanyWa,
   getAgentPrefs, setAgentPrefs, getOwnerAgentPrefs, setOwnerAgentPrefs, getGiro, setGiro,
   getCompanyProfile, setOnboarded, setOnboardingSaltado, ensureCompanyOnboarding, setKalyPersona,
+  eliminarEmpresa,
 };

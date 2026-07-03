@@ -210,6 +210,8 @@ export const api = {
   suscripcion() { return req('/api/app/suscripcion'); },
   // Crea el checkout de suscripción y devuelve { url } para pagar en el navegador.
   crearSuscripcion(plan, moneda = 'CLP') { return req('/api/app/suscripcion/crear', { method: 'POST', body: { plan, moneda } }); },
+  // Eliminación de cuenta (irreversible). Solo el dueño. Borra empresa + datos.
+  deleteAccount() { return req('/api/app/company', { method: 'DELETE' }); },
 
   // Recuperación de contraseña: envía el link por correo y/o WhatsApp. Cubre tanto
   // cuentas de empresa (owner) como personales (empleado). Siempre responde ok.

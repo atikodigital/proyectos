@@ -15,6 +15,7 @@ export default function Footer() {
       <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 justify-center opacity-80">
         <a href="/privacidad.html" className="hover:text-[#FCA311] transition-colors">Política de privacidad</a>
         <a href="/terminos.html" className="hover:text-[#FCA311] transition-colors">Términos y condiciones</a>
+        <a href="/eliminar-cuenta.html" className="hover:text-[#FCA311] transition-colors">Eliminar cuenta</a>
       </div>
       <div className="mt-4 opacity-60">© 2026 Atiko Digital</div>
     </footer>
