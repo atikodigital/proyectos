@@ -268,6 +268,19 @@ public class MaticoScreenCapturePlugin extends Plugin {
         call.resolve(ret);
     }
 
+    // Consulta PURA del permiso "mostrar sobre otras apps" (sin abrir ajustes ni
+    // iniciar nada). El JS la usa al volver de Ajustes para detectar que el usuario
+    // ya lo activó y así ocultar el mensaje / continuar la captura automáticamente.
+    @PluginMethod
+    public void hasOverlayPermission(PluginCall call) {
+        Activity activity = getActivity();
+        boolean granted = Build.VERSION.SDK_INT < Build.VERSION_CODES.M
+                || (activity != null && Settings.canDrawOverlays(activity));
+        JSObject ret = new JSObject();
+        ret.put("granted", granted);
+        call.resolve(ret);
+    }
+
     @PluginMethod
     public void stopCaptureSession(PluginCall call) {
         Intent serviceIntent = new Intent(getContext(), MaticoScreenCaptureService.class);

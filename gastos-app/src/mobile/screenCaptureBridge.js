@@ -89,6 +89,20 @@ export const getNativeCaptureSessionState = async () => {
     return plugin.getCaptureSessionState();
 };
 
+// Consulta PURA del permiso "mostrar sobre otras apps" (no abre ajustes ni inicia
+// nada). Se usa al volver de Ajustes para detectar que el usuario ya lo activó.
+// Si el plugin no expone el método (build viejo), no bloqueamos: devolvemos true.
+export const hasNativeOverlayPermission = async () => {
+    const plugin = getPlugin();
+    if (!plugin?.hasOverlayPermission) return true;
+    try {
+        const r = await plugin.hasOverlayPermission();
+        return Boolean(r?.granted);
+    } catch {
+        return false;
+    }
+};
+
 export const captureNowNativeSession = async () => {
     const plugin = getPlugin();
     if (!plugin?.captureNow) throw new Error('native_not_available');

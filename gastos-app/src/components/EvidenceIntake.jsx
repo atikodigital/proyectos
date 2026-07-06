@@ -11,6 +11,7 @@ import {
     onNativeCaptureSessionFinalized,
     startNativeCaptureSession,
     stopNativeCaptureSession,
+    hasNativeOverlayPermission,
     waitForNativeScreenCapture
 } from '../mobile/screenCaptureBridge';
 
@@ -120,6 +121,10 @@ const EvidenceIntake = ({
     const [nativeCaptureSupported, setNativeCaptureSupported] = useState(false);
     const [nativeSessionActive, setNativeSessionActive] = useState(false);
     const [nativeQueueCount, setNativeQueueCount] = useState(0);
+    // Se pone true cuando falta el permiso "mostrar sobre otras apps" (tras abrir
+    // Ajustes). Al volver a la app se re-chequea: si ya está, oculta el aviso y sigue.
+    const esperandoOverlayRef = useRef(false);
+    const captureFromNativeAppRef = useRef(null);
 
     const streamRef = useRef(null);
     const videoRef = useRef(null);
@@ -421,12 +426,14 @@ const EvidenceIntake = ({
                 return;
             }
             if (String(error?.message || '').toLowerCase().includes('overlay_permission_required')) {
-                handleError('Debes activar "mostrar sobre otras apps" para ver el marco azul y el boton de captura.');
+                esperandoOverlayRef.current = true;
+                handleError('Activa "Mostrar sobre otras apps" para Hash IA. Cuando lo actives y vuelvas, seguimos solos.');
                 return;
             }
             handleError('No se pudo iniciar la sesion de captura en app movil.');
         }
     };
+    captureFromNativeAppRef.current = captureFromNativeApp;
 
     const startNativeSession = async () => {
         try {
@@ -434,6 +441,9 @@ const EvidenceIntake = ({
             await refreshNativeState();
             setErrorMsg('Permiso activado. En Android selecciona "Pantalla completa" y luego navega con el marco azul y boton inferior.');
         } catch (error) {
+            if (String(error?.message || '').toLowerCase().includes('overlay_permission_required')) {
+                esperandoOverlayRef.current = true;
+            }
             handleError(normalizeNativeCaptureError(error, 'No se pudo iniciar el modo captura celular.'));
         }
     };
@@ -509,6 +519,22 @@ const EvidenceIntake = ({
             if (typeof unsubscribe === 'function') unsubscribe();
         };
     }, [nativeCaptureSupported]);
+
+    // Al volver a primer plano tras abrir "Mostrar sobre otras apps": si el permiso
+    // ya está concedido, oculta el aviso y CONTINÚA la captura solo. Acotado a
+    // esperandoOverlayRef → no dispara auto-import (evita el bug de imports espurios).
+    useEffect(() => {
+        if (!showNativeCapture) return undefined;
+        const onVisible = async () => {
+            if (document.visibilityState !== 'visible' || !esperandoOverlayRef.current) return;
+            if (!(await hasNativeOverlayPermission())) return; // aún falta: se mantiene el aviso
+            esperandoOverlayRef.current = false;
+            setErrorMsg('');
+            captureFromNativeAppRef.current?.();
+        };
+        document.addEventListener('visibilitychange', onVisible);
+        return () => document.removeEventListener('visibilitychange', onVisible);
+    }, [showNativeCapture]);
 
     const removeItem = (id) => {
         publish(items.filter((item) => item.id !== id));
