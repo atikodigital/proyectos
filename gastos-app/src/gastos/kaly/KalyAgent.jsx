@@ -94,6 +94,11 @@ export default function KalyAgent() {
   const start = useCallback(
     async (motivo) => {
       if (sessionRef.current) return;
+      // Desbloquea (reanuda) el AudioContext ANTES de conectar. El WebView Android lo
+      // crea 'suspended'; en el AUTO-saludo no hay un toque previo que lo reactive, así
+      // que el saludo salía MUDO en una app recién abierta. El WebView permite autoplay
+      // (setMediaPlaybackRequiresUserGesture=false), por lo que resume() funciona aquí.
+      try { unlockAudio(); } catch (_) {}
       // Marcar ANTES de conectar: si KalyAgent se desmonta/remonta a mitad de la
       // conexión (navegación entre pestañas), el remontaje no debe repetir el saludo.
       if (motivo === 'saludo' || motivo === 'onboarding') marcarSaludado();
