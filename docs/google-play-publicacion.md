@@ -20,34 +20,33 @@ paquete `cl.atikodigital.hashia`, versión **3.73 (versionCode 107)**.
 
 **Nombre de la app (30):** `Hash IA`
 
+> **Enfoque: PERSONAL primero.** La ficha lidera con finanzas personales (público amplio: cualquier persona) y menciona el negocio/pyme como uso secundario.
+
 **Descripción corta (80):**
-`Cuentas y ventas de tu pyme con IA: gastos, IVA, SII y KALY, tu asistente de voz.`
+`Controla tu plata con IA: anota gastos por foto o voz y sabe cuánto te queda.`
 
 **Descripción completa (pegar tal cual):**
 ```
-Hash IA es la inteligencia artificial que le lleva las cuentas y las ventas a las pymes de Chile. Su asistente se llama KALY.
+Hash IA es la app que te ayuda a controlar tu plata con inteligencia artificial. Su asistente se llama KALY.
 
-CUENTAS (finanzas)
-• Registra gastos e ingresos por foto de la boleta/factura, por voz o escribiéndole a KALY.
-• Calcula el IVA automáticamente (neto + 19%).
-• Concilia con el SII y con la cartola del banco (Match) para que tu mes cuadre.
-• Reportes y flujo de caja al día.
-
-VENTAS
-• Arma tu catálogo por voz o con la foto del menú.
-• Toma pedidos en el chat y genera el PDF para enviar por WhatsApp.
-• Cobra el delivery por comuna.
+TUS FINANZAS PERSONALES
+• Anota tus gastos e ingresos por foto de la boleta, por voz o escribiéndole a KALY.
+• Registra tu sueldo y mira cuánto te queda del mes, en tiempo real.
+• Entiende en qué se te va la plata, sin planillas ni Excel.
 
 KALY, TU ASISTENTE
-• Háblale o escríbele: registra movimientos, te responde dudas y te ayuda a ordenar el negocio.
+• Háblale o escríbele: registra lo que gastaste y te dice cuánto llevas.
+
+¿TIENES UN NEGOCIO O EMPRENDIMIENTO?
+Hash IA también le lleva las cuentas y las ventas a tu pyme: calcula el IVA, concilia con el SII y el banco, arma tu catálogo, toma pedidos con PDF para WhatsApp y cobra delivery por comuna.
 
 PLANES
-• Plan gratis para partir, y planes de pago con más "shots" (1 shot = 1 movimiento registrado por la IA).
+• Plan gratis para partir, y planes con más "shots" (1 shot = 1 movimiento registrado por la IA).
 
-Hecha en Chile, para pymes de Chile. Cancela cuando quieras.
+Hecha en Chile. Cancela cuando quieras.
 ```
 
-**Category / Categoría:** `Empresa` (Business). *(También válido: Finanzas.)*
+**Category / Categoría:** `Finanzas` (Finance). *(Encaja con el enfoque personal.)*
 
 **Correo de contacto:** `atikodigital@gmail.com`
 **Sitio web:** `https://hash.atikodigital.cl`
@@ -57,7 +56,7 @@ Hecha en Chile, para pymes de Chile. Cancela cuando quieras.
 ### Gráficos — ✅ LISTOS en `docs/play-assets/`
 - [x] **Ícono** 512×512 → `docs/play-assets/icon-512.png`
 - [x] **Gráfico destacado (Feature graphic)** 1024×500 → `docs/play-assets/feature-graphic-1024x500.png`
-- [x] **Capturas de teléfono** (1080×1920, 4): `screenshot-1-foto.png`, `screenshot-2-kaly.png`, `screenshot-3-cuadre.png`, `screenshot-4-pedido.png`
+- [x] **Capturas de teléfono** (1080×1920, 4, enfoque PERSONAL): `screenshot-1-foto.png` (anota gastos por foto), `screenshot-2-balance.png` (cuánto te queda del mes), `screenshot-3-kaly.png` (KALY por voz), `screenshot-4-sueldo.png` (sueldo vs gastos)
   - Son capturas de marketing (marca + función). Opcional: reemplazar/sumar capturas reales tomadas en tu teléfono con la app instalada (aún más auténtico).
 
 ## 3. App access / Acceso a la app (login para el revisor)
