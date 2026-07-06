@@ -7,6 +7,7 @@ import {
   yaSaludoEnEstaSesion,
   marcarSaludado,
   resetKalyGreeting,
+  kalyHizoPregunta,
 } from '../../src/gastos/kaly/logic';
 import { buildSystemPrompt, instruccionInicial } from '../../src/gastos/kaly/prompt';
 
@@ -86,6 +87,18 @@ describe('resetKalyGreeting (cambio de cuenta)', () => {
     const onboarded = localStorage.getItem('kaly_onboarded') === '1';
     expect(decideAutoStart({ onboarded, yaSaludo: yaSaludoEnEstaSesion() })).toBe('onboarding');
   });
+});
+
+// Bug real (voz): cuando KALY preguntaba "¿Ya lo pagaste?", la conversación se
+// cortaba — por el silencio de 5s o porque el "no" del usuario se leía como
+// despedida. kalyHizoPregunta detecta que KALY espera respuesta para no cortar.
+describe('kalyHizoPregunta', () => {
+  test.each(['¿Ya lo pagaste?', 'Anotado, ¿lo pagaste?', 'Do you want to continue?'])(
+    '"%s" → true (KALY espera respuesta)', (t) => expect(kalyHizoPregunta(t)).toBe(true),
+  );
+  test.each(['Listo, quedó anotado.', '¡Anotado!', '', null])(
+    '"%s" → false (no es pregunta)', (t) => expect(kalyHizoPregunta(t)).toBe(false),
+  );
 });
 
 describe('esNegativa', () => {

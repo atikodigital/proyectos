@@ -1,5 +1,16 @@
 export const SILENCE_MS = 5000; // 5 seconds of silence before closing
+// Cuando KALY acaba de hacer una PREGUNTA (ej. "¿Ya lo pagaste?"), damos más tiempo
+// para responder: no cortar la conversación por un silencio corto mientras el
+// usuario piensa la respuesta.
+export const SILENCE_ANSWER_MS = 15000; // 15s para responder una pregunta de KALY
 export const INACTIVITY_MS = 5 * 60 * 1000;
+
+// ¿KALY hizo una PREGUNTA (espera respuesta)? Si lo que dijo incluye un signo de
+// interrogación, la próxima respuesta del usuario —incluido un "no"— es la RESPUESTA
+// a esa pregunta y NO debe cerrar la sesión ni cortarse por silencio corto.
+export function kalyHizoPregunta(text) {
+  return /[?¿]/.test(String(text || ''));
+}
 
 export function hoyStr(d = new Date()) { return d.toISOString().slice(0, 10); }
 

@@ -10,7 +10,7 @@ import KalyOrb from './KalyOrb.jsx';
 import { openLiveSession, unlockAudio } from './live.js';
 import { TOOL_DECLARATIONS, executeTool } from './tools.js';
 import { buildSystemPrompt, instruccionInicial } from './prompt.js';
-import { decideAutoStart, esNegativa, hoyStr, marcarSaludado, yaSaludoEnEstaSesion, SILENCE_MS, INACTIVITY_MS } from './logic.js';
+import { decideAutoStart, esNegativa, hoyStr, marcarSaludado, yaSaludoEnEstaSesion, kalyHizoPregunta, SILENCE_MS, SILENCE_ANSWER_MS, INACTIVITY_MS } from './logic.js';
 import { useAgentInteraction } from '../agente/AgentInteractionProvider.jsx';
 
 const LIVE_MODEL_FALLBACK =
@@ -55,10 +55,13 @@ export default function KalyAgent() {
   function clearSilenceTimer() {
     if (silenceTimerRef.current != null) { clearTimeout(silenceTimerRef.current); silenceTimerRef.current = null; }
   }
-  function armSilenceTimer(stopFn) {
+  function armSilenceTimer(stopFn, ms = SILENCE_MS) {
     clearSilenceTimer();
-    silenceTimerRef.current = setTimeout(() => { silenceTimerRef.current = null; stopFn(); }, SILENCE_MS);
+    silenceTimerRef.current = setTimeout(() => { silenceTimerRef.current = null; stopFn(); }, ms);
   }
+  // true cuando KALY acaba de PREGUNTAR algo (espera respuesta): mientras tanto no
+  // cortamos la conversación por silencio corto ni tratamos un "no" como despedida.
+  const esperaRespuestaRef = useRef(false);
   function pushTurn(role, text) {
     const t = String(text || '').trim();
     if (!t) return;
@@ -128,7 +131,8 @@ export default function KalyAgent() {
           if (diagTimerRef.current) { clearTimeout(diagTimerRef.current); diagTimerRef.current = null; }
         }
         setState(newState);
-        if (newState === 'listening') armSilenceTimer(stop);
+        // Si KALY acaba de preguntar algo, da más tiempo para responder (no cortar).
+        if (newState === 'listening') armSilenceTimer(stop, esperaRespuestaRef.current ? SILENCE_ANSWER_MS : SILENCE_MS);
       };
       const onAudioLevel = (_dir, v) => setLevel(v);
       const onUserTranscript = (text) => {
@@ -136,10 +140,15 @@ export default function KalyAgent() {
         clearSilenceTimer();
         setMessages((prev) => [...prev, { sender: 'user', text }]);
         if (esSilenciar(text)) { aplicarMute(true); return; }
+        // Si KALY acababa de preguntar, esto es la RESPUESTA (ej. "no" a "¿lo
+        // pagaste?"): NO cerrar la sesión, aunque el texto parezca negativo.
+        if (esperaRespuestaRef.current) { esperaRespuestaRef.current = false; return; }
         if (esNegativa(text)) setTimeout(() => stop(), 2500);
       };
       const onAgentTranscript = (text) => {
         pushTurn('kaly', text);
+        // Detecta si KALY hizo una pregunta (espera respuesta) para no cortar la charla.
+        if (kalyHizoPregunta(text)) esperaRespuestaRef.current = true;
         setMessages((prev) => {
           const last = prev[prev.length - 1];
           if (last && last.sender === 'kaly' && !last.isSystem) {
