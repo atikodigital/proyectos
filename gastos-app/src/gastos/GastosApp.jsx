@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { getToken, clearToken } from './session';
+import { docsDeItems } from './capturaCola';
 import { api } from './api';
 import { t } from './i18n';
 import LoginScreen from './LoginScreen.jsx';
@@ -44,6 +45,10 @@ export default function GastosApp() {
   const [mostrarPlan, setMostrarPlan] = useState(false);
   const [company, setCompany] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  // Cola de documentos pendientes cuando se escanean VARIOS de una vez (multi-captura).
+  // Se procesan uno por uno: cada uno con su confirmación, igual que 1 documento.
+  const [cola, setCola] = useState([]);
+  const colaRef = useRef([]);
   // Módulos habilitados por cliente (vienen del backend). El módulo "chat" sale
   // OCULTO por defecto y solo se activa desde gastos.atikodigital.cl/admin.
   const [productos, setProductos] = useState([]);
@@ -112,9 +117,22 @@ export default function GastosApp() {
     finally { setBusy(false); }
   }
   async function onChange(items) {
-    const ev = (items || [])[0];
-    if (!ev || !ev.imageBase64) return;
-    await submit(ev.imageBase64, ev.imageMimeType || 'image/jpeg', false);
+    const docs = docsDeItems(items);
+    if (!docs.length) return;
+    // Registra el primero y encola el resto (multi-captura: registrar TODOS).
+    const resto = docs.slice(1);
+    colaRef.current = resto;
+    setCola(resto);
+    await submit(docs[0].imageBase64, docs[0].mimeType, false);
+  }
+  // Pasa al siguiente documento de la cola, o termina (va a "Movimientos").
+  function siguienteDoc() {
+    const prev = colaRef.current;
+    if (!prev.length) { setTab('mis'); return; }
+    const [next, ...rest] = prev;
+    colaRef.current = rest;
+    setCola(rest);
+    submit(next.imageBase64, next.mimeType, false);
   }
 
   return (
@@ -167,6 +185,11 @@ export default function GastosApp() {
             <KalyAgent />
           </div>
         )}
+        {cola.length > 0 && (pending || dup || esVenta || receptorAjeno) && (
+          <div className="px-4 py-1.5 text-xs font-black text-center text-black shrink-0" style={{ background: '#C9A24B' }}>
+            📄 Te quedan {cola.length} documento{cola.length > 1 ? 's' : ''} por revisar
+          </div>
+        )}
         <div className="flex-1 min-h-0">
         {esVenta ? (
           <div className="h-full overflow-y-auto p-6 max-w-sm mx-auto grid gap-3 content-start">
@@ -184,7 +207,7 @@ export default function GastosApp() {
               ) : null}
             </div>
             <button onClick={() => submit(esVenta.imageBase64, esVenta.mimeType, false, false, true)} className="rounded-xl font-black py-3 text-black" style={{ background: '#C9A24B' }}>{t('app.registrar_ingreso')}</button>
-            <button onClick={() => setEsVenta(null)} className="rounded-xl font-black py-3 bg-black/10 border">{t('app.descartar')}</button>
+            <button onClick={() => { setEsVenta(null); siguienteDoc(); }} className="rounded-xl font-black py-3 bg-black/10 border">{t('app.descartar')}</button>
           </div>
         ) : receptorAjeno ? (
           <div className="h-full overflow-y-auto p-6 max-w-sm mx-auto grid gap-3 content-start">
@@ -197,7 +220,7 @@ export default function GastosApp() {
               <div>{t('app.registrar_igual_q')}</div>
             </div>
             <button onClick={() => submit(receptorAjeno.imageBase64, receptorAjeno.mimeType, false, true)} className="rounded-xl font-black py-3 text-black" style={{ background: '#C9A24B' }}>{t('app.si_registrar_igual')}</button>
-            <button onClick={() => setReceptorAjeno(null)} className="rounded-xl font-black py-3 bg-black/10 border">{t('app.descartar')}</button>
+            <button onClick={() => { setReceptorAjeno(null); siguienteDoc(); }} className="rounded-xl font-black py-3 bg-black/10 border">{t('app.descartar')}</button>
           </div>
         ) : dup ? (
           <div className="h-full overflow-y-auto p-6 max-w-sm mx-auto grid gap-3 content-start">
@@ -210,11 +233,11 @@ export default function GastosApp() {
               <div>{t('app.dup_pregunta')}</div>
             </div>
             <button onClick={() => submit(dup.imageBase64, dup.mimeType, true)} className="rounded-xl font-black py-3 text-black" style={{ background: '#C9A24B' }}>{t('app.registrar_igual')}</button>
-            <button onClick={() => setDup(null)} className="rounded-xl font-black py-3 bg-black/10 border">{t('app.descartar')}</button>
+            <button onClick={() => { setDup(null); siguienteDoc(); }} className="rounded-xl font-black py-3 bg-black/10 border">{t('app.descartar')}</button>
           </div>
         ) : pending ? (
           <div className="h-full overflow-y-auto">
-            <ConfirmScreen expense={pending.exp} photo={{ base64: pending.img, mime: pending.mime }} onDone={() => { setPending(null); setRefreshKey((k) => k + 1); try { window.dispatchEvent(new CustomEvent('hash:data-changed')); } catch (_) {} setTab('mis'); }} />
+            <ConfirmScreen expense={pending.exp} photo={{ base64: pending.img, mime: pending.mime }} onDone={() => { setPending(null); setRefreshKey((k) => k + 1); try { window.dispatchEvent(new CustomEvent('hash:data-changed')); } catch (_) {} siguienteDoc(); }} />
           </div>
         ) : tab === 'capturar' ? (
           busy ? <div className="p-6">{t('app.procesando')}</div>
@@ -222,7 +245,7 @@ export default function GastosApp() {
                    <p className="px-2 mb-2 opacity-70 text-xs font-bold">
                      {esPersonal ? t('app.captura_gasto_personal') : t('app.captura_comprobante')}
                    </p>
-                   <EvidenceIntake maxEvidence={1} value={[]} onChange={onChange} showNativeCapture />
+                   <EvidenceIntake maxEvidence={10} value={[]} onChange={onChange} showNativeCapture />
                    {esPersonal && <BalanceCard key={refreshKey} />}
                  </div>
         ) : tab === 'mis' ? (
