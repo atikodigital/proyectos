@@ -8,6 +8,7 @@ import MyExpenses from './MyExpenses.jsx';
 import EvidenceIntake from '../components/EvidenceIntake.jsx';
 import ContabilidadView from './ContabilidadView.jsx';
 import KalyAgent from './kaly/KalyAgent.jsx';
+import { resetKalyGreeting } from './kaly/logic.js';
 import VarasChat from './VarasChat.jsx';
 import { APP_VERSION } from './version';
 import ChatView from './ChatView.jsx';
@@ -82,7 +83,10 @@ export default function GastosApp() {
     };
   }, []);
 
-  if (!authed) return <LoginScreen onLoggedIn={() => setAuthed(true)} />;
+  // Al iniciar sesión, resetea el estado de saludo de KALY: cada cuenta (en el mismo
+  // teléfono con varias cuentas) debe saludar/onboardar desde cero. Sin esto, las
+  // flags de la cuenta anterior hacían que KALY no saludara a la nueva.
+  if (!authed) return <LoginScreen onLoggedIn={() => { resetKalyGreeting(); setAuthed(true); }} />;
 
   async function submit(imageBase64, mimeType, override, overrideReceptor, forceIngreso) {
     setBusy(true);
@@ -154,7 +158,7 @@ export default function GastosApp() {
           )}
           <button className="text-xs opacity-60 border border-current rounded px-2 py-0.5" onClick={() => setMostrarMemoria(true)}>{t('app.memoria_kaly')}</button>
           <button className="text-xs opacity-60 border border-current rounded px-2 py-0.5" onClick={() => setMostrarPlan(true)}>Mi Plan</button>
-          <button className="text-xs opacity-60" onClick={() => { clearToken(); setAuthed(false); }}>{t('app.salir')}</button>
+          <button className="text-xs opacity-60" onClick={() => { resetKalyGreeting(); clearToken(); setAuthed(false); }}>{t('app.salir')}</button>
         </div>
       </header>
       <main className="flex-1 min-h-0 flex flex-col overflow-hidden">

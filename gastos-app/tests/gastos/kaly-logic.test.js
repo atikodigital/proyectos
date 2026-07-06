@@ -6,6 +6,7 @@ import {
   esNegativa,
   yaSaludoEnEstaSesion,
   marcarSaludado,
+  resetKalyGreeting,
 } from '../../src/gastos/kaly/logic';
 import { buildSystemPrompt, instruccionInicial } from '../../src/gastos/kaly/prompt';
 
@@ -56,6 +57,34 @@ describe('yaSaludoEnEstaSesion / marcarSaludado', () => {
   test('marcarSaludado() hace que yaSaludoEnEstaSesion() devuelva true', () => {
     marcarSaludado();
     expect(yaSaludoEnEstaSesion()).toBe(true);
+  });
+});
+
+// Bug real (multi-cuenta en el mismo teléfono): al iniciar sesión con otra cuenta,
+// las flags de la cuenta anterior (kaly_greeted_session / kaly_onboarded /
+// kaly_last_greet) seguían puestas → KALY NO saludaba ni onboardaba a la cuenta
+// nueva ("no me saludó ni extrajo información"). resetKalyGreeting() se llama en
+// cada login/logout para que cada cuenta empiece desde cero.
+describe('resetKalyGreeting (cambio de cuenta)', () => {
+  beforeEach(() => { sessionStorage.clear(); localStorage.clear(); });
+
+  test('borra las flags de saludo/onboarding', () => {
+    marcarSaludado();                              // cuenta A ya saludó
+    localStorage.setItem('kaly_onboarded', '1');   // y quedó onboarded en el celular
+    expect(yaSaludoEnEstaSesion()).toBe(true);
+
+    resetKalyGreeting();                           // login de cuenta B
+
+    expect(yaSaludoEnEstaSesion()).toBe(false);
+    expect(localStorage.getItem('kaly_onboarded')).toBeNull();
+    expect(localStorage.getItem('kaly_last_greet')).toBeNull();
+  });
+
+  test('tras el reset la cuenta nueva vuelve a saludar/onboardar (no queda muda)', () => {
+    marcarSaludado(); localStorage.setItem('kaly_onboarded', '1');
+    resetKalyGreeting();
+    const onboarded = localStorage.getItem('kaly_onboarded') === '1';
+    expect(decideAutoStart({ onboarded, yaSaludo: yaSaludoEnEstaSesion() })).toBe('onboarding');
   });
 });
 

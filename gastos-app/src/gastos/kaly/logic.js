@@ -10,6 +10,18 @@ export function hoyStr(d = new Date()) { return d.toISOString().slice(0, 10); }
 //    saludo. Persiste aunque cierres y reabras la app → KALY saluda UNA vez al día.
 const GREETED_KEY = 'kaly_greeted_session';
 const LAST_GREET_KEY = 'kaly_last_greet';
+const ONBOARDED_KEY = 'kaly_onboarded';
+
+// Resetea el estado de saludo/onboarding de KALY. Se llama al INICIAR y CERRAR
+// sesión. En un mismo teléfono con varias cuentas, las flags de una cuenta (ya
+// saludó / ya onboardó) no deben filtrarse a la siguiente: sin este reset, al
+// entrar con otra cuenta KALY no saludaba ni onboardaba. Cada login parte de cero;
+// el backend (context.onboarded) decide luego si onboarda o solo saluda.
+export function resetKalyGreeting() {
+  try { sessionStorage.removeItem(GREETED_KEY); } catch (_) { /* noop */ }
+  try { localStorage.removeItem(LAST_GREET_KEY); } catch (_) { /* noop */ }
+  try { localStorage.removeItem(ONBOARDED_KEY); } catch (_) { /* noop */ }
+}
 
 export function decideAutoStart({ onboarded, yaSaludo }) {
   // Saluda UNA vez por apertura de la app: si ya saludó en esta sesión (sessionStorage),
