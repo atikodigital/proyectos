@@ -172,11 +172,21 @@ function createAppRouter({ db, extractExpense, createLiveToken, sendText, sendIm
   });
 
   // Eliminación de cuenta self-service (requisito de Google Play para apps con
-  // registro). Solo el DUEÑO (kind='user'); borra la empresa y TODOS sus datos.
-  // Va antes del requireKind('employee') global, como /agent/session, porque el
-  // dueño entra con token kind='user'. Es irreversible.
-  router.delete('/company', requireAuth, requireKindAny(['user']), async (req, res) => {
+  // registro). Borra la empresa y TODOS sus datos. Permitido para el DUEÑO de
+  // negocio (kind='user') y para las cuentas PERSONALES (persona natural, que se
+  // autentican como employee único con tipo_cuenta='personal'). Un empleado de un
+  // NEGOCIO no puede borrar la empresa. Va antes del requireKind('employee')
+  // global, como /agent/session, porque el dueño entra con token kind='user'.
+  // Es irreversible.
+  router.delete('/company', requireAuth, requireKindAny(['user', 'employee']), async (req, res) => {
     try {
+      if (req.auth.kind !== 'user') {
+        const r = await db.query('SELECT tipo_cuenta FROM companies WHERE id=$1', [req.auth.companyId]).catch(() => ({ rows: [] }));
+        const tipo = r.rows[0] && r.rows[0].tipo_cuenta;
+        if (tipo !== 'personal') {
+          return res.status(403).json({ error: 'prohibido' });
+        }
+      }
       const eliminada = await eliminarEmpresa(db, req.auth.companyId);
       if (!eliminada) return res.status(404).json({ error: 'no_existe' });
       return res.json({ ok: true, empresa: eliminada.nombre });

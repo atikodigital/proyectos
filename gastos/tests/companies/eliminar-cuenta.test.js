@@ -54,7 +54,7 @@ test('dueño (kind=user) elimina su empresa y todos sus datos', async () => {
   expect(await count(db, 'subscriptions', co.id)).toBe(0);
 });
 
-test('empleado (kind=employee) NO puede eliminar la empresa → 403', async () => {
+test('empleado de NEGOCIO (kind=employee, no personal) NO puede eliminar → 403', async () => {
   const db = await freshDb();
   const co = await createCompany(db, { nombre: 'NoBorrarCo' });
   const tok = signToken({ kind: 'employee', companyId: co.id, employeeId: 'emp-1' });
@@ -68,6 +68,23 @@ test('empleado (kind=employee) NO puede eliminar la empresa → 403', async () =
   // La empresa sigue existiendo
   const emp = await db.query('SELECT count(*)::int AS n FROM companies WHERE id=$1', [co.id]);
   expect(emp.rows[0].n).toBe(1);
+});
+
+test('cuenta PERSONAL (employee + tipo_cuenta=personal) SÍ puede eliminar → 200', async () => {
+  const db = await freshDb();
+  // Las cuentas personales se autentican como employee único, con tipo_cuenta='personal'.
+  const co = await createCompany(db, { nombre: 'PersonalCo', tipo_cuenta: 'personal' });
+  const tok = signToken({ kind: 'employee', companyId: co.id, employeeId: 'emp-personal' });
+
+  const app = buildApp(db);
+  const res = await request(app)
+    .delete('/api/app/company')
+    .set('Authorization', `Bearer ${tok}`);
+
+  expect(res.status).toBe(200);
+  expect(res.body.ok).toBe(true);
+  const emp = await db.query('SELECT count(*)::int AS n FROM companies WHERE id=$1', [co.id]);
+  expect(emp.rows[0].n).toBe(0);
 });
 
 test('sin token → 401', async () => {
