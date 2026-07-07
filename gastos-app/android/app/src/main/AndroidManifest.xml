@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
     <application
         android:name=".MaticoApplication"
         android:allowBackup="false"
@@ -116,9 +117,13 @@
     <!-- Notificaciones (Android 13+) -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
-    <!-- Alarmas exactas (Android 12+) -->
+    <!-- Alarmas exactas (Android 12+). USE_EXACT_ALARM es SOLO para apps
+         "despertador"/"calendario" (política de Play); Hash IA no lo es, así que
+         se ELIMINA (tools:node=remove, por si el plugin de local-notifications lo
+         re-agrega en el merge). Se mantiene SCHEDULE_EXACT_ALARM (se concede en
+         runtime; no requiere la declaración de "alarmas exactas" de Play). -->
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
-    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" tools:node="remove" />
 
     <!-- Wake lock para alarmas con pantalla apagada -->
     <uses-permission android:name="android.permission.WAKE_LOCK" />
