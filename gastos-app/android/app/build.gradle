@@ -12,8 +12,8 @@ android {
         applicationId "cl.atikodigital.hashia"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 112
-        versionName "3.78"
+        versionCode 113
+        versionName "3.79"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -39,10 +39,22 @@ android {
         }
     }
 
-    // Nombre personalizado del APK
+    // Flavors de distribución:
+    //  - direct: APK que instalas directo a clientes; incluye TODO (incl. el
+    //            servicio de accesibilidad "Crear pedido" que lee el chat).
+    //  - play:   AAB para Google Play; SIN el servicio de accesibilidad
+    //            (la API de accesibilidad para leer otras apps viola la política
+    //            de Play). El servicio se agrega solo vía src/direct/AndroidManifest.xml.
+    flavorDimensions "distribution"
+    productFlavors {
+        direct { dimension "distribution" }
+        play   { dimension "distribution" }
+    }
+
+    // Nombre personalizado del APK (incluye el flavor para no confundir builds)
     android.applicationVariants.all { variant ->
         variant.outputs.all { output ->
-            outputFileName = "HashIA-${variant.buildType.name}-v${defaultConfig.versionName}.apk"
+            outputFileName = "HashIA-${variant.flavorName}-${variant.buildType.name}-v${defaultConfig.versionName}.apk"
         }
     }
 }

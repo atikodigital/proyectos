@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- Overlay del flavor "direct" (APK que se instala directo a clientes).
+     Agrega el Servicio de Accesibilidad "Crear pedido" (lee/escribe en el chat
+     real de WhatsApp para armar el pedido). Este servicio NO va en el flavor
+     "play" porque la API de accesibilidad para leer otras apps viola la política
+     de Google Play. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <service
+            android:name=".PedidoAccessibilityService"
+            android:exported="false"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/pedido_accessibility_config"
+            />
+        </service>
+    </application>
+</manifest>
