@@ -107,9 +107,12 @@
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28" />
 
-    <!-- Fotos y videos (Android 13+) -->
+    <!-- Fotos (Android 13+): la app SOLO lee imágenes que el usuario elige
+         (fotos de boletas/facturas para OCR). NO usa video, así que
+         READ_MEDIA_VIDEO se ELIMINA (tools:node=remove, por si un plugin lo
+         re-agrega en el merge). -->
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
-    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
+    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" tools:node="remove" />
 
     <!-- Vibración para feedback táctil -->
     <uses-permission android:name="android.permission.VIBRATE" />
