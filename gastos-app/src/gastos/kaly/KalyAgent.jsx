@@ -40,6 +40,9 @@ export default function KalyAgent({ chat = false }) {
   const mutedRef = useRef(muted);
   const turnosRef = useRef([]);
   const scrollRef = useRef(null);
+  // Evita abrir DOS sesiones si start() se llama dos veces en el hueco async
+  // (antes de que sessionRef quede seteado).
+  const startingRef = useRef(false);
   // Timestamp hasta el cual ignorar transcripciones del usuario (eco del altavoz).
   const echoGuardRef = useRef(0);
   // Historial accesible desde callbacks (start/onClose) sin depender del closure.
@@ -99,6 +102,7 @@ export default function KalyAgent({ chat = false }) {
   }, []);
 
   const stop = useCallback(() => {
+    startingRef.current = false;
     flushAprender();
     clearSilenceTimer();
     if (diagTimerRef.current) { clearTimeout(diagTimerRef.current); diagTimerRef.current = null; }
@@ -112,7 +116,8 @@ export default function KalyAgent({ chat = false }) {
 
   const start = useCallback(
     async (motivo) => {
-      if (sessionRef.current) return;
+      if (sessionRef.current || startingRef.current) return;
+      startingRef.current = true;
       // Desbloquea (reanuda) el AudioContext ANTES de conectar. El WebView Android lo
       // crea 'suspended'; en el AUTO-saludo no hay un toque previo que lo reactive, así
       // que el saludo salía MUDO en una app recién abierta. El WebView permite autoplay
@@ -136,6 +141,7 @@ export default function KalyAgent({ chat = false }) {
         const detalle = e && (e.status ? `HTTP ${e.status}` : '') + (e && e.data && e.data.error ? ' · ' + e.data.error : (e.message || ''));
         { const msg = { sender: 'kaly', text: 'Kaly no disponible. ' + (detalle || 'Intente más tarde.'), isSystem: true };
           setMessages((prev) => (chat ? [...prev, msg] : [msg])); }
+        startingRef.current = false;
         setTimeout(() => stop(), 4000);
         return;
       }
@@ -256,6 +262,7 @@ export default function KalyAgent({ chat = false }) {
       });
 
       sessionRef.current = session;
+      startingRef.current = false;
       if (mutedRef.current && session.setMuted) session.setMuted(true);
       // Pasa la conversación reciente (voz + texto) para que la sesión nueva
       // CONTINÚE donde quedó, en vez de partir de cero saludando.

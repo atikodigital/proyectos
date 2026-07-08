@@ -179,7 +179,11 @@ export default function GastosApp() {
         </div>
       </header>
       <main className="flex-1 min-h-0 flex flex-col overflow-hidden">
-        {!pending && !dup && !receptorAjeno && !esVenta && ((tab === 'capturar' && !esPersonal) || tab === 'chat') && (
+        {/* OJO: esperamos a que `company` cargue antes de montar KALY. Si no, mientras
+            carga (company=null → esPersonal=false) se montaba el KALY compacto y
+            arrancaba a saludar; al resolver 'personal' se desmontaba y montaba el KALY
+            chat, que saludaba OTRA vez → dos voces en paralelo al inicio. */}
+        {!pending && !dup && !receptorAjeno && !esVenta && company && ((tab === 'capturar' && !esPersonal) || tab === 'chat') && (
           <div className="px-4 py-2 bg-slate-50/50 border-b border-slate-200/40 shrink-0">
             <KalyAgent />
           </div>
