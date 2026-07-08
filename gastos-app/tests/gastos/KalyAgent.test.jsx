@@ -306,3 +306,19 @@ test('(12) modo chat: pinta burbujas de usuario (derecha) y de kaly (izquierda)'
   expect(userBubble).toHaveAttribute('data-role', 'user');
   expect(kalyBubble).toHaveAttribute('data-role', 'kaly');
 });
+
+test('(13) modo chat: el saludo por voz queda escrito aunque la sesión de voz se cierre', async () => {
+  await act(async () => { render(<KalyAgent chat />); });
+  await waitFor(() => expect(openLiveSession).toHaveBeenCalledTimes(1));
+
+  // KALY conecta y saluda por voz → llega su transcripción.
+  act(() => {
+    lastLiveOpts.onState('live');
+    lastLiveOpts.onAgentTranscript('Hola, buenos días. ¿En qué trabajamos hoy?');
+  });
+  expect(screen.getByText(/Hola, buenos días/)).toBeInTheDocument();
+
+  // La sesión de voz se cierra (silencio) → en modo chat el historial NO se borra.
+  act(() => { lastLiveOpts.onClose(); });
+  expect(screen.getByText(/Hola, buenos días/)).toBeInTheDocument();
+});

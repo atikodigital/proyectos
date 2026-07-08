@@ -95,8 +95,10 @@ export default function KalyAgent({ chat = false }) {
     if (diagTimerRef.current) { clearTimeout(diagTimerRef.current); diagTimerRef.current = null; }
     if (sessionRef.current) { sessionRef.current.close(); sessionRef.current = null; }
     setState('off');
-    setMessages([]);
-  }, []);
+    // En modo chat NO borramos el historial: la conversación (voz + texto) debe
+    // seguir visible aunque la sesión de voz se cierre por silencio.
+    if (!chat) setMessages([]);
+  }, [chat]);
 
   const start = useCallback(
     async (motivo) => {
@@ -113,14 +115,17 @@ export default function KalyAgent({ chat = false }) {
       // salude normal (no vuelva a hacer el onboarding largo cada día).
       if (motivo === 'onboarding') { try { localStorage.setItem('kaly_onboarded', '1'); } catch (_) {} }
       setState('connecting');
-      setMessages([{ sender: 'kaly', text: 'Conectando con Kaly...', isSystem: true }]);
+      // En modo chat conservamos el historial (voz + texto); no lo pisamos con el
+      // aviso de conexión (el color del orbe ya indica el estado).
+      if (!chat) setMessages([{ sender: 'kaly', text: 'Conectando con Kaly...', isSystem: true }]);
 
       let s;
       try { s = await api.agentSession(); }
       catch (e) {
         setState('error');
         const detalle = e && (e.status ? `HTTP ${e.status}` : '') + (e && e.data && e.data.error ? ' · ' + e.data.error : (e.message || ''));
-        setMessages([{ sender: 'kaly', text: 'Kaly no disponible. ' + (detalle || 'Intente más tarde.'), isSystem: true }]);
+        { const msg = { sender: 'kaly', text: 'Kaly no disponible. ' + (detalle || 'Intente más tarde.'), isSystem: true };
+          setMessages((prev) => (chat ? [...prev, msg] : [msg])); }
         setTimeout(() => stop(), 4000);
         return;
       }
@@ -191,13 +196,14 @@ export default function KalyAgent({ chat = false }) {
         sessionRef.current = null;
         if (diagTimerRef.current) { clearTimeout(diagTimerRef.current); diagTimerRef.current = null; }
         if (!everLive && info) {
-          setMessages([{ sender: 'kaly', text: `DIAG: la conexión con Gemini se cerró antes de conectar (código ${info.code || '?'}${info.reason ? ' · ' + info.reason : ''}).`, isSystem: true }]);
+          const dmsg = { sender: 'kaly', text: `DIAG: la conexión con Gemini se cerró antes de conectar (código ${info.code || '?'}${info.reason ? ' · ' + info.reason : ''}).`, isSystem: true };
+          setMessages((prev) => (chat ? [...prev, dmsg] : [dmsg]));
           setState('error');
-          setTimeout(() => { setState('off'); setMessages([]); }, 5000);
+          setTimeout(() => { setState('off'); if (!chat) setMessages([]); }, 5000);
           return;
         }
         setState('off');
-        setMessages([]);
+        if (!chat) setMessages([]);
       };
 
       const session = openLiveSession({
@@ -214,7 +220,7 @@ export default function KalyAgent({ chat = false }) {
       session.sendText(instruccionInicial(s.context, motivo));
       if (motivo === 'saludo') localStorage.setItem('kaly_last_greet', hoyStr());
     },
-    [stop, aplicarMute],
+    [stop, aplicarMute, chat],
   );
 
   useEffect(() => {
@@ -301,31 +307,28 @@ export default function KalyAgent({ chat = false }) {
   if (chat) {
     return (
       <div className="w-full h-full flex flex-col bg-slate-50/40">
-        {/* Cabecera: orbe chico + silenciar */}
-        <div className="flex items-center gap-2 px-3 py-1.5 border-b border-slate-200/50 shrink-0">
-          <div style={{ width: 58, height: 58, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <div style={{ transform: 'scale(0.33)' }}>
-              <KalyOrb state={state} audioLevel={level} onTap={handleTap} />
-            </div>
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="font-black text-sm" style={{ color: '#38bdf8' }}>Kaly</div>
-            <div className="text-[10px] text-slate-500 leading-tight truncate">
-              {state === 'error' ? 'No disponible' : muted ? '🔇 En silencio — te respondo por texto' : t('kaly.chat_sub')}
-            </div>
-          </div>
+        {/* Orbe grande (voz) arriba, centrado — se ve la animación al hablar.
+            Usamos `zoom` (WebView = Chromium) para achicarlo un poco SIN romper el
+            layout como haría transform:scale. */}
+        <div className="shrink-0 relative flex flex-col items-center pt-0.5">
           <button
             type="button"
             onClick={toggleMute}
             aria-label={muted ? 'Activar voz de Kaly' : 'Silenciar Kaly'}
-            className={`shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-base border ${muted ? 'bg-[#C9A24B] text-white border-[#C9A24B]' : 'bg-white text-slate-500 border-slate-200'}`}
+            className={`absolute right-2 top-1 z-10 w-9 h-9 rounded-full flex items-center justify-center text-base border ${muted ? 'bg-[#C9A24B] text-white border-[#C9A24B]' : 'bg-white text-slate-500 border-slate-200'}`}
           >
             {muted ? '🔇' : '🔊'}
           </button>
+          <div style={{ zoom: 0.82 }}>
+            <KalyOrb state={state} audioLevel={level} onTap={handleTap} />
+          </div>
+          <div className="text-[10px] text-slate-500 leading-tight text-center mb-1 px-6">
+            {state === 'error' ? 'No disponible' : muted ? '🔇 En silencio — te respondo por texto' : t('kaly.chat_sub')}
+          </div>
         </div>
 
-        {/* Burbujas */}
-        <div ref={scrollRef} data-testid="kaly-burbujas" className="flex-1 min-h-0 overflow-y-auto px-3 py-3 flex flex-col gap-1.5">
+        {/* Chat compacto (voz + texto) */}
+        <div ref={scrollRef} data-testid="kaly-burbujas" className="flex-1 min-h-0 overflow-y-auto px-3 py-2 flex flex-col gap-1.5 border-t border-slate-200/50">
           {messages.length === 0 ? (
             <div className="m-auto text-center text-slate-400 text-sm px-6">{t('kaly.chat_vacio')}</div>
           ) : messages.map((m, i) => (
