@@ -18,6 +18,8 @@ jest.mock('../../src/components/EvidenceIntake.jsx', () => ({
 }));
 jest.mock('../../src/gastos/kaly/KalyAgent.jsx', () => ({ __esModule: true, default: () => <div>kaly-mock</div> }));
 jest.mock('../../src/gastos/onboarding/OnboardingWizard.jsx', () => ({ __esModule: true, default: ({ onSkip }) => <button onClick={onSkip}>wizard-mock-skip</button> }));
+jest.mock('../../src/gastos/VarasChat.jsx', () => ({ __esModule: true, default: () => <div>varas-mock</div> }));
+jest.mock('../../src/gastos/PersonalDashboard.jsx', () => ({ __esModule: true, default: () => <div>dashboard-mock</div> }));
 
 beforeEach(() => clearToken());
 
@@ -51,12 +53,22 @@ test('click en Match muestra la conciliación de cartola', () => {
   expect(screen.getByText(/cuadra tu banco/i)).toBeInTheDocument();
 });
 
-test('click en Transaccional muestra placeholder Próximamente', () => {
+test('empresa: click en Transaccional muestra VARAS', () => {
   setToken('TK');
   render(<GastosApp />);
   fireEvent.click(screen.getByRole('button', { name: /^Transaccional$/i }));
-  expect(screen.getByText(/Próximamente/i)).toBeInTheDocument();
-  expect(screen.getByText(/Regístralo sin imagen/i)).toBeInTheDocument();
+  expect(screen.getByText('varas-mock')).toBeInTheDocument();
+});
+
+test('cuenta personal: el 3er tab es "Panel" (no "Transaccional") y abre el dashboard', async () => {
+  setToken('TK');
+  api.getCompany.mockResolvedValueOnce({ onboarded_at: '2026-01-01', tipo_cuenta: 'personal' });
+  render(<GastosApp />);
+  const panelBtn = await screen.findByRole('button', { name: /^Panel$/i });
+  expect(panelBtn).toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: /^Transaccional$/i })).toBeNull();
+  fireEvent.click(panelBtn);
+  expect(screen.getByText('dashboard-mock')).toBeInTheDocument();
 });
 
 test('createExpense con documento:cartola cambia a tab Match y muestra cartola bancaria', async () => {

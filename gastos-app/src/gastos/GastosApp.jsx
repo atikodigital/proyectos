@@ -15,7 +15,7 @@ import { APP_VERSION } from './version';
 import ChatView from './ChatView.jsx';
 import OnboardingWizard from './onboarding/OnboardingWizard.jsx';
 import OnboardingPersonal from './OnboardingPersonal.jsx';
-import BalanceCard from './BalanceCard.jsx';
+import PersonalDashboard from './PersonalDashboard.jsx';
 import MemoriaKalyView from './MemoriaKalyView.jsx';
 import MiPlanView from './MiPlanView.jsx';
 import { AgentInteractionProvider } from './agente/AgentInteractionProvider.jsx';
@@ -44,7 +44,6 @@ export default function GastosApp() {
   const [mostrarMemoria, setMostrarMemoria] = useState(false);
   const [mostrarPlan, setMostrarPlan] = useState(false);
   const [company, setCompany] = useState(null);
-  const [refreshKey, setRefreshKey] = useState(0);
   // Cola de documentos pendientes cuando se escanean VARIOS de una vez (multi-captura).
   // Se procesan uno por uno: cada uno con su confirmación, igual que 1 documento.
   const [cola, setCola] = useState([]);
@@ -180,7 +179,7 @@ export default function GastosApp() {
         </div>
       </header>
       <main className="flex-1 min-h-0 flex flex-col overflow-hidden">
-        {!pending && !dup && !receptorAjeno && !esVenta && (tab === 'capturar' || tab === 'chat') && (
+        {!pending && !dup && !receptorAjeno && !esVenta && ((tab === 'capturar' && !esPersonal) || tab === 'chat') && (
           <div className="px-4 py-2 bg-slate-50/50 border-b border-slate-200/40 shrink-0">
             <KalyAgent />
           </div>
@@ -237,17 +236,26 @@ export default function GastosApp() {
           </div>
         ) : pending ? (
           <div className="h-full overflow-y-auto">
-            <ConfirmScreen expense={pending.exp} photo={{ base64: pending.img, mime: pending.mime }} onDone={() => { setPending(null); setRefreshKey((k) => k + 1); try { window.dispatchEvent(new CustomEvent('hash:data-changed')); } catch (_) {} siguienteDoc(); }} />
+            <ConfirmScreen expense={pending.exp} photo={{ base64: pending.img, mime: pending.mime }} onDone={() => { setPending(null); try { window.dispatchEvent(new CustomEvent('hash:data-changed')); } catch (_) {} siguienteDoc(); }} />
           </div>
         ) : tab === 'capturar' ? (
           busy ? <div className="p-6">{t('app.procesando')}</div>
-               : <div className="h-full overflow-y-auto p-4">
-                   <p className="px-2 mb-2 opacity-70 text-xs font-bold">
-                     {esPersonal ? t('app.captura_gasto_personal') : t('app.captura_comprobante')}
-                   </p>
-                   <EvidenceIntake maxEvidence={10} value={[]} onChange={onChange} showNativeCapture />
-                   {esPersonal && <BalanceCard key={refreshKey} />}
+               : esPersonal ? (
+                 // Modo personal: Captura ES el chat con KALY (burbujas). El bloque
+                 // de captura de foto/archivo queda abajo. Sin tarjeta de saldo.
+                 <div className="h-full flex flex-col">
+                   <div className="flex-1 min-h-0"><KalyAgent chat /></div>
+                   <div className="shrink-0 border-t border-slate-200/50 p-3 bg-white">
+                     <p className="px-1 mb-2 opacity-70 text-xs font-bold">{t('app.captura_gasto_personal')}</p>
+                     <EvidenceIntake maxEvidence={10} value={[]} onChange={onChange} showNativeCapture />
+                   </div>
                  </div>
+               ) : (
+                 <div className="h-full overflow-y-auto p-4">
+                   <p className="px-2 mb-2 opacity-70 text-xs font-bold">{t('app.captura_comprobante')}</p>
+                   <EvidenceIntake maxEvidence={10} value={[]} onChange={onChange} showNativeCapture />
+                 </div>
+               )
         ) : tab === 'mis' ? (
           <div className="h-full flex flex-col">
             <div className="shrink-0 border-b overflow-hidden" style={{ height: '40%' }}>
@@ -257,6 +265,8 @@ export default function GastosApp() {
           </div>
         ) : (tab === 'chat' && chatHabilitado) ? (
           <ChatView />
+        ) : tab === 'dashboard' ? (
+          <PersonalDashboard />
         ) : tab === 'transaccional' ? (
           <div className="h-full"><VarasChat /></div>
         ) : (
@@ -272,8 +282,8 @@ export default function GastosApp() {
           <button className={`flex-1 flex flex-col justify-center items-center text-[10.5px] font-bold border-r border-slate-300 transition-all duration-200 ${tab === 'mis' ? 'text-[#C9A24B] bg-slate-50/50' : 'text-neutral-500 opacity-60 hover:opacity-100'}`} onClick={() => setTab('mis')}>
             <span>{t('app.tab_movimientos')}</span>
           </button>
-          <button className={`flex-1 flex flex-col justify-center items-center text-[10.5px] font-bold border-r border-slate-300 transition-all duration-200 ${tab === 'transaccional' ? 'text-[#C9A24B] bg-slate-50/50' : 'text-neutral-500 opacity-60 hover:opacity-100'}`} onClick={() => setTab('transaccional')}>
-            <span>{t('app.tab_transaccional')}</span>
+          <button className={`flex-1 flex flex-col justify-center items-center text-[10.5px] font-bold border-r border-slate-300 transition-all duration-200 ${tab === (esPersonal ? 'dashboard' : 'transaccional') ? 'text-[#C9A24B] bg-slate-50/50' : 'text-neutral-500 opacity-60 hover:opacity-100'}`} onClick={() => setTab(esPersonal ? 'dashboard' : 'transaccional')}>
+            <span>{esPersonal ? t('app.tab_panel') : t('app.tab_transaccional')}</span>
           </button>
           {chatHabilitado && (
           <button className={`flex-1 flex flex-col justify-center items-center text-[10.5px] font-bold border-r border-slate-300 transition-all duration-200 ${tab === 'chat' ? 'text-[#C9A24B] bg-slate-50/50' : 'text-neutral-500 opacity-60 hover:opacity-100'}`} onClick={() => setTab('chat')}>

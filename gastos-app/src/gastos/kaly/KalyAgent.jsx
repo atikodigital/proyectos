@@ -6,6 +6,7 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '../api';
+import { t } from '../i18n';
 import KalyOrb from './KalyOrb.jsx';
 import { openLiveSession, unlockAudio } from './live.js';
 import { TOOL_DECLARATIONS, executeTool } from './tools.js';
@@ -21,7 +22,7 @@ const LIVE_MODEL_FALLBACK =
 
 const esSilenciar = (t) => /(c[áa]llate|silencio|no hables|\bcalla\b)/i.test(String(t || ''));
 
-export default function KalyAgent() {
+export default function KalyAgent({ chat = false }) {
   const [state, setState] = useState('off');
   const [level, setLevel] = useState(0);
   const [messages, setMessages] = useState([]);
@@ -38,7 +39,13 @@ export default function KalyAgent() {
   const contextRef = useRef(null);
   const mutedRef = useRef(muted);
   const turnosRef = useRef([]);
+  const scrollRef = useRef(null);
   useEffect(() => { mutedRef.current = muted; }, [muted]);
+  // En modo chat (burbujas), baja el scroll al último mensaje cuando llega uno nuevo.
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [messages]);
 
   const { proponer, pedirEvidencia, interaccionAbierta } = useAgentInteraction();
 
@@ -287,6 +294,80 @@ export default function KalyAgent() {
   const toggleMute = useCallback(() => { aplicarMute(!mutedRef.current); }, [aplicarMute]);
 
   const ultimaKaly = [...messages].reverse().find((m) => m.sender === 'kaly' && !m.isSystem);
+
+  // Modo chat: conversación con burbujas estilo WhatsApp (orbe chico arriba,
+  // burbujas al medio con auto-scroll, barra de texto abajo). Reusa messages,
+  // handleSendText, handleTap y toggleMute del modo compacto.
+  if (chat) {
+    return (
+      <div className="w-full h-full flex flex-col bg-slate-50/40">
+        {/* Cabecera: orbe chico + silenciar */}
+        <div className="flex items-center gap-2 px-3 py-1.5 border-b border-slate-200/50 shrink-0">
+          <div style={{ width: 58, height: 58, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <div style={{ transform: 'scale(0.33)' }}>
+              <KalyOrb state={state} audioLevel={level} onTap={handleTap} />
+            </div>
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="font-black text-sm" style={{ color: '#38bdf8' }}>Kaly</div>
+            <div className="text-[10px] text-slate-500 leading-tight truncate">
+              {state === 'error' ? 'No disponible' : muted ? '🔇 En silencio — te respondo por texto' : t('kaly.chat_sub')}
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={toggleMute}
+            aria-label={muted ? 'Activar voz de Kaly' : 'Silenciar Kaly'}
+            className={`shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-base border ${muted ? 'bg-[#C9A24B] text-white border-[#C9A24B]' : 'bg-white text-slate-500 border-slate-200'}`}
+          >
+            {muted ? '🔇' : '🔊'}
+          </button>
+        </div>
+
+        {/* Burbujas */}
+        <div ref={scrollRef} data-testid="kaly-burbujas" className="flex-1 min-h-0 overflow-y-auto px-3 py-3 flex flex-col gap-1.5">
+          {messages.length === 0 ? (
+            <div className="m-auto text-center text-slate-400 text-sm px-6">{t('kaly.chat_vacio')}</div>
+          ) : messages.map((m, i) => (
+            m.isSystem ? (
+              <div key={i} className="self-center my-1 px-3 py-1 text-[11px] text-slate-500 bg-slate-200/60 rounded-full max-w-[90%] text-center">{m.text}</div>
+            ) : (
+              <div
+                key={i}
+                data-role={m.sender === 'user' ? 'user' : 'kaly'}
+                className="max-w-[82%] px-3 py-2 text-[13px] leading-snug shadow-sm break-words"
+                style={m.sender === 'user'
+                  ? { alignSelf: 'flex-end', background: '#dcf8c6', color: '#1f2b16', borderRadius: '14px 14px 4px 14px' }
+                  : { alignSelf: 'flex-start', background: '#ffffff', color: '#1f2937', border: '1px solid rgba(201,162,75,0.3)', borderRadius: '14px 14px 14px 4px' }}
+              >
+                {m.text}
+              </div>
+            )
+          ))}
+        </div>
+
+        {/* Barra de texto */}
+        <div className="flex items-center gap-2 px-3 py-2 border-t border-slate-200/50 shrink-0 bg-white">
+          <input
+            type="text"
+            value={inputText}
+            onChange={(e) => setInputText(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') handleSendText(); }}
+            placeholder={t('kaly.chat_ph')}
+            className="flex-1 px-3 py-2 text-[13px] border border-slate-200 rounded-full focus:outline-none focus:ring-1 focus:ring-[#C9A24B] bg-white text-slate-800"
+          />
+          <button
+            onClick={handleSendText}
+            disabled={busyText || !inputText.trim()}
+            aria-label="Enviar"
+            className="shrink-0 w-10 h-10 flex items-center justify-center text-base bg-[#C9A24B] hover:bg-[#b08b3a] disabled:opacity-40 text-white rounded-full font-black transition-colors"
+          >
+            {busyText ? '…' : '➤'}
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full max-w-sm mx-auto flex flex-col items-center pt-2 pb-2 bg-slate-50/50 border border-slate-200/40 rounded-2xl shadow-sm px-4">

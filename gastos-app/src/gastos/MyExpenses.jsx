@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { api } from './api';
 import { t } from './i18n';
+import { FILTRO_INICIAL, pasaFiltros } from './movimientosFiltro';
 
 const CATEGORIES = [
   'Mercadería e insumos del giro', 'Alimentación y representación', 'Combustible y transporte',
@@ -278,35 +279,6 @@ function Detalle({ e: e0, onBack, onReload }) {
   );
 }
 
-function fechaDe(e) {
-  return String(e.fecha || (e.created_at ? String(e.created_at).slice(0, 10) : '')).slice(0, 10);
-}
-function enPeriodo(e, periodo, desde, hasta) {
-  if (periodo === 'todos') return true;
-  const raw = fechaDe(e);
-  if (!raw) return true; // sin fecha → no la escondemos
-  const d = new Date();
-  const hoy = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-  if (periodo === 'hoy') return raw === hoy;
-  if (periodo === 'mes') return raw.slice(0, 7) === d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
-  if (periodo === 'anio') return raw.slice(0, 4) === String(d.getFullYear());
-  if (periodo === 'rango') { if (desde && raw < desde) return false; if (hasta && raw > hasta) return false; return true; }
-  return true;
-}
-// Combina todos los filtros (período + tipo + estado + categoría + búsqueda).
-function pasaFiltros(e, f) {
-  if (!enPeriodo(e, f.periodo, f.desde, f.hasta)) return false;
-  if (f.tipo !== 'todos') { const tp = e.tipo === 'ingreso' ? 'ingreso' : 'gasto'; if (tp !== f.tipo) return false; }
-  if (f.estado !== 'todos' && String(e.estado || '').toLowerCase() !== f.estado) return false;
-  if (f.categoria && String(e.categoria || '') !== f.categoria) return false;
-  if (f.q) {
-    const q = f.q.trim().toLowerCase();
-    const hay = [e.proveedor, e.folio, e.glosa, e.rut_emisor, e.nro_operacion].filter(Boolean).join(' ').toLowerCase();
-    if (!hay.includes(q)) return false;
-  }
-  return true;
-}
-
 // Carrusel deslizable: una tarjeta completa por movimiento; se corre con el dedo
 // (scroll-snap) y los puntitos indican en cuál vas. Reemplaza el "expande-de-a-uno".
 function MovimientosCards({ rows, onSelect }) {
@@ -386,8 +358,6 @@ function MovimientosCards({ rows, onSelect }) {
     </div>
   );
 }
-
-const FILTRO_INICIAL = { periodo: 'mes', desde: '', hasta: '', tipo: 'todos', estado: 'todos', categoria: '', q: '' };
 
 export default function MyExpenses() {
   const [rows, setRows] = useState([]);

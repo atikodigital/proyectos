@@ -291,3 +291,18 @@ test('(11) onToolCall pasa proponer y pedirEvidencia en el ctx de executeTool', 
     expect.objectContaining({ proponer: expect.any(Function), pedirEvidencia: expect.any(Function) }),
   );
 });
+
+test('(12) modo chat: pinta burbujas de usuario (derecha) y de kaly (izquierda)', async () => {
+  await act(async () => { render(<KalyAgent chat />); });
+  await waitFor(() => expect(openLiveSession).toHaveBeenCalledTimes(1));
+
+  act(() => {
+    lastLiveOpts.onUserTranscript('gasté 5000 en almuerzo');
+    lastLiveOpts.onAgentTranscript('Anotado, ¿algo más?');
+  });
+
+  const userBubble = screen.getByText('gasté 5000 en almuerzo');
+  const kalyBubble = screen.getByText('Anotado, ¿algo más?');
+  expect(userBubble).toHaveAttribute('data-role', 'user');
+  expect(kalyBubble).toHaveAttribute('data-role', 'kaly');
+});
