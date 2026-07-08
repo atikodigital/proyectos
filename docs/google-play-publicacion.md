@@ -156,3 +156,64 @@ La app exige iniciar sesión → hay que darle credenciales a Google (Google NO 
 - [ ] App access con cuenta demo (de **dueño**, para el botón de borrado)
 - [ ] Target audience 18+
 - [ ] Sin anuncios declarado
+
+---
+
+## 11. 🚧 Acceso a PRODUCCIÓN — cuenta de ORGANIZACIÓN (obligatorio) — 2026-07-08
+
+**El bloqueo real a producción no es el botón "Enviar a revisión".** La cuenta es
+**PERSONAL creada después de Nov-2023**, así que Google exige una **prueba cerrada
+con ≥12 testers opted-in por ≥14 días** antes de dar acceso a producción. Las cuentas
+de **ORGANIZACIÓN están EXENTAS**. → Decisión: **convertir a cuenta de organización
+(ATIKO SpA)**, en el **MISMO `atikodigital@gmail.com`** (no se crea correo nuevo ni se
+transfiere la app; la ficha/app/declaraciones se conservan).
+
+### Datos oficiales ATIKO SpA (RUT del SII, emitido 2026-07-01)
+| Campo | Valor |
+|---|---|
+| Razón social | **ATIKO SPA** |
+| RUT | **78.434.915-2** *(el 78.910.632-4 que se usó antes estaba MAL)* |
+| Giro | Desarrollo de agentes IA, automatización, web y marketing digital |
+| Dirección casa matriz | Calle Avellaneda 101, Lt 1, Casas Itahue, **Lampa**, Región Metropolitana, Chile |
+| Representante legal | José Antonio Olguín Rodríguez — cédula 16.750.340-3 |
+
+### Paso A — ✅ YA HECHO: desbloquear "Cambiar tipo de cuenta"
+Play Console → **Cuenta de desarrollador** → "Información sobre ti" (flecha →) →
+el botón **"Cambiar tipo de cuenta"** salía GRIS pidiendo "verifica un sitio web de tu
+organización". Se resolvió así:
+1. Campo **Sitio web** = `https://hash.atikodigital.cl` → "Enviar solicitud de verificación".
+2. Se agregó ese sitio como propiedad **Prefijo de URL** en **Google Search Console**
+   (`search.google.com/search-console`) → **se verificó SOLO, automáticamente, vía el
+   Google Analytics (gtag.js) que ya trae el landing**. ⚠️ **NO quitar el gtag.js del
+   landing** o se pierde la verificación.
+3. Play mostró "✅ Sitio web verificado" y **"Cambiar tipo de cuenta" quedó habilitado (azul)**.
+
+### Paso B — ⏳ PENDIENTE (lo hace José): número D-U-N-S de ATIKO SpA
+El asistente "Cambiar tipo de cuenta" pide que el **nombre, dirección y D-U-N-S** de la
+organización estén en un **perfil de pagos de Google**. Para eso hace falta primero el DUNS.
+- El self-service de **dnb.com es SOLO EE.UU.** (pide ZIP, "U.S. business") → **no sirve para Chile.**
+- Canal correcto Chile/LatAm = **CIAL Dun & Bradstreet** → `https://en.cialdnb.com/duns-number`
+  → botón **"Get a D-U-N-S Number"** → abre un **chat guiado**. En el desplegable "DUNS
+  Requestor" elegir **Google**. Luego responder "¿Ya tienes DUNS?" = **No** y entregar los
+  datos de la tabla de arriba + email/teléfono de contacto.
+- **Costo/plazo:** **gratis ~30 días hábiles**, o **exprés ~8 días hábiles pagando**. Un
+  representante de D&B puede llamar a validar. **Recomendado: exprés** (después viene la
+  verificación de organización de Google, que suma más días).
+- ⚠️ Este trámite lo **envía José** (son datos KYC de la empresa + su consentimiento de
+  grabación/datos con D&B + posible llamada de validación).
+
+### Paso C — cuando llegue el DUNS (9 dígitos)
+1. Play Console → Cuenta de desarrollador → "Información sobre ti" → **"Cambiar tipo de
+   cuenta"** → **"Crear o seleccionar perfil de pagos"** → crear perfil de pagos de
+   **organización** con: razón social **ATIKO SPA**, dirección de Lampa, y el **número DUNS**.
+2. Completar teléfono + correo del **perfil público** de desarrollador (se verifican) y el de
+   contacto para Google.
+3. Google **verifica la organización** (días). Al quedar verificada, la cuenta pasa a
+   **Organización → EXENTA de los 12 testers/14 días** → se habilita publicar a **Producción**.
+4. Promover el AAB **v3.81/115** (track `play`) de prueba interna a **Producción** y enviar a
+   revisión. La ficha (ES/EN), gráficos y todas las declaraciones ya están listas.
+
+> ⚠️ Duda residual: hay reportes divididos sobre si convertir una cuenta *nacida* personal
+> quita del todo la regla de testers. El propio botón de Google ofrece la conversión, así que
+> se asume que otorga estatus de organización (y la exención). Si tras verificar la org
+> siguiera exigiendo testers, escalar a soporte de Play Console.
