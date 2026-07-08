@@ -1777,6 +1777,9 @@
       'plan.nombre.basico': 'Básico',
       'plan.nombre.pyme': 'Pyme',
       'plan.nombre.empresa': 'Empresa',
+      'plan.pruebaPyme': '🎁 Prueba Pyme gratis',
+      'plan.diasRestantes': 'días restantes',
+      'plan.pasaAFree': 'Al terminar pasas a Free (30 créditos/mes)',
       // Detalle / edición de movimiento
       'det.detalle': 'Detalle',
       'det.cerrar': 'Cerrar',
@@ -1997,6 +2000,9 @@
       'plan.nombre.basico': 'Basic',
       'plan.nombre.pyme': 'SMB',
       'plan.nombre.empresa': 'Enterprise',
+      'plan.pruebaPyme': '🎁 Free SMB trial',
+      'plan.diasRestantes': 'days left',
+      'plan.pasaAFree': 'When it ends you move to Free (30 credits/mo)',
       // Detalle / edición de movimiento
       'det.detalle': 'Detail',
       'det.cerrar': 'Close',
@@ -2217,6 +2223,9 @@
       'plan.nombre.basico': 'Básico',
       'plan.nombre.pyme': 'Pyme',
       'plan.nombre.empresa': 'Empresa',
+      'plan.pruebaPyme': '🎁 Teste Pyme grátis',
+      'plan.diasRestantes': 'dias restantes',
+      'plan.pasaAFree': 'Ao terminar você passa para Free (30 créditos/mês)',
       // Detalle / edición de movimiento
       'det.detalle': 'Detalhe',
       'det.cerrar': 'Fechar',
@@ -2341,7 +2350,7 @@
       var s = await res.json();
       var el = $('saldoCreditos');
       if (!el) return;
-      var sinCreditos = s.estado !== 'activa' || s.restante === 0;
+      var sinCreditos = (s.estado !== 'activa' && s.estado !== 'trial') || s.restante === 0;
       el.textContent = tp('pnl.creditos') + ': ' + s.restante + '/' + s.limite;
       el.style.color = sinCreditos ? '#ffb4ab' : '#d0c6ab';
     } catch (e) {}
@@ -3799,9 +3808,16 @@
     var estado = s.estado || 'activa';
     var restante = s.restante != null ? s.restante : '—';
     var renovacion = s.ciclo_fin ? new Date(s.ciclo_fin).toLocaleDateString('es-CL') : null;
-    info.textContent = tp('plan.plan') + ': ' + planActual.charAt(0).toUpperCase() + planActual.slice(1)
-      + '  •  ' + tp('plan.creditosRestantes') + ': ' + restante
-      + (renovacion ? '  •  ' + tp('plan.renovacion') + ': ' + renovacion : '');
+    if (s.es_trial) {
+      var dias = s.dias_restantes != null ? s.dias_restantes : '';
+      info.textContent = tp('plan.pruebaPyme') + ' · ' + dias + ' ' + tp('plan.diasRestantes')
+        + '  •  ' + tp('plan.creditosRestantes') + ': ' + restante
+        + '  •  ' + tp('plan.pasaAFree');
+    } else {
+      info.textContent = tp('plan.plan') + ': ' + planActual.charAt(0).toUpperCase() + planActual.slice(1)
+        + '  •  ' + tp('plan.creditosRestantes') + ': ' + restante
+        + (renovacion ? '  •  ' + tp('plan.renovacion') + ': ' + renovacion : '');
+    }
     if (banner) banner.classList.toggle('hidden', estado !== 'morosa');
     if (planActual === 'ilimitado') {
       cards.innerHTML = '<p style="color:#9a917a;font-size:13px">' + tp('plan.ilimitado') + '</p>';

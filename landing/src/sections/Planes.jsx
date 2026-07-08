@@ -68,6 +68,9 @@ export default function Planes() {
           Se cobra por <span className="font-bold text-[#FCA311]">shots</span>: 1 shot = 1 imagen interpretada por la IA.
           Todos los planes incluyen <span className="font-semibold text-[#E5E5E5]">cuentas y ventas</span>. Cancela cuando quieras.
         </p>
+        <div className="mt-5 inline-flex items-center gap-2 rounded-full border border-[#FCA311]/40 bg-[#FCA311]/10 px-4 py-2 text-sm font-semibold text-[#FCA311] font-sans">
+          🎁 Empieza con <span className="font-extrabold">14 días de Pyme gratis</span> — 210 shots, sin tarjeta. Al terminar sigues en Free.
+        </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 max-w-6xl mx-auto items-stretch">
