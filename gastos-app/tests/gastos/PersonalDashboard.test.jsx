@@ -30,10 +30,10 @@ test('muestra ingresos, gastos y balance del mes (sin contar meses viejos)', asy
 
   render(<PersonalDashboard />);
 
-  expect(await screen.findByText(clp(800000))).toBeInTheDocument(); // Ingresos del mes
+  expect(await screen.findByText(clp(1800000))).toBeInTheDocument(); // Ingresos del mes (1,000,000 sueldo + 800,000 manual)
   expect(screen.getByText(clp(250000))).toBeInTheDocument();        // Gastos del mes (200k + 50k)
-  // Balance (800k - 250k) aparece en la tarjeta Balance y en el total del filtro.
-  expect(screen.getAllByText(clp(550000)).length).toBeGreaterThanOrEqual(1);
+  // Balance (1,800,000 - 250,000) aparece en la tarjeta Balance
+  expect(screen.getAllByText(clp(1550000)).length).toBeGreaterThanOrEqual(1);
   expect(screen.getByText(clp(123456))).toBeInTheDocument();        // Disponible (presupuesto)
 });
 

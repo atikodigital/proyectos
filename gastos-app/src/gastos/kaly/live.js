@@ -10,7 +10,7 @@ export function openLiveSession(opts) {
   const echoCancellation = !!opts.echoCancellation;
   // Tiempo que el mic sigue MUDO después de que KALY terminó de hablar (cola de
   // seguridad para que la última sílaba por el parlante no entre como "usuario").
-  const halfDuplexTailMs = opts.halfDuplexTailMs || 250;
+  const halfDuplexTailMs = opts.halfDuplexTailMs || 200;
   // Ahorro de costo: VAD (no manda silencio) + corte por inactividad.
   const gate = createVadGate({ threshold: opts.vadThreshold || 0.012, hangoverMs: opts.vadHangoverMs || 800 });
   const idleMs = opts.idleMs || 25000;
@@ -76,7 +76,11 @@ export function openLiveSession(opts) {
       let textContent = '';
       for (const p of sc.modelTurn.parts) {
         if (p.inlineData && p.inlineData.data) { agentSpeaking = true; bump(); setState('speaking'); if (player) player.push(p.inlineData.data); }
-        if (p.text) textContent += p.text;
+        if (p.text) {
+          const hasOutputTranscription = sc.outputTranscription && sc.outputTranscription.text;
+          const isDuplicate = hasOutputTranscription && String(sc.outputTranscription.text).includes(p.text);
+          if (!isDuplicate) textContent += p.text;
+        }
       }
       if (textContent && opts.onAgentTranscript) {
         opts.onAgentTranscript(textContent);
@@ -94,7 +98,7 @@ export function openLiveSession(opts) {
   function cleanup() { if (closed) return; closed = true; stopIdle(); if (micStop) micStop(); if (player) player.stop(); }
 
   return {
-    sendText(text) { send({ clientContent: { turns: [{ role: 'user', parts: [{ text }] }], turnComplete: true } }); },
+    sendText(text, turnComplete = true) { send({ clientContent: { turns: [{ role: 'user', parts: [{ text }] }], turnComplete } }); },
     sendToolResponse(id, name, response) { send({ toolResponse: { functionResponses: [{ id, name, response }] } }); },
     close() { cleanup(); try { ws.close(); } catch (e) {} },
     setMuted(m) { muted = !!m; },
@@ -187,7 +191,7 @@ export async function startMic(send, onLevel, isAgentSpeaking, gate, onVoiced, m
     const source = ctx.createMediaStreamSource(stream);
     // ScriptProcessor is deprecated but universally available in browsers; worklets
     // would require an extra file and HTTPS blob URL which complicates testing paths.
-    const processor = ctx.createScriptProcessor(4096, 1, 1);
+    const processor = ctx.createScriptProcessor(2048, 1, 1);
 
     processor.onaudioprocess = (e) => {
       try {

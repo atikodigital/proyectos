@@ -169,7 +169,7 @@ export default function KalyAgent({ chat = false }) {
         // voz colándose por el altavoz. Evita el bucle de auto-respuesta.
         if (chat) {
           if (newState === 'speaking') echoGuardRef.current = Number.MAX_SAFE_INTEGER;
-          else if (newState === 'listening') echoGuardRef.current = Date.now() + 800;
+          else if (newState === 'listening') echoGuardRef.current = Date.now() + 200;
         }
         // Si KALY acaba de preguntar algo, da más tiempo para responder (no cortar).
         // En modo chat NO se corta por silencio: la conversación queda siempre
@@ -182,7 +182,14 @@ export default function KalyAgent({ chat = false }) {
         if (chat && Date.now() < echoGuardRef.current) return;
         pushTurn('user', text);
         clearSilenceTimer();
-        setMessages((prev) => [...prev, { sender: 'user', text }]);
+        setMessages((prev) => {
+          const last = prev[prev.length - 1];
+          if (last && last.sender === 'user' && !last.isSystem) {
+            const nuevoTexto = `${last.text} ${text}`.replace(/\s+/g, ' ').replace(/\s+,/g, ',').trim();
+            return [...prev.slice(0, -1), { sender: 'user', text: nuevoTexto }];
+          }
+          return [...prev, { sender: 'user', text }];
+        });
         if (esSilenciar(text)) { aplicarMute(true); return; }
         // Si KALY acababa de preguntar, esto es la RESPUESTA (ej. "no" a "¿lo
         // pagaste?"): NO cerrar la sesión, aunque el texto parezca negativo.
@@ -257,7 +264,8 @@ export default function KalyAgent({ chat = false }) {
         // mudo más rato tras hablar, para que KALY no se oiga a sí misma y no entre
         // en bucle de auto-respuesta.
         echoCancellation: chat,
-        halfDuplexTailMs: chat ? 900 : 250,
+        halfDuplexTailMs: chat ? 200 : 250,
+        idleMs: chat ? 10 * 60 * 1000 : 25000,
         onState, onAudioLevel, onUserTranscript, onAgentTranscript, onToolCall, onClose,
       });
 
@@ -266,7 +274,7 @@ export default function KalyAgent({ chat = false }) {
       if (mutedRef.current && session.setMuted) session.setMuted(true);
       // Pasa la conversación reciente (voz + texto) para que la sesión nueva
       // CONTINÚE donde quedó, en vez de partir de cero saludando.
-      session.sendText(instruccionInicial(s.context, motivo, messagesRef.current));
+      session.sendText(instruccionInicial(s.context, motivo, messagesRef.current), motivo !== 'reconexion');
       if (motivo === 'saludo') localStorage.setItem('kaly_last_greet', hoyStr());
     },
     [stop, aplicarMute, chat],

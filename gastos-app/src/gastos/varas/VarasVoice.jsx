@@ -63,6 +63,8 @@ export default function VarasVoice() {
       systemPrompt: buildVarasVoicePrompt(s.context || {}),
       tools: TOOL_DECLARATIONS,
       audio: true,
+      echoCancellation: true,
+      halfDuplexTailMs: 200,
       onState, onAudioLevel, onAgentTranscript, onToolCall, onClose,
     });
 
