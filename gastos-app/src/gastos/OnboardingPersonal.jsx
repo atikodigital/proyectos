@@ -33,7 +33,11 @@ export default function OnboardingPersonal({ company, onDone }) {
   async function finish() {
     setLoading(true);
     try {
-      await api.updateCompany({ onboarded_at: new Date().toISOString() });
+      // OJO: el backend NO acepta 'onboarded_at' directo (no está en el whitelist de
+      // updateCompany) → hay que mandar { onboarded: true }, que dispara setOnboarded()
+      // y marca onboarded_at=now(). Sin esto el onboarding reaparecía en cada apertura.
+      await api.updateCompany({ onboarded: true });
+      try { localStorage.setItem('kaly_onboarded', '1'); } catch (_) {}
       onDone();
     } finally { setLoading(false); }
   }

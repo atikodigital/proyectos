@@ -40,6 +40,8 @@ export default function KalyAgent({ chat = false }) {
   const mutedRef = useRef(muted);
   const turnosRef = useRef([]);
   const scrollRef = useRef(null);
+  // Timestamp hasta el cual ignorar transcripciones del usuario (eco del altavoz).
+  const echoGuardRef = useRef(0);
   // Historial accesible desde callbacks (start/onClose) sin depender del closure.
   const messagesRef = useRef([]);
   // true cuando el usuario apagó a KALY tocando el orbe: NO auto-reconectar.
@@ -156,6 +158,13 @@ export default function KalyAgent({ chat = false }) {
           if (diagTimerRef.current) { clearTimeout(diagTimerRef.current); diagTimerRef.current = null; }
         }
         setState(newState);
+        // Guardia anti-eco (manos libres): mientras KALY habla y ~800ms después,
+        // ignoramos cualquier "transcripción de usuario" — casi seguro es su propia
+        // voz colándose por el altavoz. Evita el bucle de auto-respuesta.
+        if (chat) {
+          if (newState === 'speaking') echoGuardRef.current = Number.MAX_SAFE_INTEGER;
+          else if (newState === 'listening') echoGuardRef.current = Date.now() + 800;
+        }
         // Si KALY acaba de preguntar algo, da más tiempo para responder (no cortar).
         // En modo chat NO se corta por silencio: la conversación queda siempre
         // abierta (manos libres); solo el usuario la apaga tocando el orbe.
@@ -163,6 +172,8 @@ export default function KalyAgent({ chat = false }) {
       };
       const onAudioLevel = (_dir, v) => setLevel(v);
       const onUserTranscript = (text) => {
+        // Descarta el eco del propio altavoz de KALY (ver echoGuardRef).
+        if (chat && Date.now() < echoGuardRef.current) return;
         pushTurn('user', text);
         clearSilenceTimer();
         setMessages((prev) => [...prev, { sender: 'user', text }]);
@@ -236,6 +247,11 @@ export default function KalyAgent({ chat = false }) {
         systemPrompt: buildSystemPrompt(s.context),
         tools: TOOL_DECLARATIONS,
         audio: true,
+        // Manos libres (chat): cancela el eco del altavoz en el mic y deja el mic
+        // mudo más rato tras hablar, para que KALY no se oiga a sí misma y no entre
+        // en bucle de auto-respuesta.
+        echoCancellation: chat,
+        halfDuplexTailMs: chat ? 900 : 250,
         onState, onAudioLevel, onUserTranscript, onAgentTranscript, onToolCall, onClose,
       });
 

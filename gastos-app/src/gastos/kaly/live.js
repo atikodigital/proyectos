@@ -4,6 +4,13 @@ const WS_HOST = 'wss://generativelanguage.googleapis.com/ws/google.ai.generative
 
 export function openLiveSession(opts) {
   const { token, model, systemPrompt, tools, voice, onAudioLevel, onState, onUserTranscript, onToolCall, onClose, wsFactory, audio = true } = opts;
+  // Manos libres (chat personal): el mic queda abierto todo el rato, así que hay que
+  // cancelar por hardware el eco del PROPIO altavoz (si no, KALY se oye a sí misma y
+  // se auto-responde en bucle). En empresa/Bluetooth se deja apagado (routing A2DP).
+  const echoCancellation = !!opts.echoCancellation;
+  // Tiempo que el mic sigue MUDO después de que KALY terminó de hablar (cola de
+  // seguridad para que la última sílaba por el parlante no entre como "usuario").
+  const halfDuplexTailMs = opts.halfDuplexTailMs || 250;
   // Ahorro de costo: VAD (no manda silencio) + corte por inactividad.
   const gate = createVadGate({ threshold: opts.vadThreshold || 0.012, hangoverMs: opts.vadHangoverMs || 800 });
   const idleMs = opts.idleMs || 25000;
@@ -54,7 +61,7 @@ export function openLiveSession(opts) {
         const q = queue.shift();
         try { ws.send(JSON.stringify(q)); } catch (e) {}
       }
-      if (audio) micStop = await startMic(send, onAudioLevel, () => agentSpeaking, gate, bump).catch(() => null);
+      if (audio) micStop = await startMic(send, onAudioLevel, () => agentSpeaking, gate, bump, { echoCancellation }).catch(() => null);
       if (audio) player = createPlayer(onAudioLevel, setState, () => muted);
       startIdle();
       return;
@@ -76,7 +83,7 @@ export function openLiveSession(opts) {
       }
     }
     if (sc.turnComplete) {
-      if (player) player.onDrain(() => { setState('listening'); setTimeout(() => { agentSpeaking = false; }, 250); });
+      if (player) player.onDrain(() => { setState('listening'); setTimeout(() => { agentSpeaking = false; }, halfDuplexTailMs); });
       else { agentSpeaking = false; setState('listening'); }
     }
   };
@@ -164,15 +171,17 @@ if (typeof window !== 'undefined' && !window.__kalyAudioUnlockHooked) {
   window.addEventListener('click', onFirstGesture, { passive: true });
 }
 
-export async function startMic(send, onLevel, isAgentSpeaking, gate, onVoiced) {
+export async function startMic(send, onLevel, isAgentSpeaking, gate, onVoiced, micOpts = {}) {
   try {
     // OJO Android/Bluetooth: pedir echoCancellation/noiseSuppression/AGC hace que el
     // WebView entre en "modo comunicación" (como una llamada) y enrute el audio al
     // parlante o a Bluetooth SCO en vez de A2DP (audífonos), y manda el volumen al
-    // stream de llamada. Los dejamos en false para quedarnos en modo multimedia normal:
-    // así el audio sale por los audífonos Bluetooth (A2DP) y el control de volumen es el de media.
+    // stream de llamada. Por eso en empresa se dejan en false (modo multimedia, A2DP).
+    // En manos libres (chat personal) el eco del PROPIO altavoz haría que KALY se
+    // oiga y se auto-responda en bucle → ahí SÍ activamos la cancelación de eco.
+    const ec = !!micOpts.echoCancellation;
     const stream = await navigator.mediaDevices.getUserMedia({
-      audio: { channelCount: 1, echoCancellation: false, noiseSuppression: false, autoGainControl: false },
+      audio: { channelCount: 1, echoCancellation: ec, noiseSuppression: ec, autoGainControl: false },
     });
     const ctx = new AudioContext({ sampleRate: 16000 });
     const source = ctx.createMediaStreamSource(stream);
