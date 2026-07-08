@@ -13,11 +13,12 @@ async function freshDb() {
   return db;
 }
 
-test('crear empresa la deja con suscripción free', async () => {
+test('crear empresa la deja en prueba Pyme de 14 días (antes era free)', async () => {
   const db = await freshDb();
   const co = await createCompany(db, { nombre: 'Pyme Test' });
   const sub = await getSubscription(db, co.id);
   expect(sub).toBeTruthy();
-  expect(sub.plan).toBe('free');
-  expect(Number(sub.creditos_limite)).toBe(30);
+  expect(sub.plan).toBe('pyme');
+  expect(sub.estado).toBe('trial');
+  expect(Number(sub.creditos_limite)).toBe(210);
 });

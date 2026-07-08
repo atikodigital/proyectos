@@ -149,6 +149,26 @@ export default function MiPlanView() {
 
       {datos && !cargando && (
         <>
+          {/* Prueba gratis (trial Pyme) */}
+          {datos.es_trial && (
+            <div style={{
+              background: 'rgba(201,162,75,0.12)',
+              border: '1px solid rgba(201,162,75,0.45)',
+              borderRadius: 10,
+              padding: '12px 14px',
+              marginBottom: 16,
+              fontSize: 13,
+              color: '#f4f4f5',
+              lineHeight: 1.5,
+            }}>
+              🎁 <b style={{ color: GOLD }}>Prueba Pyme gratis</b> —{' '}
+              {datos.dias_restantes > 0
+                ? <>te {datos.dias_restantes === 1 ? 'queda' : 'quedan'} <b>{datos.dias_restantes} día{datos.dias_restantes === 1 ? '' : 's'}</b>.</>
+                : <>termina hoy.</>}{' '}
+              Al terminar pasas al plan Free (30 créditos/mes). Mejora tu plan cuando quieras.
+            </div>
+          )}
+
           {/* Estado morosa */}
           {datos.estado === 'morosa' && (
             <div style={{
@@ -186,7 +206,9 @@ export default function MiPlanView() {
                 padding: '2px 10px',
                 textTransform: 'capitalize',
               }}>
-                {datos.estado === 'activa' || datos.estado === 'morosa' ? t('mp.estado_' + datos.estado) : datos.estado}
+                {datos.estado === 'trial'
+                  ? 'Prueba'
+                  : (datos.estado === 'activa' || datos.estado === 'morosa' ? t('mp.estado_' + datos.estado) : datos.estado)}
               </span>
             </div>
 
@@ -238,7 +260,8 @@ export default function MiPlanView() {
             <div style={{ marginBottom: 18 }}>
               <div style={{ fontSize: 14, fontWeight: 900, color: GOLD, marginBottom: 10 }}>Mejorar mi plan</div>
               <div style={{ display: 'grid', gap: 10 }}>
-                {PLANES_UP.filter((p) => p.id !== datos.plan).map((p) => (
+                {/* En prueba se muestran todos (aún no paga el Pyme); pagando se oculta el plan vigente. */}
+                {PLANES_UP.filter((p) => datos.es_trial || p.id !== datos.plan).map((p) => (
                   <div key={p.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(201,162,75,0.25)', borderRadius: 12, padding: '12px 14px' }}>
                     <div>
                       <div style={{ fontWeight: 800, color: '#f4f4f5' }}>{p.nombre}</div>

@@ -8,6 +8,11 @@ const PLANES = {
   ilimitado: { nombre: 'ilimitado', creditos: 100000000, precios: { CLP: 0,     USD: 0,  EUR: 0  } },
 };
 
+// Prueba gratis para cuentas nuevas: regala el plan Pyme completo por N días.
+// Al vencer, la suscripción se degrada sola a Free (ver billing/repo.expireTrialIfDue).
+const TRIAL_PLAN = 'pyme';
+const TRIAL_DIAS = 14;
+
 const PLAN_LABELS = {
   free:      'Hash IA Free',
   basico:    'Hash IA Básico',
@@ -52,4 +57,4 @@ function monedasSoportadas() {
   return ['CLP', 'USD', 'EUR'];
 }
 
-module.exports = { PLANES, PESOS, getPlan, creditosDe, PLAN_LABELS, precioDe, procesadorPara, monedasSoportadas };
+module.exports = { PLANES, PESOS, getPlan, creditosDe, PLAN_LABELS, precioDe, procesadorPara, monedasSoportadas, TRIAL_PLAN, TRIAL_DIAS };

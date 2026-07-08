@@ -101,7 +101,7 @@ async function crearCliente(db, d) {
     rut: d.rut || undefined,
     owner_nombre: d.nombreContacto || undefined,
     owner_whatsapp: d.owner_whatsapp || undefined,
-  });
+  }, { trial: false }); // cliente creado por la agencia: nace en Free; el plan se asigna a mano
   if (d.plan) await setCompanyPlan(db, empresa.id, d.plan);
   if (d.owner_email !== undefined) {
     await ensureProductos(db);

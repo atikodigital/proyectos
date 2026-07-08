@@ -74,6 +74,8 @@ async function getPanelToken(app) {
 test('app: 1er minuto gratis → 90s cobra solo 1 min (ceil(90/60)-1=1)', async () => {
   const db = await freshDb();
   const co = await createCompany(db, { nombre: 'TestApp' });
+  // La cuenta nueva nace en prueba Pyme; este test cubre el cobro de voz sobre el plan Free.
+  await db.query("UPDATE subscriptions SET plan='free', estado='activa', creditos_limite=30, creditos_usados=0, ciclo_fin=NULL WHERE company_id=$1", [co.id]);
   await seedAppEmployee(db, co.id);
 
   const app = buildAppInstance(db);
@@ -171,6 +173,8 @@ test('app: sin token → 401', async () => {
 test('panel: 90s → cobra 2 min, devuelve ok y saldo', async () => {
   const db = await freshDb();
   const co = await createCompany(db, { nombre: 'TestPanel' });
+  // La cuenta nueva nace en prueba Pyme; este test cubre el cobro de voz sobre el plan Free.
+  await db.query("UPDATE subscriptions SET plan='free', estado='activa', creditos_limite=30, creditos_usados=0, ciclo_fin=NULL WHERE company_id=$1", [co.id]);
   await seedOwner(db, co.id);
 
   const app = buildPanelInstance(db);

@@ -1,6 +1,9 @@
 const billingRepo = require('../billing/repo');
 
-async function createCompany(db, data) {
+// opts.trial (default true): cuenta de auto-registro → prueba gratis de 14 días del
+// plan Pyme (al vencer baja sola a Free). El admin de la agencia crea clientes con
+// { trial: false } (les asigna el plan a mano), así que esos nacen en Free.
+async function createCompany(db, data, opts = {}) {
   const cols = ['nombre', 'rut', 'wa_phone_number_id', 'wa_token', 'owner_nombre', 'owner_whatsapp', 'resumen_frecuencia', 'tipo_cuenta', 'sueldo_mensual', 'dia_pago']
     .filter((f) => data[f] !== undefined);
   const ph = cols.map((_, i) => `$${i + 1}`).join(', ');
@@ -9,7 +12,11 @@ async function createCompany(db, data) {
     cols.map((f) => data[f])
   );
   const company = r.rows[0];
-  try { await billingRepo.createFreeSubscription(db, company.id); } catch (e) { console.error('[billing] no se creó sub free para company', company.id, e.message); }
+  const conTrial = opts.trial !== false;
+  try {
+    if (conTrial) await billingRepo.createTrialSubscription(db, company.id);
+    else await billingRepo.createFreeSubscription(db, company.id);
+  } catch (e) { console.error('[billing] no se creó suscripción inicial para company', company.id, e.message); }
   return company;
 }
 

@@ -42,6 +42,8 @@ async function getToken(app) {
 test('GET /suscripcion devuelve saldo de la empresa autenticada', async () => {
   const db = await freshDb();
   const co = await createCompany(db, { nombre: 'X' });
+  // La cuenta nueva nace en prueba Pyme; este test cubre la mecánica del plan Free.
+  await db.query("UPDATE subscriptions SET plan='free', estado='activa', creditos_limite=30, creditos_usados=0, ciclo_fin=NULL WHERE company_id=$1", [co.id]);
   await seedEmployee(db, co.id);
   await consumirCredito(db, co.id, { tipo: 'imagen', cantidad: 2 });
 

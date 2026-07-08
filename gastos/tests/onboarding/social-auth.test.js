@@ -30,9 +30,10 @@ test('nuevo usuario social: crea empresa + usuario owner y pide nombre de negoci
   expect(r.user.auth_provider).toBe('google');
   expect(r.user.google_sub).toBe('g-1');
   expect(r.user.company_id).toBe(r.company.id);
-  // La empresa nueva nace con suscripción free (createCompany lo hace).
-  const sub = await db.query('SELECT plan FROM subscriptions WHERE company_id=$1', [r.company.id]);
-  expect(sub.rows[0].plan).toBe('free');
+  // La empresa nueva (auto-registro social) nace en prueba Pyme de 14 días.
+  const sub = await db.query("SELECT plan, estado FROM subscriptions WHERE company_id=$1", [r.company.id]);
+  expect(sub.rows[0].plan).toBe('pyme');
+  expect(sub.rows[0].estado).toBe('trial');
 });
 
 test('segundo login con el mismo Google: NO duplica; sigue pidiendo datos si no completó', async () => {
