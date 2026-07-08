@@ -40,7 +40,14 @@ export default function KalyAgent({ chat = false }) {
   const mutedRef = useRef(muted);
   const turnosRef = useRef([]);
   const scrollRef = useRef(null);
+  // Historial accesible desde callbacks (start/onClose) sin depender del closure.
+  const messagesRef = useRef([]);
+  // true cuando el usuario apagó a KALY tocando el orbe: NO auto-reconectar.
+  const manualStopRef = useRef(false);
+  const reconnectTimerRef = useRef(null);
+  const reconnectFailsRef = useRef(0);
   useEffect(() => { mutedRef.current = muted; }, [muted]);
+  useEffect(() => { messagesRef.current = messages; }, [messages]);
   // En modo chat (burbujas), baja el scroll al último mensaje cuando llega uno nuevo.
   useEffect(() => {
     const el = scrollRef.current;
@@ -93,6 +100,7 @@ export default function KalyAgent({ chat = false }) {
     flushAprender();
     clearSilenceTimer();
     if (diagTimerRef.current) { clearTimeout(diagTimerRef.current); diagTimerRef.current = null; }
+    if (reconnectTimerRef.current) { clearTimeout(reconnectTimerRef.current); reconnectTimerRef.current = null; }
     if (sessionRef.current) { sessionRef.current.close(); sessionRef.current = null; }
     setState('off');
     // En modo chat NO borramos el historial: la conversación (voz + texto) debe
@@ -149,7 +157,9 @@ export default function KalyAgent({ chat = false }) {
         }
         setState(newState);
         // Si KALY acaba de preguntar algo, da más tiempo para responder (no cortar).
-        if (newState === 'listening') armSilenceTimer(stop, esperaRespuestaRef.current ? SILENCE_ANSWER_MS : SILENCE_MS);
+        // En modo chat NO se corta por silencio: la conversación queda siempre
+        // abierta (manos libres); solo el usuario la apaga tocando el orbe.
+        if (newState === 'listening' && !chat) armSilenceTimer(stop, esperaRespuestaRef.current ? SILENCE_ANSWER_MS : SILENCE_MS);
       };
       const onAudioLevel = (_dir, v) => setLevel(v);
       const onUserTranscript = (text) => {
@@ -160,7 +170,9 @@ export default function KalyAgent({ chat = false }) {
         // Si KALY acababa de preguntar, esto es la RESPUESTA (ej. "no" a "¿lo
         // pagaste?"): NO cerrar la sesión, aunque el texto parezca negativo.
         if (esperaRespuestaRef.current) { esperaRespuestaRef.current = false; return; }
-        if (esNegativa(text)) setTimeout(() => stop(), 2500);
+        // En modo chat un "no, gracias" NO apaga la conversación: KALY se despide
+        // en una frase y sigue escuchando (manos libres).
+        if (!chat && esNegativa(text)) setTimeout(() => stop(), 2500);
       };
       const onAgentTranscript = (text) => {
         pushTurn('kaly', text);
@@ -200,10 +212,22 @@ export default function KalyAgent({ chat = false }) {
           setMessages((prev) => (chat ? [...prev, dmsg] : [dmsg]));
           setState('error');
           setTimeout(() => { setState('off'); if (!chat) setMessages([]); }, 5000);
+          // Reintenta la conexión un par de veces (red móvil inestable), sin loop infinito.
+          if (chat && !manualStopRef.current && reconnectFailsRef.current < 2) {
+            reconnectFailsRef.current += 1;
+            reconnectTimerRef.current = setTimeout(() => { reconnectTimerRef.current = null; start('reconexion'); }, 6000);
+          }
           return;
         }
         setState('off');
         if (!chat) setMessages([]);
+        // Modo chat: si la sesión se cerró SOLA (Gemini corta ~10 min, caída de red),
+        // reconecta al tiro SIN saludar, pasando el historial. La conversación se
+        // siente UNA sola, siempre disponible. Si el usuario la apagó (orbe), no.
+        if (chat && !manualStopRef.current) {
+          reconnectFailsRef.current = 0;
+          reconnectTimerRef.current = setTimeout(() => { reconnectTimerRef.current = null; start('reconexion'); }, 1200);
+        }
       };
 
       const session = openLiveSession({
@@ -217,7 +241,9 @@ export default function KalyAgent({ chat = false }) {
 
       sessionRef.current = session;
       if (mutedRef.current && session.setMuted) session.setMuted(true);
-      session.sendText(instruccionInicial(s.context, motivo));
+      // Pasa la conversación reciente (voz + texto) para que la sesión nueva
+      // CONTINÚE donde quedó, en vez de partir de cero saludando.
+      session.sendText(instruccionInicial(s.context, motivo, messagesRef.current));
       if (motivo === 'saludo') localStorage.setItem('kaly_last_greet', hoyStr());
     },
     [stop, aplicarMute, chat],
@@ -227,6 +253,9 @@ export default function KalyAgent({ chat = false }) {
     const onboarded = localStorage.getItem('kaly_onboarded') === '1';
     const motivo = decideAutoStart({ onboarded, yaSaludo: yaSaludoEnEstaSesion() });
     if (motivo) start(motivo);
+    // Modo chat manos libres: si ya saludó en esta apertura (volviste a la pestaña),
+    // reconecta al tiro SIN saludar. La conexión queda lista apenas entras.
+    else if (chat) start('reconexion');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -235,6 +264,8 @@ export default function KalyAgent({ chat = false }) {
       if (inactivityTimerRef.current != null) clearTimeout(inactivityTimerRef.current);
       inactivityTimerRef.current = setTimeout(() => {
         inactivityTimerRef.current = null;
+        // Si el usuario apagó a KALY a propósito (orbe), respeta el silencio.
+        if (manualStopRef.current) return;
         setState((current) => { if (current === 'off') setTimeout(() => start('inactividad'), 0); return current; });
       }, INACTIVITY_MS);
     }
@@ -251,14 +282,27 @@ export default function KalyAgent({ chat = false }) {
 
   useEffect(() => () => {
     clearSilenceTimer();
+    // Al desmontar (cambio de pestaña), que el onClose de la sesión no re-agende
+    // una reconexión huérfana.
+    manualStopRef.current = true;
+    if (reconnectTimerRef.current != null) { clearTimeout(reconnectTimerRef.current); reconnectTimerRef.current = null; }
     if (inactivityTimerRef.current != null) { clearTimeout(inactivityTimerRef.current); inactivityTimerRef.current = null; }
     if (sessionRef.current) { sessionRef.current.close(); sessionRef.current = null; }
   }, []);
 
   const handleTap = useCallback(() => {
     unlockAudio(); // desbloquea el audio dentro del gesto, para que el saludo suene al tiro
-    if (state === 'off') start('manual'); else stop();
-  }, [state, start, stop]);
+    if (state === 'off') {
+      manualStopRef.current = false;
+      reconnectFailsRef.current = 0;
+      // Si ya saludó en esta apertura de la app, reencender NO debe saludar de
+      // nuevo: continúa la conversación (reconexion). Solo la primera vez saluda.
+      start(chat && yaSaludoEnEstaSesion() ? 'reconexion' : 'manual');
+    } else {
+      manualStopRef.current = true; // apagado a propósito: no auto-reconectar
+      stop();
+    }
+  }, [state, start, stop, chat]);
 
   // El texto NO usa la sesión de voz Live (mezclar audio + turnos de texto es
   // inestable y a veces no responde). Va por un chat HTTP dedicado que devuelve

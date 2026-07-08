@@ -322,3 +322,33 @@ test('(13) modo chat: el saludo por voz queda escrito aunque la sesión de voz s
   act(() => { lastLiveOpts.onClose(); });
   expect(screen.getByText(/Hola, buenos días/)).toBeInTheDocument();
 });
+
+test('(14) modo chat: NO se corta por silencio (manos libres)', async () => {
+  localStorage.setItem('kaly_onboarded', '1');
+  await act(async () => { render(<KalyAgent chat />); });
+  await waitFor(() => expect(openLiveSession).toHaveBeenCalledTimes(1));
+
+  act(() => { lastLiveOpts.onState('listening'); });
+  act(() => { jest.advanceTimersByTime(60000); }); // 60s de silencio
+  expect(lastSession.close).not.toHaveBeenCalled();
+});
+
+test('(15) modo chat: si la sesión se cierra sola, reconecta sin saludar y con historial', async () => {
+  localStorage.setItem('kaly_onboarded', '1');
+  await act(async () => { render(<KalyAgent chat />); });
+  await waitFor(() => expect(openLiveSession).toHaveBeenCalledTimes(1));
+
+  act(() => {
+    lastLiveOpts.onState('live');
+    lastLiveOpts.onAgentTranscript('Anotado el almuerzo.');
+  });
+  // Gemini corta la sesión (límite/red) → el watchdog reconecta a los ~1.2s.
+  act(() => { lastLiveOpts.onClose(); });
+  await act(async () => { jest.advanceTimersByTime(2000); await Promise.resolve(); });
+  await waitFor(() => expect(openLiveSession).toHaveBeenCalledTimes(2));
+
+  // La instrucción de la sesión NUEVA no saluda y trae la conversación previa.
+  const sent = lastSession.sendText.mock.calls[0][0];
+  expect(sent).toMatch(/NO saludes/i);
+  expect(sent).toContain('Anotado el almuerzo.');
+});

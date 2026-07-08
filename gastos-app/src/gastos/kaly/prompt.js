@@ -26,6 +26,17 @@ function fmt(n) {
   return '$' + Number(n).toLocaleString('es-CL');
 }
 
+// Resumen de la conversación reciente (voz + texto) para que una sesión de voz
+// NUEVA continúe donde quedó la anterior, en vez de partir de cero saludando.
+function bloqueHistorial(historial) {
+  const arr = (Array.isArray(historial) ? historial : [])
+    .filter((m) => m && m.text && !m.isSystem)
+    .slice(-8);
+  if (!arr.length) return '';
+  return '\nConversación reciente (es TU MISMA conversación de hace un momento; úsala como contexto, NO la repitas ni la resumas en voz alta):\n'
+    + arr.map((m) => `${m.sender === 'kaly' ? 'KALY' : 'Usuario'}: ${String(m.text).slice(0, 220)}`).join('\n') + '\n';
+}
+
 const IDIOMA_KALY = { es: 'español', en: 'inglés (English)', pt: 'portugués de Brasil (Português)' };
 // Idioma de la cuenta (es|en|pt): del context o, si no viene, de localStorage.
 function idiomaActual(context) {
@@ -100,6 +111,8 @@ Después de registrarlo, confírmalo en 1 frase y dile cuánto le queda del mes.
 # Reglas
 - Habla siempre en términos simples y cercanos, como un amigo que sabe de plata.
 - NUNCA menciones IVA, folios, libros contables, VARAS, SII ni terminología de empresa.
+- Si el usuario dice solo "Kaly", "Hola" u "Hola Kaly", responde breve (ej. "¿Dime${nombreLabel}?") y escucha. NO te presentes de nuevo ni repitas cómo se usa la app.
+- Preséntate y explica cómo usar la app SOLO la primera vez o si te lo piden. En el resto de la conversación ve directo al grano.
 - ${reglaSaludo}
 - Cuando registre un gasto, confírmalo y dile en 1 frase cuánto le queda del presupuesto.
 - Si el disponible es bajo (< 20% del sueldo) o negativo, avísale con tacto y sin alarmar.
@@ -251,7 +264,7 @@ ${bloqueSenales(senales)}
 `;
 }
 
-export function instruccionInicial(context = {}, motivo = 'manual') {
+export function instruccionInicial(context = {}, motivo = 'manual', historial = []) {
   const { saludoHora = 'dia', nombre = '', trato = '' } = context;
 
   const saludo = saludoHora === 'noche'
@@ -263,12 +276,19 @@ export function instruccionInicial(context = {}, motivo = 'manual') {
   const tratamiento = trato || '';
   const nombreLabel = nombre ? ` ${nombre}` : '';
 
-  // ── Modo personal (persona natural): saluda SIEMPRE y, la 1ª vez, enseña a usar la app ──
+  // ── Reconexión (cualquier modo): la sesión de voz se cayó/renovó a mitad de una
+  // conversación. NO saludar ni presentarse: continuar como si nada, con el historial
+  // como contexto. Es la clave para que la charla se sienta UNA sola conversación.
+  if (motivo === 'reconexion') {
+    return `La conexión de voz se restableció: es la MISMA conversación de hace un momento, NO una nueva. NO saludes, NO te presentes, NO expliques cómo usar la app, NO digas que volviste. ${bloqueHistorial(historial)}Si el usuario habla, responde directo retomando el contexto; si no dice nada, quédate en silencio escuchando.`;
+  }
+
+  // ── Modo personal (persona natural): saluda SOLO cuando corresponde ──
   if (context.tipoPersonal) {
     if (motivo === 'inactividad') {
       return `Enciende el micrófono brevemente y di, cálido y breve: 'Hola${nombreLabel}, ¿te ayudo a registrar algún gasto?'`;
     }
-    if (motivo === 'onboarding' || !context.onboarded) {
+    if (motivo === 'onboarding') {
       return `Es la PRIMERA vez de ${nombre || 'la persona'}. Eres un compañero HOMBRE (habla de ti en masculino). Enciende el micrófono y, con calidez y en 2-3 frases: (1) salúdala por su nombre y preséntate como su compañero de finanzas personales; (2) enséñale que para registrar un gasto puede tomarle una FOTO a la boleta, subir una CAPTURA de pantalla, SUBIR un archivo, o simplemente HABLARTE y decirte el gasto (ej. "gasté 5 mil en el almuerzo"); (3) invítala a probar ahora con su primer gasto. NUNCA le pidas el nombre: ya lo sabes. Sé breve y cercano.`;
     }
     if (motivo === 'saludo') {
