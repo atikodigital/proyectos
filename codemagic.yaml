@@ -1,0 +1,56 @@
+# Codemagic — build de iOS de Hash IA en la nube (sin Mac).
+# Requisitos que se configuran en la UI de Codemagic (una sola vez):
+#  1. Integración "App Store Connect" con una API key de tu cuenta Apple Developer.
+#  2. Un grupo de variables llamado "appstore" (o edita el nombre abajo) con:
+#       APP_STORE_CONNECT_ISSUER_ID, APP_STORE_CONNECT_KEY_IDENTIFIER, APP_STORE_CONNECT_PRIVATE_KEY
+#     (Codemagic los inyecta solo si usas la integración de App Store Connect.)
+#  3. Certificado de firma: usa "Automatic code signing" de Codemagic (recomendado).
+#
+# La app vive en el subdirectorio gastos-app/ (Capacitor 8 con Swift Package Manager, sin CocoaPods).
+
+workflows:
+  ios-hashia:
+    name: Hash IA · iOS (TestFlight)
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    integrations:
+      app_store_connect: HashIA ASC   # nombre de la integración creada en Codemagic
+    environment:
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: cl.atikodigital.hashia
+      vars:
+        XCODE_PROJECT: "gastos-app/ios/App/App.xcodeproj"
+        XCODE_SCHEME: "App"
+        APP_ID: cl.atikodigital.hashia
+      node: 20
+      xcode: latest
+    scripts:
+      - name: Instalar dependencias del proyecto web
+        script: |
+          cd gastos-app
+          npm ci || npm install
+      - name: Compilar los assets web (Vite)
+        script: |
+          cd gastos-app
+          npm run build
+      - name: Sincronizar con iOS (Capacitor)
+        script: |
+          cd gastos-app
+          npx cap sync ios
+      - name: Preparar firma automática
+        script: |
+          xcode-project use-profiles
+      - name: Compilar el IPA
+        script: |
+          xcode-project build-ipa \
+            --project "$XCODE_PROJECT" \
+            --scheme "$XCODE_SCHEME"
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+        # submit_to_app_store: false   # ponlo en true cuando quieras enviar a revisión de App Store
