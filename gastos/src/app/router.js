@@ -98,19 +98,20 @@ function createAppRouter({ db, extractExpense, createLiveToken, sendText, sendIm
   // dos rutas van ANTES del requireKind('employee') global, con su propio middleware
   // que acepta ambos, y arman el contexto según cuál sea (mismo patrón que el panel).
   router.post('/agent/session', requireAuth, requireKindAny(['employee', 'user']), async (req, res) => {
-    let tok;
-    if (process.env.KALY_TOKEN_MODE === 'key') {
-      tok = { token: process.env.GEMINI_API_KEY, expireAt: null, model: process.env.GEMINI_LIVE_MODEL || 'gemini-2.5-flash-native-audio-preview-09-2025' };
-    } else {
-      try { tok = await _liveToken(); }
-      catch (e) { return res.status(503).json({ error: 'live_no_disponible', detalle: e.message }); }
-    }
     const esOwner = req.auth.kind === 'user';
-    const context = await buildAgentContext(db, {
+    // Mintea el token efímero (llamada a Google) y arma el contexto (BD) EN PARALELO.
+    // Antes iban en serie → el saludo por voz tardaba la SUMA de ambos.
+    const tokP = (process.env.KALY_TOKEN_MODE === 'key')
+      ? Promise.resolve({ token: process.env.GEMINI_API_KEY, expireAt: null, model: process.env.GEMINI_LIVE_MODEL || 'gemini-2.5-flash-native-audio-preview-09-2025' })
+      : _liveToken();
+    const ctxP = buildAgentContext(db, {
       companyId: req.auth.companyId,
       employeeId: esOwner ? null : req.auth.employeeId,
       owner: esOwner ? { kind: 'user', id: req.auth.userId } : { kind: 'employee', id: req.auth.employeeId },
     });
+    let tok, context;
+    try { [tok, context] = await Promise.all([tokP, ctxP]); }
+    catch (e) { return res.status(503).json({ error: 'live_no_disponible', detalle: e && e.message }); }
     if (esOwner) {
       const ownerPrefs = await getOwnerAgentPrefs(db, req.auth.companyId);
       if (ownerPrefs.nombre) context.nombre = ownerPrefs.nombre;
@@ -118,17 +119,18 @@ function createAppRouter({ db, extractExpense, createLiveToken, sendText, sendIm
       if (ownerPrefs.onboarded_at) context.onboarded = true;
     }
     console.log('[kaly] token live emitido para', esOwner ? 'owner' : 'empleado', esOwner ? req.auth.userId : req.auth.employeeId);
-    // Deja constancia en la Memoria de KALY de que hubo interacción (se actualiza,
-    // no duplica). Refleja "ya saludó / última vez que conversaron". Y si ya está
-    // onboarded, marca el inicio de la relación una sola vez ("Kaly conoció a X").
-    try {
-      const hoy = new Intl.DateTimeFormat('es-CL', { timeZone: 'America/Santiago' }).format(new Date());
-      await memoryRepo.upsertHechoAuto(db, req.auth.companyId, { tipo: 'dueño', prefijo: 'Última conversación con KALY', contenido: `Última conversación con KALY: ${hoy}` });
-      if (context.onboarded && context.nombre) {
-        await memoryRepo.crearHechoUnico(db, req.auth.companyId, { tipo: 'dueño', prefijo: 'Kaly conoció a', contenido: `Kaly conoció a ${context.nombre} el ${hoy}` });
-      }
-    } catch (_) { /* memoria best-effort */ }
-    return res.json({ ...tok, context });
+    // Responde YA. Las escrituras a la Memoria de KALY van DESPUÉS (fire-and-forget):
+    // antes se esperaban (await) y sumaban latencia de BD a CADA saludo.
+    res.json({ ...tok, context });
+    Promise.resolve().then(async () => {
+      try {
+        const hoy = new Intl.DateTimeFormat('es-CL', { timeZone: 'America/Santiago' }).format(new Date());
+        await memoryRepo.upsertHechoAuto(db, req.auth.companyId, { tipo: 'dueño', prefijo: 'Última conversación con KALY', contenido: `Última conversación con KALY: ${hoy}` });
+        if (context.onboarded && context.nombre) {
+          await memoryRepo.crearHechoUnico(db, req.auth.companyId, { tipo: 'dueño', prefijo: 'Kaly conoció a', contenido: `Kaly conoció a ${context.nombre} el ${hoy}` });
+        }
+      } catch (_) { /* memoria best-effort */ }
+    });
   });
 
   router.post('/agent/session/end', requireAuth, requireKindAny(['employee', 'user']), async (req, res) => {

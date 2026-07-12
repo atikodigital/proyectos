@@ -26,7 +26,17 @@ export function openLiveSession(opts) {
   const ws = (wsFactory || ((url) => new WebSocket(url)))(`${WS_HOST}?key=${encodeURIComponent(token)}`);
   let closed = false; let micStop = null; let player = null; let muted = false; let agentSpeaking = false;
   let sessionReady = false;
+  let speakWatchdog = null;
   const queue = [];
+
+  // Backstop: si se pierde el `turnComplete` (blip de red / mensaje perdido),
+  // `agentSpeaking` podría quedar en true PARA SIEMPRE y el mic quedaría MUDO → KALY
+  // no volvería a escucharte ("se detiene"). Si no llega audio nuevo en 5s, lo soltamos.
+  const clearSpeakWatchdog = () => { if (speakWatchdog) { clearTimeout(speakWatchdog); speakWatchdog = null; } };
+  const armSpeakWatchdog = () => {
+    clearSpeakWatchdog();
+    speakWatchdog = setTimeout(() => { agentSpeaking = false; if (onState) onState('listening'); }, 5000);
+  };
 
   const send = (obj) => {
     if (obj.setup) {
@@ -71,11 +81,11 @@ export function openLiveSession(opts) {
     if (!sc) return;
     if (sc.inputTranscription && sc.inputTranscription.text) onUserTranscript && onUserTranscript(sc.inputTranscription.text);
     if (sc.outputTranscription && sc.outputTranscription.text) opts.onAgentTranscript && opts.onAgentTranscript(sc.outputTranscription.text);
-    if (sc.interrupted) { if (player) player.flush(); agentSpeaking = false; setState('listening'); }
+    if (sc.interrupted) { if (player) player.flush(); agentSpeaking = false; clearSpeakWatchdog(); setState('listening'); }
     if (sc.modelTurn && sc.modelTurn.parts) {
       let textContent = '';
       for (const p of sc.modelTurn.parts) {
-        if (p.inlineData && p.inlineData.data) { agentSpeaking = true; bump(); setState('speaking'); if (player) player.push(p.inlineData.data); }
+        if (p.inlineData && p.inlineData.data) { agentSpeaking = true; bump(); armSpeakWatchdog(); setState('speaking'); if (player) player.push(p.inlineData.data); }
         if (p.text) {
           const hasOutputTranscription = sc.outputTranscription && sc.outputTranscription.text;
           const isDuplicate = hasOutputTranscription && String(sc.outputTranscription.text).includes(p.text);
@@ -87,6 +97,7 @@ export function openLiveSession(opts) {
       }
     }
     if (sc.turnComplete) {
+      clearSpeakWatchdog();
       if (player) player.onDrain(() => { setState('listening'); setTimeout(() => { agentSpeaking = false; }, halfDuplexTailMs); });
       else { agentSpeaking = false; setState('listening'); }
     }
@@ -95,7 +106,7 @@ export function openLiveSession(opts) {
   ws.onerror = () => setState('error');
   ws.onclose = (ev) => { cleanup(); onClose && onClose({ code: ev && ev.code, reason: ev && ev.reason, wasClean: ev && ev.wasClean }); };
 
-  function cleanup() { if (closed) return; closed = true; stopIdle(); if (micStop) micStop(); if (player) player.stop(); }
+  function cleanup() { if (closed) return; closed = true; stopIdle(); clearSpeakWatchdog(); if (micStop) micStop(); if (player) player.stop(); }
 
   return {
     sendText(text, turnComplete = true) { send({ clientContent: { turns: [{ role: 'user', parts: [{ text }] }], turnComplete } }); },
@@ -184,8 +195,11 @@ export async function startMic(send, onLevel, isAgentSpeaking, gate, onVoiced, m
     // En manos libres (chat personal) el eco del PROPIO altavoz haría que KALY se
     // oiga y se auto-responda en bucle → ahí SÍ activamos la cancelación de eco.
     const ec = !!micOpts.echoCancellation;
+    // AGC (control automático de ganancia) SUBE la voz baja/lejana para que el VAD la
+    // detecte y no la descarte. Lo activamos junto con EC (modo chat manos libres);
+    // en empresa se deja apagado para no romper el ruteo A2DP de audífonos Bluetooth.
     const stream = await navigator.mediaDevices.getUserMedia({
-      audio: { channelCount: 1, echoCancellation: ec, noiseSuppression: ec, autoGainControl: false },
+      audio: { channelCount: 1, echoCancellation: ec, noiseSuppression: ec, autoGainControl: ec },
     });
     const ctx = new AudioContext({ sampleRate: 16000 });
     const source = ctx.createMediaStreamSource(stream);

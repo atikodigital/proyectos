@@ -45,6 +45,8 @@ export default function KalyAgent({ chat = false }) {
   const startingRef = useRef(false);
   // Timestamp hasta el cual ignorar transcripciones del usuario (eco del altavoz).
   const echoGuardRef = useRef(0);
+  // Throttle del nivel de audio para no re-renderizar en cada frame.
+  const lastLevelRef = useRef(0);
   // Historial accesible desde callbacks (start/onClose) sin depender del closure.
   const messagesRef = useRef([]);
   // true cuando el usuario apagó a KALY tocando el orbe: NO auto-reconectar.
@@ -176,7 +178,15 @@ export default function KalyAgent({ chat = false }) {
         // abierta (manos libres); solo el usuario la apaga tocando el orbe.
         if (newState === 'listening' && !chat) armSilenceTimer(stop, esperaRespuestaRef.current ? SILENCE_ANSWER_MS : SILENCE_MS);
       };
-      const onAudioLevel = (_dir, v) => setLevel(v);
+      const onAudioLevel = (_dir, v) => {
+        // El nivel llega ~8 veces/seg (in y out). Actualizar el estado en CADA frame
+        // re-renderiza KALY y compite con el audio en el hilo principal → entrecortes.
+        // Con ~16 fps el orbe se ve fluido igual y baja mucho la carga.
+        const now = Date.now();
+        if (now - lastLevelRef.current < 60) return;
+        lastLevelRef.current = now;
+        setLevel(v);
+      };
       const onUserTranscript = (text) => {
         // Descarta el eco del propio altavoz de KALY (ver echoGuardRef).
         if (chat && Date.now() < echoGuardRef.current) return;
@@ -250,7 +260,8 @@ export default function KalyAgent({ chat = false }) {
         // siente UNA sola, siempre disponible. Si el usuario la apagó (orbe), no.
         if (chat && !manualStopRef.current) {
           reconnectFailsRef.current = 0;
-          reconnectTimerRef.current = setTimeout(() => { reconnectTimerRef.current = null; start('reconexion'); }, 1200);
+          // Reconexión casi inmediata para minimizar el hueco sordo entre sesiones.
+          reconnectTimerRef.current = setTimeout(() => { reconnectTimerRef.current = null; start('reconexion'); }, 300);
         }
       };
 
@@ -266,6 +277,9 @@ export default function KalyAgent({ chat = false }) {
         echoCancellation: chat,
         halfDuplexTailMs: chat ? 200 : 250,
         idleMs: chat ? 10 * 60 * 1000 : 25000,
+        // En chat el mic tiene AGC (sube la voz baja); con eso un umbral VAD más bajo
+        // capta mejor cuando hablas suave o lejos, sin descartar tu voz.
+        vadThreshold: chat ? 0.008 : 0.012,
         onState, onAudioLevel, onUserTranscript, onAgentTranscript, onToolCall, onClose,
       });
 

@@ -44,6 +44,10 @@ export default function GastosApp() {
   const [mostrarMemoria, setMostrarMemoria] = useState(false);
   const [mostrarPlan, setMostrarPlan] = useState(false);
   const [company, setCompany] = useState(null);
+  // Caché del tipo de cuenta (empresa|personal): al REABRIR montamos el KALY correcto
+  // AL INSTANTE (en paralelo con getCompany) en vez de esperar la respuesta → el saludo
+  // por voz arranca antes y sin "doble voz".
+  const [tipoCuentaCache] = useState(() => { try { return localStorage.getItem('hash_tipo_cuenta') || null; } catch (_) { return null; } });
   // Cola de documentos pendientes cuando se escanean VARIOS de una vez (multi-captura).
   // Se procesan uno por uno: cada uno con su confirmación, igual que 1 documento.
   const [cola, setCola] = useState([]);
@@ -59,6 +63,7 @@ export default function GastosApp() {
         const resp = await api.getCompany();
         setCompany(resp);
         try { localStorage.setItem('hash_idioma', resp.idioma || 'es'); } catch (_) {}
+        try { localStorage.setItem('hash_tipo_cuenta', resp.tipo_cuenta || 'empresa'); } catch (_) {}
         setProductos(Array.isArray(resp.productos) ? resp.productos : []);
         if (!resp.onboarded_at && !resp.onboarding_saltado && !saltado) setMostrarOnboarding(true);
       } catch { /* no romper el render */ }
@@ -66,7 +71,9 @@ export default function GastosApp() {
   }, [authed]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const chatHabilitado = productos.includes('chat');
-  const esPersonal = company?.tipo_cuenta === 'personal';
+  // Tipo conocido = el real (si ya cargó company) o el cacheado de la última sesión.
+  const tipoConocido = company?.tipo_cuenta || tipoCuentaCache;
+  const esPersonal = tipoConocido === 'personal';
 
   // Si el chat se desactiva (o nunca estuvo activo) y la pestaña activa era 'chat',
   // vuelve a Captura para no dejar al usuario en una vista oculta.
@@ -183,7 +190,7 @@ export default function GastosApp() {
             carga (company=null → esPersonal=false) se montaba el KALY compacto y
             arrancaba a saludar; al resolver 'personal' se desmontaba y montaba el KALY
             chat, que saludaba OTRA vez → dos voces en paralelo al inicio. */}
-        {!pending && !dup && !receptorAjeno && !esVenta && company && ((tab === 'capturar' && !esPersonal) || tab === 'chat') && (
+        {!pending && !dup && !receptorAjeno && !esVenta && tipoConocido && ((tab === 'capturar' && !esPersonal) || tab === 'chat') && (
           <div className="px-4 py-2 bg-slate-50/50 border-b border-slate-200/40 shrink-0">
             <KalyAgent />
           </div>
