@@ -134,6 +134,12 @@ const PERSONAL_COLUMNS = [
   "ALTER TABLE companies ADD COLUMN IF NOT EXISTS tipo_cuenta TEXT NOT NULL DEFAULT 'empresa'",
   "ALTER TABLE companies ADD COLUMN IF NOT EXISTS sueldo_mensual INTEGER NOT NULL DEFAULT 0",
   "ALTER TABLE companies ADD COLUMN IF NOT EXISTS dia_pago INTEGER NOT NULL DEFAULT 1",
+  // 'productos' (módulos habilitados) y 'plan' las selecciona getCompanyProfile pero
+  // solo las agregaban de forma perezosa getCompany/admin → en un esquema recién
+  // migrado (tests, DB nueva) getCompanyProfile fallaba con "column ... does not exist".
+  // Idempotentes (IF NOT EXISTS): no-op donde ya existen (producción).
+  "ALTER TABLE companies ADD COLUMN IF NOT EXISTS productos jsonb DEFAULT '[]'",
+  "ALTER TABLE companies ADD COLUMN IF NOT EXISTS plan text DEFAULT 'free'",
 ];
 
 // Idioma de la cuenta (es | en | pt). Condiciona el asistente (responde en ese

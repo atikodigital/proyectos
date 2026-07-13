@@ -33,7 +33,9 @@ test('POST /agent/session devuelve token efímero + contexto', async () => {
   const { app, db, cid, token, createLiveToken } = await setup();
   // un movimiento confirmado para el resumen
   const { createExpense, confirmExpense } = require('../src/expenses/repo');
-  const g = await createExpense(db, { company_id: cid, tipo: 'gasto', categoria: 'Arriendos', fecha: '2026-06-05', total: 30000 });
+  // Fecha del MES ACTUAL: el resumen cuenta el mes en curso, así que un gasto con
+  // fecha fija (ej. '2026-06-05') deja de contar cuando cambia el mes → test flaky.
+  const g = await createExpense(db, { company_id: cid, tipo: 'gasto', categoria: 'Arriendos', fecha: new Date().toISOString().slice(0, 10), total: 30000 });
   await confirmExpense(db, g.id);
   const res = await request(app).post('/api/app/agent/session').set('Authorization', 'Bearer ' + token).send({});
   expect(res.status).toBe(200);
