@@ -25,10 +25,14 @@ test('reconexion también funciona para cuentas de empresa (no solo personal)', 
   expect(ins).toMatch(/NO saludes/i);
 });
 
-test("saludo diario personal: ya NO repite el discurso de primera vez aunque onboarded venga false", () => {
-  const ins = instruccionInicial({ tipoPersonal: true, nombre: 'José', onboarded: false }, 'saludo');
+test("saludo personal: ya NO repite el discurso de primera vez aunque onboarded venga false", () => {
+  const ins = instruccionInicial({ tipoPersonal: true, nombre: 'José', onboarded: false, saludoHora: 'dia' }, 'saludo');
+  // Lo esencial: NO debe soltar el discurso de onboarding en un saludo normal.
   expect(ins).not.toMatch(/PRIMERA vez/i);
-  expect(ins).toMatch(/hola de nuevo hoy/i);
+  // El saludo ya no es el fijo "hola de nuevo hoy": ahora usa la hora del día
+  // (buenos días/tardes/noches), que se había perdido en v3.94.
+  expect(ins).toMatch(/hola/i);
+  expect(ins).toMatch(/buenos días/i);
 });
 
 test('el onboarding completo personal solo sale con motivo onboarding', () => {

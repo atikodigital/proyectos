@@ -48,6 +48,11 @@ export default function GastosApp() {
   // AL INSTANTE (en paralelo con getCompany) en vez de esperar la respuesta → el saludo
   // por voz arranca antes y sin "doble voz".
   const [tipoCuentaCache] = useState(() => { try { return localStorage.getItem('hash_tipo_cuenta') || null; } catch (_) { return null; } });
+  // Si getCompany() falla (offline, token vencido, 502) y NO hay caché (instalación
+  // nueva), `tipoConocido` quedaba null PARA SIEMPRE → KalyAgent no se montaba en
+  // ninguna pestaña y KALY desaparecía entera, sin error visible. Con esta bandera
+  // caemos a 'empresa' y KALY igual aparece.
+  const [cargaFallida, setCargaFallida] = useState(false);
   // Cola de documentos pendientes cuando se escanean VARIOS de una vez (multi-captura).
   // Se procesan uno por uno: cada uno con su confirmación, igual que 1 documento.
   const [cola, setCola] = useState([]);
@@ -66,13 +71,14 @@ export default function GastosApp() {
         try { localStorage.setItem('hash_tipo_cuenta', resp.tipo_cuenta || 'empresa'); } catch (_) {}
         setProductos(Array.isArray(resp.productos) ? resp.productos : []);
         if (!resp.onboarded_at && !resp.onboarding_saltado && !saltado) setMostrarOnboarding(true);
-      } catch { /* no romper el render */ }
+      } catch { setCargaFallida(true); /* no romper el render */ }
     })();
   }, [authed]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const chatHabilitado = productos.includes('chat');
-  // Tipo conocido = el real (si ya cargó company) o el cacheado de la última sesión.
-  const tipoConocido = company?.tipo_cuenta || tipoCuentaCache;
+  // Tipo conocido = el real (si ya cargó company), el cacheado de la última sesión,
+  // o —si la carga FALLÓ— 'empresa' como último recurso para que KALY igual monte.
+  const tipoConocido = company?.tipo_cuenta || tipoCuentaCache || (cargaFallida ? 'empresa' : null);
   const esPersonal = tipoConocido === 'personal';
 
   // Si el chat se desactiva (o nunca estuvo activo) y la pestaña activa era 'chat',

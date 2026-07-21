@@ -11,7 +11,7 @@ import KalyOrb from './KalyOrb.jsx';
 import { openLiveSession, unlockAudio } from './live.js';
 import { TOOL_DECLARATIONS, executeTool } from './tools.js';
 import { buildSystemPrompt, instruccionInicial } from './prompt.js';
-import { decideAutoStart, esNegativa, hoyStr, marcarSaludado, yaSaludoEnEstaSesion, kalyHizoPregunta, SILENCE_MS, SILENCE_ANSWER_MS, INACTIVITY_MS } from './logic.js';
+import { decideAutoStart, esNegativa, marcarSaludado, saludoReciente, ultimoSaludoMs, kalyHizoPregunta, SILENCE_MS, SILENCE_ANSWER_MS, INACTIVITY_MS } from './logic.js';
 import { useAgentInteraction } from '../agente/AgentInteractionProvider.jsx';
 
 const LIVE_MODEL_FALLBACK =
@@ -289,14 +289,13 @@ export default function KalyAgent({ chat = false }) {
       // Pasa la conversación reciente (voz + texto) para que la sesión nueva
       // CONTINÚE donde quedó, en vez de partir de cero saludando.
       session.sendText(instruccionInicial(s.context, motivo, messagesRef.current), motivo !== 'reconexion');
-      if (motivo === 'saludo') localStorage.setItem('kaly_last_greet', hoyStr());
     },
     [stop, aplicarMute, chat],
   );
 
   useEffect(() => {
     const onboarded = localStorage.getItem('kaly_onboarded') === '1';
-    const motivo = decideAutoStart({ onboarded, yaSaludo: yaSaludoEnEstaSesion() });
+    const motivo = decideAutoStart({ onboarded, ultimoSaludo: ultimoSaludoMs() });
     if (motivo) start(motivo);
     // Modo chat manos libres: si ya saludó en esta apertura (volviste a la pestaña),
     // reconecta al tiro SIN saludar. La conexión queda lista apenas entras.
@@ -342,7 +341,7 @@ export default function KalyAgent({ chat = false }) {
       reconnectFailsRef.current = 0;
       // Si ya saludó en esta apertura de la app, reencender NO debe saludar de
       // nuevo: continúa la conversación (reconexion). Solo la primera vez saluda.
-      start(chat && yaSaludoEnEstaSesion() ? 'reconexion' : 'manual');
+      start(chat && saludoReciente() ? 'reconexion' : 'manual');
     } else {
       manualStopRef.current = true; // apagado a propósito: no auto-reconectar
       stop();

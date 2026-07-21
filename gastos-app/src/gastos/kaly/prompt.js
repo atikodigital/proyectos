@@ -294,8 +294,8 @@ export function instruccionInicial(context = {}, motivo = 'manual', historial = 
       return `Es la PRIMERA vez de ${nombre || 'la persona'}. Eres un compañero HOMBRE (habla de ti en masculino). Enciende el micrófono y, con calidez y en 2-3 frases: (1) salúdala por su nombre y preséntate como su compañero de finanzas personales; (2) enséñale que para registrar un gasto puede tomarle una FOTO a la boleta, subir una CAPTURA de pantalla, SUBIR un archivo, o simplemente HABLARTE y decirte el gasto (ej. "gasté 5 mil en el almuerzo"); (3) invítala a probar ahora con su primer gasto. NUNCA le pidas el nombre: ya lo sabes. Sé breve y cercano.`;
     }
     if (motivo === 'saludo') {
-      // Saludo diario (una vez al día): cálido, "de nuevo hoy".
-      return `Eres un compañero HOMBRE (habla de ti en masculino). Es el PRIMER saludo del día. Enciende el micrófono y saluda cálido: '¡Hola de nuevo hoy${nombreLabel}!'. Recuérdale en 1 frase que puede registrar un gasto con una FOTO de la boleta, una CAPTURA de pantalla, SUBIENDO un archivo o HABLÁNDOTE, y pregúntale en qué le ayudas hoy.`;
+      // Saludo de apertura: cálido y CON la hora del día (buenos días/tardes/noches).
+      return `Eres un compañero HOMBRE (habla de ti en masculino). Enciende el micrófono y saluda cálido: '¡Hola${nombreLabel}, ${saludo}!'. Recuérdale en 1 frase que puede registrar un gasto con una FOTO de la boleta, una CAPTURA de pantalla, SUBIENDO un archivo o HABLÁNDOTE, y pregúntale en qué le ayudas hoy.`;
     }
     // 'manual'
     return `Eres un compañero HOMBRE (habla de ti en masculino). Enciende el micrófono y saluda cálido y breve: 'Hola${nombreLabel}'. Recuérdale en 1 frase que puede registrar un gasto con una FOTO de la boleta, una CAPTURA de pantalla, SUBIENDO un archivo o HABLÁNDOTE (ej. "gasté 5 mil en el almuerzo"), y pregúntale en qué le ayudas hoy.`;
@@ -309,7 +309,7 @@ export function instruccionInicial(context = {}, motivo = 'manual', historial = 
     if (senal) {
       return `Enciende el micrófono y saluda breve: 'Hola, ${saludo}${nombreLabel}'. Menciona enseguida, en tu tono y sin agobiar: '${senal}'. Luego ofrece ayuda con algo como '¿En qué trabajamos hoy?'.`;
     }
-    return `Enciende el micrófono y saluda: '¡Hola de nuevo hoy${nombreLabel}! ¿En qué trabajaremos?'. Recuérdale en 1 frase que puede registrar con una FOTO, una CAPTURA de pantalla, SUBIENDO un archivo o dictándotelo por voz.`;
+    return `Enciende el micrófono y saluda: '¡Hola, ${saludo}${nombreLabel}! ¿En qué trabajaremos hoy?'. Recuérdale en 1 frase que puede registrar con una FOTO, una CAPTURA de pantalla, SUBIENDO un archivo o dictándotelo por voz.`;
   }
   if (motivo === 'inactividad') {
     return `Enciende el micrófono brevemente y di exactamente: '${tratamiento}${nombreLabel}, ¿tal vez le puedo ayudar en algo?'`;

@@ -1,10 +1,12 @@
 import {
   SILENCE_MS,
   INACTIVITY_MS,
+  RESALUDO_MS,
   hoyStr,
   decideAutoStart,
   esNegativa,
-  yaSaludoEnEstaSesion,
+  saludoReciente,
+  ultimoSaludoMs,
   marcarSaludado,
   resetKalyGreeting,
   kalyHizoPregunta,
@@ -24,40 +26,73 @@ describe('hoyStr', () => {
   });
 });
 
-describe('decideAutoStart', () => {
-  const today = '2026-06-12';
+// Bug real (v3.94, "KALY no saluda al abrir la app"): la decisión dependía de una
+// bandera booleana en sessionStorage. En una pestaña de navegador sessionStorage se
+// borra al cerrar, pero en el WebView de Capacitor NO: al minimizar y reabrir la app
+// el WebView sigue vivo → la bandera seguía en '1' → decideAutoStart devolvía null →
+// KALY nunca volvía a saludar. Ahora la decisión es por TIEMPO desde el último saludo
+// (timestamp en localStorage), que no depende de que el WebView muera.
+describe('decideAutoStart (por tiempo desde el último saludo)', () => {
+  const AHORA = 1_760_000_000_000;
 
-  test('retorna onboarding si !onboarded', () => {
-    expect(decideAutoStart({ onboarded: false, lastGreet: null, today })).toBe('onboarding');
+  test('retorna onboarding si !onboarded y nunca saludó', () => {
+    expect(decideAutoStart({ onboarded: false, ultimoSaludo: null, ahora: AHORA })).toBe('onboarding');
   });
 
   test('retorna onboarding si onboarded=undefined', () => {
-    expect(decideAutoStart({ onboarded: undefined, lastGreet: null, today })).toBe('onboarding');
+    expect(decideAutoStart({ onboarded: undefined, ultimoSaludo: null, ahora: AHORA })).toBe('onboarding');
   });
 
-  test('retorna saludo si onboarded=true y no ha saludado en esta sesión', () => {
-    expect(decideAutoStart({ onboarded: true, yaSaludo: false })).toBe('saludo');
+  test('retorna saludo si onboarded=true y nunca saludó', () => {
+    expect(decideAutoStart({ onboarded: true, ultimoSaludo: null, ahora: AHORA })).toBe('saludo');
   });
 
-  // Bug real: KalyAgent se remonta al navegar entre pestañas (está dentro de una
-  // condición que depende de `tab`/`pending`/etc.), y cada remontaje disparaba el
-  // saludo automático de nuevo — el usuario reportó "me saludó 3 veces". La bandera
-  // yaSaludo (memoria de corto plazo, sessionStorage) evita repetirlo.
-  test('NO retorna saludo si ya saludó en esta sesión (evita saludos repetidos al remontar)', () => {
-    expect(decideAutoStart({ onboarded: true, yaSaludo: true })).toBeNull();
+  // El bug original que resolvía la bandera ("me saludó 3 veces"): KalyAgent se
+  // remonta al cambiar de pestaña, a segundos del saludo anterior. Eso NO debe saludar.
+  test('NO saluda si acaba de saludar (remontaje al cambiar de pestaña)', () => {
+    expect(decideAutoStart({ onboarded: true, ultimoSaludo: AHORA - 3_000, ahora: AHORA })).toBeNull();
+  });
+
+  test('NO saluda justo antes del umbral', () => {
+    expect(decideAutoStart({ onboarded: true, ultimoSaludo: AHORA - (RESALUDO_MS - 1), ahora: AHORA })).toBeNull();
+  });
+
+  // ── EL FIX: reabrir la app después de un rato SÍ saluda ──
+  test('SÍ vuelve a saludar pasado el umbral (reabrir la app)', () => {
+    expect(decideAutoStart({ onboarded: true, ultimoSaludo: AHORA - (RESALUDO_MS + 1), ahora: AHORA })).toBe('saludo');
+  });
+
+  test('SÍ vuelve a onboardar pasado el umbral si no está onboarded', () => {
+    expect(decideAutoStart({ onboarded: false, ultimoSaludo: AHORA - (RESALUDO_MS + 1), ahora: AHORA })).toBe('onboarding');
+  });
+
+  test('umbral configurable por parámetro', () => {
+    expect(decideAutoStart({ onboarded: true, ultimoSaludo: AHORA - 5_000, ahora: AHORA, resaludoMs: 1_000 })).toBe('saludo');
   });
 });
 
-describe('yaSaludoEnEstaSesion / marcarSaludado', () => {
-  beforeEach(() => { sessionStorage.clear(); });
+describe('saludoReciente / marcarSaludado / ultimoSaludoMs', () => {
+  beforeEach(() => { sessionStorage.clear(); localStorage.clear(); });
 
-  test('empieza en false', () => {
-    expect(yaSaludoEnEstaSesion()).toBe(false);
+  test('sin saludo previo: ultimoSaludoMs=null y saludoReciente=false', () => {
+    expect(ultimoSaludoMs()).toBeNull();
+    expect(saludoReciente()).toBe(false);
   });
 
-  test('marcarSaludado() hace que yaSaludoEnEstaSesion() devuelva true', () => {
-    marcarSaludado();
-    expect(yaSaludoEnEstaSesion()).toBe(true);
+  test('marcarSaludado() guarda el timestamp y saludoReciente pasa a true', () => {
+    const t = 1_760_000_000_000;
+    marcarSaludado(t);
+    expect(ultimoSaludoMs()).toBe(t);
+    expect(saludoReciente(t + 1_000)).toBe(true);
+  });
+
+  // Clave del fix: el timestamp vive en localStorage, así que sobrevive al WebView
+  // igual que antes — pero al consultarlo con la hora actual, "hace rato" ya no
+  // cuenta como saludo reciente y KALY vuelve a saludar.
+  test('un saludo viejo YA NO cuenta como reciente (la app se reabre y saluda)', () => {
+    const t = 1_760_000_000_000;
+    marcarSaludado(t);
+    expect(saludoReciente(t + RESALUDO_MS + 1)).toBe(false);
   });
 });
 
@@ -72,20 +107,20 @@ describe('resetKalyGreeting (cambio de cuenta)', () => {
   test('borra las flags de saludo/onboarding', () => {
     marcarSaludado();                              // cuenta A ya saludó
     localStorage.setItem('kaly_onboarded', '1');   // y quedó onboarded en el celular
-    expect(yaSaludoEnEstaSesion()).toBe(true);
+    expect(saludoReciente()).toBe(true);
 
     resetKalyGreeting();                           // login de cuenta B
 
-    expect(yaSaludoEnEstaSesion()).toBe(false);
+    expect(saludoReciente()).toBe(false);
+    expect(ultimoSaludoMs()).toBeNull();
     expect(localStorage.getItem('kaly_onboarded')).toBeNull();
-    expect(localStorage.getItem('kaly_last_greet')).toBeNull();
   });
 
   test('tras el reset la cuenta nueva vuelve a saludar/onboardar (no queda muda)', () => {
     marcarSaludado(); localStorage.setItem('kaly_onboarded', '1');
     resetKalyGreeting();
     const onboarded = localStorage.getItem('kaly_onboarded') === '1';
-    expect(decideAutoStart({ onboarded, yaSaludo: yaSaludoEnEstaSesion() })).toBe('onboarding');
+    expect(decideAutoStart({ onboarded, ultimoSaludo: ultimoSaludoMs() })).toBe('onboarding');
   });
 });
 
@@ -236,6 +271,18 @@ describe('instruccionInicial', () => {
   test('motivo saludo con saludoHora=noche menciona buenas noches', () => {
     const msg = instruccionInicial({ saludoHora: 'noche' }, 'saludo');
     expect(msg).toContain('buenas noches');
+  });
+
+  // Regresión (v3.94): el saludo genérico dejó de usar la hora del día y decía un
+  // fijo "¡Hola de nuevo hoy!". El modo PERSONAL —el que usa la app de finanzas
+  // personales— tenía el mismo problema, así que ahí tampoco se oía "buenos días".
+  test.each([
+    ['dia', 'buenos días'],
+    ['tarde', 'buenas tardes'],
+    ['noche', 'buenas noches'],
+  ])('modo personal, saludoHora=%s → menciona "%s"', (saludoHora, esperado) => {
+    const msg = instruccionInicial({ saludoHora, tipoPersonal: true, nombre: 'José' }, 'saludo');
+    expect(msg).toContain(esperado);
   });
 
   test('motivo inactividad pregunta si puede ayudar', () => {
